@@ -53,6 +53,27 @@ func ValidateCurrentSources(s subscription.Subscription, p plan.Version, sources
 	}
 	return nil
 }
+func ProjectInitialSources(tenant string, target plan.Version, sources []entitlement.Source, id string, at time.Time, end *time.Time) ([]entitlement.Source, error) {
+	if !Tenant(tenant) || !Key(id) || target.Integrity() != nil || at.IsZero() {
+		return nil, ErrInvalid
+	}
+	out := make([]entitlement.Source, 0, len(sources)+len(target.Terms.Modules)*2)
+	for _, source := range sources {
+		if source.TenantID != tenant {
+			return nil, ErrCorrupt
+		}
+		if source.SourceKind == entitlement.PlanSource && source.RevokedAt == nil {
+			return nil, ErrConflict
+		}
+		out = append(out, source)
+	}
+	for _, source := range subscription.Sources(tenant, id, at, target.Terms) {
+		source.ExpiresAt = end
+		out = append(out, source)
+	}
+	return out, nil
+}
+
 func ProjectSources(s subscription.Subscription, old, target plan.Version, sources []entitlement.Source, id string, at time.Time, end *time.Time) ([]entitlement.Source, error) {
 	if err := ValidateCurrentSources(s, old, sources); err != nil {
 		return nil, err
