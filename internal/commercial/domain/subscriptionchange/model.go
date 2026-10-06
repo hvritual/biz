@@ -18,6 +18,7 @@ import (
 )
 
 const (
+	Initial      = "INITIAL"
 	Switch       = "SWITCH"
 	Renew        = "RENEW"
 	StopRenewal  = "STOP_RENEWAL"
@@ -59,6 +60,7 @@ type Input struct {
 	Action            string     `json:"action"`
 	TargetPlanCode    string     `json:"target_plan_code"`
 	TargetPlanVersion uint64     `json:"target_plan_version"`
+	SalesScope        string     `json:"sales_scope,omitempty"`
 	EffectiveAt       *time.Time `json:"effective_at,omitempty"`
 	Reason            string     `json:"reason"`
 }
