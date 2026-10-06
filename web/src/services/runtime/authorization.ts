@@ -42,13 +42,34 @@ function isTenantUserActor(actorKind: string | undefined) {
   return actorKind === 'user' || actorKind === 'tenant'
 }
 
+function isPlatformActor(actorKind: string | undefined) {
+  return actorKind === 'platform'
+}
+
+function hasAuthorizationContext(session: TrustedSession) {
+  if (!session.authenticated) return false
+  if (isPlatformActor(session.actor_kind)) return Boolean(session.platform_subject)
+  return isTenantUserActor(session.actor_kind) && Boolean(session.active_tenant_id)
+}
+
 function sessionKey(session: TrustedSession) {
   return [
     session.actor_kind ?? '',
+    session.platform_subject ?? '',
     session.user_id ?? '',
     session.active_tenant_id ?? '',
     String(session.context_version ?? 0),
   ].join(':')
+}
+
+function authorizationMatchesSession(snapshot: CurrentAuthorizationResponse, session: TrustedSession) {
+  if (!snapshot.authenticated || snapshot.actor_kind !== session.actor_kind) return false
+  if (isPlatformActor(session.actor_kind)) {
+    return Boolean(session.platform_subject) && snapshot.platform_subject === session.platform_subject
+  }
+  return isTenantUserActor(session.actor_kind)
+    && Boolean(session.active_tenant_id)
+    && snapshot.tenant_id === session.active_tenant_id
 }
 
 export function authorizationApiMode() {
@@ -75,10 +96,10 @@ export function currentAuthorizationAllows(actionCode: string) {
 
 export function currentAuthorizationMatchesSession(session: TrustedSession | null | undefined) {
   if (!apiMode) return true
-  if (!session?.authenticated || !isTenantUserActor(session.actor_kind) || !session.active_tenant_id) return false
+  if (!session || !hasAuthorizationContext(session)) return false
   const authorizationSession = state.session
   if (!authorizationSession || sessionKey(authorizationSession) !== sessionKey(session)) return false
-  if (state.status === 'ready') return state.snapshot?.tenant_id === session.active_tenant_id
+  if (state.status === 'ready') return Boolean(state.snapshot && authorizationMatchesSession(state.snapshot, session))
   return true
 }
 
@@ -114,7 +135,7 @@ export async function ensureCurrentAuthorization(force = false): Promise<Current
       if (requestGeneration !== generation) return null
       state.session = session
       const key = sessionKey(session)
-      if (!session.authenticated || !isTenantUserActor(session.actor_kind) || !session.active_tenant_id) {
+      if (!hasAuthorizationContext(session)) {
         state.status = 'unauthenticated'
         state.snapshot = null
         state.contextKey = key
@@ -130,16 +151,13 @@ export async function ensureCurrentAuthorization(force = false): Promise<Current
       state.status = 'loading'
       const snapshot = await readCurrentAuthorization()
       if (requestGeneration !== generation) return null
-      if (
-        !snapshot.authenticated ||
-        !isTenantUserActor(snapshot.actor_kind) ||
-        snapshot.actor_kind !== session.actor_kind ||
-        snapshot.tenant_id !== session.active_tenant_id
-      ) {
+      if (!authorizationMatchesSession(snapshot, session)) {
         state.status = 'forbidden'
         state.snapshot = null
         state.contextKey = key
-        state.error = '服务端授权上下文与当前可信租户不一致。'
+        state.error = isPlatformActor(session.actor_kind)
+          ? '服务端授权上下文与当前可信平台身份不一致。'
+          : '服务端授权上下文与当前可信租户不一致。'
         return null
       }
 
