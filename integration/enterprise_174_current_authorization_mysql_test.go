@@ -266,4 +266,3 @@ func TestPlatformCurrentGrantsShrinkWithoutSessionExpiry(t *testing.T) {
 		t.Fatalf("database failure reused stale platform grants: %+v", grants)
 	}
 }
-
