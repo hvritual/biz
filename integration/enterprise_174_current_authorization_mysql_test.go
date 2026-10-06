@@ -195,3 +195,74 @@ func TestEnterprise174QualificationRejectsAlwaysAllowResolver(t *testing.T) {
 		t.Fatal("authorization qualification accepted an always-allow resolver")
 	}
 }
+
+func TestPlatformCurrentGrantsShrinkWithoutSessionExpiry(t *testing.T) {
+	db := ce08FreshFixtureDB(t)
+	ctx := context.Background()
+	store, err := accesspersistence.New(db)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := store.EnsurePlatformSchema(ctx); err != nil {
+		t.Fatal(err)
+	}
+	const subject = "enterprise-174-platform"
+	if err := store.BootstrapPlatform(ctx, accesspersistence.PlatformBootstrap{
+		Subject: subject,
+		Token:   "enterprise-174-platform-token",
+		Permissions: []authz.PermissionKey{
+			"platform.module.read",
+			"platform.module.manage",
+			"platform.module.technical.manage",
+		},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	resolver, err := accesspersistence.NewPrincipalGrantResolver(store)
+	if err != nil {
+		t.Fatal(err)
+	}
+	principal := identity.Principal{
+		Subject: subject, AuthMethod: accesspersistence.AuthMethodWeb, Authenticated: true,
+	}
+	request := authz.GrantRequest{
+		Principal: principal, TenantBound: false, Operation: "commercial.module.create",
+		Permissions: []authz.PermissionKey{"platform.module.manage"},
+	}
+	grants, err := resolver.ResolveGrants(ctx, request)
+	if err != nil || len(grants) != 1 || grants[0].Permission != "platform.module.manage" {
+		t.Fatalf("initial platform manage grant missing: grants=%+v err=%v", grants, err)
+	}
+
+	if err := db.Table("biz_platform_permission_grants").
+		Where("subject = ? AND permission = ?", subject, "platform.module.manage").
+		Delete(nil).Error; err != nil {
+		t.Fatal(err)
+	}
+	grants, err = resolver.ResolveGrants(ctx, request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(grants) != 0 {
+		t.Fatalf("revoked platform grant remained allowed on next resolve: %+v", grants)
+	}
+
+	request.Operation = "commercial.module.list"
+	request.Permissions = []authz.PermissionKey{"platform.module.read"}
+	grants, err = resolver.ResolveGrants(ctx, request)
+	if err != nil || len(grants) != 1 || grants[0].Permission != "platform.module.read" {
+		t.Fatalf("unrelated platform read grant was lost: grants=%+v err=%v", grants, err)
+	}
+
+	sqlDB, err := db.DB()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := sqlDB.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if grants, err = resolver.ResolveGrants(ctx, request); err == nil {
+		t.Fatalf("database failure reused stale platform grants: %+v", grants)
+	}
+}
+
