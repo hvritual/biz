@@ -121,3 +121,49 @@ func TestProjectInitialSourcesPreservesExistingNonPlanAuthority(t *testing.T) {
 		t.Fatal("first activation accepted an already-live plan source")
 	}
 }
+
+func TestInitialReceiptAllowsDirectAndProvisionedFinalRevisions(t *testing.T) {
+	at := time.Date(2026, 10, 6, 11, 0, 0, 0, time.UTC)
+	base := subscription.Subscription{
+		Origin:                   subscription.OriginInitialActivation,
+		ID:                       subscription.ID("tenant-initial"),
+		TenantID:                 "tenant-initial",
+		Kind:                     subscription.KindBase,
+		State:                    subscription.StateActive,
+		PlanCode:                 "office-pro",
+		PlanVersion:              3,
+		SalesScope:               "rental",
+		EntitlementSourceVersion: 1,
+		CreatedAt:                at,
+		MatchExplanation:         "initial activation chg-initial",
+		Revision:                 1,
+		PeriodStart:              at,
+		SourceNamespace:          "chg-initial",
+	}
+	for _, revision := range []uint64{1, 2} {
+		value := base
+		value.Revision = revision
+		receipt := Receipt{
+			ChangeID:                 "chg-initial",
+			TenantID:                 value.TenantID,
+			ActorID:                  "platform-admin",
+			RequestID:                "confirm-initial",
+			Fingerprint:              Digest("confirm"),
+			PreviewHash:              Digest("preview"),
+			Action:                   Initial,
+			Status:                   Applied,
+			Mode:                     Immediate,
+			ConfirmedAt:              at,
+			EffectiveAt:              at,
+			Reason:                   "first activation",
+			After:                    value,
+			AfterSourceVersion:       1,
+			AfterEntitlementVersion:  2,
+			PricingAuthority:         "PLATFORM_MANUAL_APPROVAL",
+		}
+		receipt = receipt.Seal()
+		if err := receipt.Integrity(); err != nil {
+			t.Fatalf("initial receipt revision %d rejected: %v", revision, err)
+		}
+	}
+}
