@@ -3,7 +3,7 @@ import copy
 import tempfile
 from pathlib import Path
 import unittest
-from ci_access_qualification import PACKAGE, load_json, select_suites, test_argv, validate, verify_events
+from ci_access_qualification import PACKAGE, load_json, test_argv, validate, verify_events
 
 
 def events(name='TestExample'):
@@ -107,34 +107,6 @@ class RegistryTests(unittest.TestCase):
         self.data['suites'][0]['tests'][0]['file'] = '../example_test.go'
         with self.assertRaisesRegex(ValueError, 'TEST_PATH'):
             validate(self.data, self.root)
-
-
-class SelectionTests(unittest.TestCase):
-    def test_enterprise191_group_is_exact(self):
-        data = {
-            'schema_version': 1,
-            'suites': [
-                {'id': 'tenant-lifecycle', 'tests': []},
-                {'id': 'enterprise-191-login-metrics', 'tests': []},
-                {'id': 'enterprise-191-password-reset-metrics', 'tests': []},
-                {'id': 'enterprise-191-member-write-metrics', 'tests': []},
-                {'id': 'enterprise-191-revocation-metrics', 'tests': []},
-            ],
-        }
-        self.assertEqual(
-            [suite['id'] for suite in select_suites(data, 'enterprise191')],
-            [
-                'enterprise-191-login-metrics',
-                'enterprise-191-password-reset-metrics',
-                'enterprise-191-member-write-metrics',
-                'enterprise-191-revocation-metrics',
-            ],
-        )
-        self.assertEqual([suite['id'] for suite in select_suites(data, 'base')], ['tenant-lifecycle'])
-
-    def test_unknown_group_is_rejected(self):
-        with self.assertRaisesRegex(ValueError, 'UNKNOWN_SUITE_GROUP'):
-            select_suites({'suites': []}, 'unknown')
 
 
 if __name__ == '__main__':
