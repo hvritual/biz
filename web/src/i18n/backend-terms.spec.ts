@@ -41,6 +41,12 @@ describe('backend term presentation', () => {
     expect(backendTermDiagnostic('subscriptionState', '<script>secret</script>')?.value).toBeNull()
   })
 
+  it('translates the platform first-activation action', () => {
+    expect(backendTermLabel('changeAction', 'INITIAL')).toBe('首次开通套餐')
+    i18n.global.locale.value = 'en-US'
+    expect(backendTermLabel('changeAction', 'INITIAL')).toBe('Activate first plan')
+  })
+
   it('recognizes actual same-tier and renew classifications', () => {
     expect(backendTermLabel('changeClassification', 'SAME_TIER')).toBe('同级调整')
     expect(backendTermLabel('changeClassification', 'RENEW')).toBe('续订')
