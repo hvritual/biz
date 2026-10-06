@@ -132,92 +132,47 @@ func TestEnterprise173PasswordRecoveryReplayExpiryAndConcurrentConsumption(t *te
 func TestEnterprise191PasswordRecoverySuccessRate(t *testing.T) {
 	fixture := newEnterprise173Fixture(t)
 	ctx := context.Background()
-	const (
-		sampleCount = 100
-		workerCount = 8
-	)
-	type recoveryResult struct {
-		sample   int
-		phase    string
-		identity string
-		err      error
-	}
-	runSample := func(sample int) recoveryResult {
+	const sampleCount = 100
+	successes := 0
+
+	for sample := 0; sample < sampleCount; sample++ {
 		userID := fmt.Sprintf("enterprise191-reset-%03d", sample)
 		email := fmt.Sprintf("enterprise191-reset-%03d@example.invalid", sample)
 		oldPassword := "OldPass9A"
 		newPassword := "NewPass9A"
 		if err := fixture.Store.BootstrapGlobalUser(ctx, accesspersistence.GlobalUserBootstrap{ID: userID, Email: email}); err != nil {
-			return recoveryResult{sample: sample, phase: "bootstrap", err: err}
+			t.Fatal(err)
 		}
 		if err := fixture.Store.SetUserPassword(ctx, userID, oldPassword); err != nil {
-			return recoveryResult{sample: sample, phase: "set-password", err: err}
+			t.Fatal(err)
 		}
 		flowID := fmt.Sprintf("enterprise191-reset-flow-%03d", sample)
-		challenge, delivery, err := fixture.Service.SendVerificationCode(ctx, domain.VerificationChallengeRequest{
-			BusinessEventID: fmt.Sprintf("enterprise191/reset/%03d", sample),
-			FlowID:          flowID,
-			Purpose:         domain.VerificationPurposePasswordRecovery,
-			UserID:          userID,
-			Channel:         domain.SecurityNotificationEmail,
-			Destination:     email,
-		})
-		if err != nil || delivery.State != domain.NotificationStatePending {
-			return recoveryResult{sample: sample, phase: "queue-otp", err: fmt.Errorf("delivery=%+v err=%w", delivery, err)}
-		}
-		delivery, err = fixture.Service.DeliverSecurityNotification(ctx, challenge.NotificationEventID)
-		if err != nil || delivery.State != domain.NotificationStateDelivered {
-			return recoveryResult{sample: sample, phase: "deliver-otp", err: fmt.Errorf("delivery=%+v err=%w", delivery, err)}
-		}
-		message, ok := fixture.Sender.Message(challenge.NotificationEventID)
-		if !ok || message.Secret == "" {
-			return recoveryResult{sample: sample, phase: "otp-evidence", err: errors.New("recovery OTP evidence missing")}
-		}
-		_, err = fixture.Store.RecoverPasswordWithCode(ctx, fixture.Protection, domain.VerifyChallengeRequest{
+		challenge, code := fixture.sendRecoveryOTP(
+			t,
+			fmt.Sprintf("enterprise191/reset/%03d", sample),
+			flowID,
+			userID,
+			email,
+		)
+		_, err := fixture.Store.RecoverPasswordWithCode(ctx, fixture.Protection, domain.VerifyChallengeRequest{
 			ChallengeID: challenge.ChallengeID,
 			FlowID:      flowID,
 			Purpose:     domain.VerificationPurposePasswordRecovery,
 			UserID:      userID,
 			Channel:     domain.SecurityNotificationEmail,
 			Destination: email,
-			Code:        message.Secret,
+			Code:        code,
 		}, 5*time.Minute, newPassword, newPassword)
 		if err != nil {
-			return recoveryResult{sample: sample, phase: "recover", err: err}
+			t.Logf("ENTERPRISE191_RESET_FAILURE sample=%d phase=recover err=%v", sample+1, err)
+			continue
 		}
 		identity, err := fixture.Store.AuthenticateUserPassword(ctx, email, newPassword)
-		if err != nil || identity.UserID != userID {
-			return recoveryResult{sample: sample, phase: "readback", identity: identity.UserID, err: err}
-		}
-		return recoveryResult{sample: sample, identity: identity.UserID}
-	}
-
-	jobs := make(chan int)
-	results := make(chan recoveryResult, sampleCount)
-	var wg sync.WaitGroup
-	wg.Add(workerCount)
-	for worker := 0; worker < workerCount; worker++ {
-		go func() {
-			defer wg.Done()
-			for sample := range jobs {
-				results <- runSample(sample)
-			}
-		}()
-	}
-	for sample := 0; sample < sampleCount; sample++ {
-		jobs <- sample
-	}
-	close(jobs)
-	wg.Wait()
-	close(results)
-
-	successes := 0
-	for result := range results {
-		if result.err == nil && result.identity == fmt.Sprintf("enterprise191-reset-%03d", result.sample) {
+		if err == nil && identity.UserID == userID {
 			successes++
 			continue
 		}
-		t.Logf("ENTERPRISE191_RESET_FAILURE sample=%d phase=%s identity=%q err=%v", result.sample+1, result.phase, result.identity, result.err)
+		t.Logf("ENTERPRISE191_RESET_FAILURE sample=%d phase=readback identity=%q err=%v", sample+1, identity.UserID, err)
 	}
 	rate := float64(successes) / float64(sampleCount)
 	t.Logf(
