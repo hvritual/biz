@@ -24,6 +24,14 @@ const (
 	StateGrace      = "GRACE"
 	StateRestricted = "RESTRICTED"
 	StateEnded      = "ENDED"
+
+	// OriginDefaultRule is the explicit provenance for CE-08 default-rule
+	// bootstrap. Historical payloads predate this field and remain valid when
+	// rule_id/rule_version are present.
+	OriginDefaultRule = "DEFAULT_RULE"
+	// OriginInitialActivation identifies a platform-admin first activation.
+	// It must not fabricate a DefaultSubscriptionRule reference.
+	OriginInitialActivation = "INITIAL_ACTIVATION"
 )
 
 var code = regexp.MustCompile(`^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$`)
@@ -82,6 +90,9 @@ type Subscription struct {
 	RenewalStopped           bool       `json:"renewal_stopped,omitempty"`
 	PendingChangeID          string     `json:"pending_change_id,omitempty"`
 	SourceNamespace          string     `json:"source_namespace,omitempty"`
+	// Origin was added after CE-08. Empty means a legacy default-rule
+	// subscription and is accepted only when rule provenance is complete.
+	Origin                   string     `json:"origin,omitempty"`
 	ID                       string     `json:"subscription_id"`
 	TenantID                 string     `json:"tenant_id"`
 	Kind                     string     `json:"kind"`
@@ -96,11 +107,22 @@ type Subscription struct {
 	MatchExplanation         string     `json:"match_explanation"`
 }
 
+func (s Subscription) validOrigin() bool {
+	switch s.Origin {
+	case "", OriginDefaultRule:
+		return ValidCode(s.RuleID) && s.RuleVersion > 0
+	case OriginInitialActivation:
+		return s.RuleID == "" && s.RuleVersion == 0
+	default:
+		return false
+	}
+}
+
 func (s Subscription) Validate() error {
 	if s.Revision > 0 && (s.PeriodStart.IsZero() || (s.PeriodEnd != nil && !s.PeriodEnd.After(s.PeriodStart)) || s.SourceNamespace == "" || len(s.SourceNamespace) > 64 || len(s.PendingChangeID) > 64) {
 		return ErrInvalid
 	}
-	if s.ID == "" || s.TenantID == "" || s.Kind != KindBase || !ValidState(s.State) || !ValidCode(s.PlanCode) || s.PlanVersion == 0 || !ValidCode(s.RuleID) || s.RuleVersion == 0 || (s.SalesScope != "*" && !ValidCode(s.SalesScope)) || s.EntitlementSourceVersion == 0 || s.CreatedAt.IsZero() || s.MatchExplanation == "" {
+	if s.ID == "" || s.TenantID == "" || s.Kind != KindBase || !ValidState(s.State) || !ValidCode(s.PlanCode) || s.PlanVersion == 0 || !s.validOrigin() || (s.SalesScope != "*" && !ValidCode(s.SalesScope)) || s.EntitlementSourceVersion == 0 || s.CreatedAt.IsZero() || s.MatchExplanation == "" {
 		return ErrInvalid
 	}
 	return nil
