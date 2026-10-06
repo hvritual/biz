@@ -69,7 +69,22 @@ def validate(data, root=ROOT, baseline=None):
 
 
 def test_argv(suite):
-    pattern = '^(' + '|'.join(test['name'] for test in suite['tests']) + ')def verify_events(events, expected, exit_code):
+    pattern = '^(' + '|'.join(test['name'] for test in suite['tests']) + ')$'
+    return ['go', 'test', '-json', '-count=1', '-tags=integration', './integration', '-run', pattern]
+
+
+def select_suites(data, group):
+    suites = data['suites']
+    if group == 'all':
+        return suites
+    if group == 'base':
+        return [suite for suite in suites if suite['id'] not in ENTERPRISE191_METRIC_SUITES]
+    if group == 'enterprise191':
+        return [suite for suite in suites if suite['id'] in ENTERPRISE191_METRIC_SUITES]
+    raise ValueError('UNKNOWN_SUITE_GROUP:' + group)
+
+
+def verify_events(events, expected, exit_code):
     require(exit_code == 0, 'GO_TEST_PROCESS_FAILED')
     started, passed, package_passed = Counter(), Counter(), 0
     require(events, 'EMPTY_GO_TEST_EVIDENCE')
