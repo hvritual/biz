@@ -19,6 +19,7 @@ describe('backend term presentation', () => {
     ['ACTIVE', '有效', 'Active', 'success'],
     ['GRACE', '宽限期', 'Grace period', 'warning'],
     ['RESTRICTED', '受限', 'Restricted', 'danger'],
+    ['PROVISIONING', '开通处理中', 'Provisioning', 'warning'],
     ['ENDED', '已结束', 'Ended', 'neutral'],
   ])('projects %s without a fallback or an incorrect success badge', (code, zh, en, tone) => {
     i18n.global.locale.value = 'zh-CN'
@@ -48,6 +49,7 @@ describe('backend term presentation', () => {
   })
 
   it('recognizes actual same-tier and renew classifications', () => {
+    expect(backendTermLabel('changeClassification', 'INITIAL')).toBe('首次开通')
     expect(backendTermLabel('changeClassification', 'SAME_TIER')).toBe('同级调整')
     expect(backendTermLabel('changeClassification', 'RENEW')).toBe('续订')
     expect(backendTermLabel('planState', 'PUBLISHED')).toBe('已发布')
