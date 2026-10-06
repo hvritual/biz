@@ -123,6 +123,32 @@ describe('primary navigation information architecture', () => {
     expect(platformCommercialNavigation.every((item) => item.path?.startsWith('/platform/'))).toBe(true)
   })
 
+  it('binds real platform navigation to generated operation codes instead of platform identity alone', () => {
+    const byId = new Map(platformCommercialNavigation.map((item) => [item.id, item]))
+    expect(primaryNavigation.find((item) => item.id === 'platform-commercial')?.authorizationActions).toEqual(
+      expect.arrayContaining([
+        'tenant.list',
+        'commercial.module.list',
+        'commercial.feature.list',
+        'commercial.plan.list',
+        'commercial.entitlement.explain',
+      ]),
+    )
+    expect(byId.get('tenants')?.authorizationActions).toEqual(['tenant.list'])
+    expect(byId.get('modules')?.authorizationActions).toEqual(['commercial.module.list'])
+    expect(byId.get('features')?.authorizationActions).toEqual(['commercial.feature.list'])
+    expect(byId.get('plans')?.authorizationActions).toEqual(['commercial.plan.list'])
+    expect(byId.get('tenant-entitlements')).toMatchObject({
+      authorizationMode: 'all',
+      authorizationActions: [
+        'commercial.subscription.get',
+        'commercial.entitlement.override.list',
+        'commercial.entitlement.explain',
+      ],
+    })
+    expect(platformCommercialQuickActions.every((item) => item.authorizationActions.length > 0)).toBe(true)
+  })
+
   it('exposes only real commercial authority in production navigation and quick actions', () => {
     expect(visiblePlatformCommercialNavigation().map((item) => item.id)).toEqual([
       'overview', 'tenants', 'modules', 'features', 'plans', 'tenant-entitlements',
