@@ -11,6 +11,9 @@ type SubscriptionChangeRepository interface {
 	// Lock order: shared catalog epoch, existing tenant base subscription, plans,
 	// entitlement authority, snapshot. Never open a second root transaction.
 	LockTenant(context.Context, string) (subscription.Subscription, error)
+	// LockTenantOptional serializes first-activation attempts even when the
+	// tenant has no base subscription yet. nil means no current subscription.
+	LockTenantOptional(context.Context, string) (*subscription.Subscription, error)
 	Preview(context.Context, string, string, bool) (*change.Preview, error)
 	PreviewForRequest(context.Context, string, string, string) (*change.Preview, error)
 	SavePreview(context.Context, change.Preview) error
@@ -18,6 +21,9 @@ type SubscriptionChangeRepository interface {
 	ListReceipts(context.Context, string, time.Time, string, int) ([]change.Receipt, error)
 	ReceiptForRequest(context.Context, string, string, string, string) (*change.Receipt, error)
 	SaveCurrent(context.Context, subscription.Subscription, subscription.Subscription) error
+	// CreateCurrent persists the first base subscription under the same tenant
+	// serialization boundary used by LockTenantOptional.
+	CreateCurrent(context.Context, subscription.Subscription) error
 	Complete(context.Context, change.Receipt) error
 	UpdateReceipt(context.Context, change.Receipt, change.Receipt) error
 	Now(context.Context) (time.Time, error)
