@@ -104,7 +104,7 @@ func input(r *v1.PreviewSubscriptionChangeRequest) (change.Input, error) {
 	if r == nil {
 		return change.Input{}, change.ErrInvalid
 	}
-	i := change.Input{TenantID: r.TenantId, RequestID: r.RequestId, Action: r.Action, TargetPlanCode: r.TargetPlanCode, TargetPlanVersion: r.TargetPlanVersion, Reason: strings.TrimSpace(r.Reason)}
+	i := change.Input{TenantID: r.TenantId, RequestID: r.RequestId, Action: r.Action, TargetPlanCode: r.TargetPlanCode, TargetPlanVersion: r.TargetPlanVersion, SalesScope: strings.TrimSpace(r.SalesScope), Reason: strings.TrimSpace(r.Reason)}
 	if r.EffectiveAt != "" {
 		v, err := time.Parse(time.RFC3339Nano, r.EffectiveAt)
 		if err != nil {
