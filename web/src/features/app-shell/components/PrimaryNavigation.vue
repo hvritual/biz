@@ -19,7 +19,6 @@ const visiblePrimaryNavigation = computed(() =>
   primaryNavigation.filter((item) => {
     if (!authorizationApiMode()) return true
     if (item.id === 'dashboard') return true
-    if (item.id === 'platform-commercial') return currentAuthorizationState.session?.actor_kind === 'platform'
     if (!item.authorizationActions?.length) return false
     if (currentAuthorizationState.status !== 'ready') return false
     if (item.authorizationModule && !currentAuthorizationModuleAllowed(item.authorizationModule)) return false
