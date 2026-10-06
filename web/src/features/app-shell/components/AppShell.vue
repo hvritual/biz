@@ -36,7 +36,10 @@ const protectedActions = computed(() =>
 )
 const protectedRoute = computed(() => authorizationApiMode() && protectedActions.value.length > 0)
 const protectedMode = computed(() => route.meta.authorizationMode === 'all' ? 'all' : 'any')
-const authorizationContextCurrent = computed(() => currentAuthorizationMatchesSession(store.session))
+const authorizationContextSession = computed(() =>
+  platformSurface.value ? currentAuthorizationState.session : store.session,
+)
+const authorizationContextCurrent = computed(() => currentAuthorizationMatchesSession(authorizationContextSession.value))
 const protectedActionsAllowed = computed(() => {
   if (!protectedRoute.value) return true
   return protectedMode.value === 'all'
