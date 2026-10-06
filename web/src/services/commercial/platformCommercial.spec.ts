@@ -7,6 +7,7 @@ import {
   createPlanDraft,
   explainTenantEntitlements,
   listEntitlementOverrides,
+  listPlans,
   listPlanVersions,
   listPlatformModules,
   previewSubscriptionChange,
@@ -230,6 +231,25 @@ describe('CE-13 platform commercial service', () => {
     expect(new Headers(revokeInit?.headers).has('Authorization')).toBe(false)
   })
 
+
+  it('discovers platform plans with the trusted session and explicit pagination', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({
+        plans: [{ planCode: 'office-pro', name: '办公专业版', latestVersion: '3', state: 'PUBLISHED' }],
+        nextAfterPlanCode: 'office-pro',
+      }), { status: 200, headers: { 'Content-Type': 'application/json' } }),
+    )
+
+    const result = await listPlans({ afterPlanCode: 'office-basic', pageSize: 20 })
+
+    expect(result.plans[0]?.planCode).toBe('office-pro')
+    expect(result.nextAfterPlanCode).toBe('office-pro')
+    const [url, init] = fetchMock.mock.calls[0] ?? []
+    expect(String(url)).toContain('/v1/platform/plans?afterPlanCode=office-basic&pageSize=20')
+    expect(init?.credentials).toBe('include')
+    expect(new Headers(init?.headers).has('Authorization')).toBe(false)
+  })
+
   it('binds preview request_id to transport Idempotency-Key and trusted-session CSRF', async () => {
     const fetchMock = vi.spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce(new Response(JSON.stringify({ authenticated: true, csrf_token: 'csrf-preview' }), { status: 200 }))
@@ -255,8 +275,34 @@ describe('CE-13 platform commercial service', () => {
       tenantId: 'tenant/a',
       requestId: 'preview-key-1',
       action: 'SWITCH',
+      salesScope: '',
       targetPlanCode: 'office-pro',
       targetPlanVersion: '2',
+    })
+  })
+
+  it('carries explicit sales scope only for a first activation preview', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(new Response(JSON.stringify({ authenticated: true, csrf_token: 'csrf-initial' }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ changeId: 'chg-initial', previewHash: 'hash-initial' }), { status: 200 }))
+
+    await previewSubscriptionChange('tenant-1', {
+      requestId: 'preview-initial-1',
+      action: 'INITIAL',
+      salesScope: 'rental',
+      targetPlanCode: 'rental-pro-2026',
+      targetPlanVersion: '4',
+      effectiveAt: '',
+      reason: '平台首次开通',
+    })
+
+    const [, init] = fetchMock.mock.calls[1] ?? []
+    expect(JSON.parse(String(init?.body))).toMatchObject({
+      tenantId: 'tenant-1',
+      action: 'INITIAL',
+      salesScope: 'rental',
+      targetPlanCode: 'rental-pro-2026',
+      targetPlanVersion: '4',
     })
   })
 
