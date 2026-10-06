@@ -226,7 +226,7 @@ func (r Receipt) Seal() Receipt { r.Hash = ""; r.Hash = Digest(r); return r }
 func (r Receipt) Integrity() error {
 	transitionValid := r.Before.TenantID == r.TenantID && r.After.TenantID == r.TenantID && r.After.Revision >= r.Before.Revision+1 && r.After.Revision > 0
 	if r.Action == Initial {
-		transitionValid = r.Before == (subscription.Subscription{}) && r.After.TenantID == r.TenantID && r.After.Revision == 1 && r.Mode == Immediate
+		transitionValid = r.Before == (subscription.Subscription{}) && r.After.TenantID == r.TenantID && r.After.Revision >= 1 && r.After.Origin == subscription.OriginInitialActivation && r.Mode == Immediate
 	} else if r.Action != Switch && r.Action != Renew && r.Action != StopRenewal {
 		transitionValid = false
 	}
