@@ -85,7 +85,9 @@ func (s *service) confirm(ctx context.Context, actorID, tenantID, changeID, requ
 		if preview.Hash != previewHash {
 			return change.Receipt{}, change.ErrConflict
 		}
-		if tenantSelfService && preview.PricingBasis != "NO_PRICE_REFERENCE" {
+		if (tenantSelfService || preview.Input.Action == change.Initial) && preview.PricingBasis != "NO_PRICE_REFERENCE" {
+			// Paid first activation remains owned by #124/#125/#132. Platform
+			// administration is not permission to invent a payment/approval fact.
 			return change.Receipt{}, errExternalApprovalRequired
 		}
 		now, err := repo.Now(call)
