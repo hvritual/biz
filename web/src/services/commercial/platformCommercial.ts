@@ -72,6 +72,24 @@ export interface ListPlanVersionsResult {
   nextAfterVersion: string | number
 }
 
+export interface PlanCatalogEntryDTO {
+  planCode: string
+  name: string
+  latestVersion: string | number
+  latestRevision: string | number
+  planRevision: string | number
+  state: BackendWireTerm<'planState'>
+  salesScope: string[]
+  createdAt: string
+  publishedAt: string
+  retiredAt: string
+}
+
+export interface ListPlansResult {
+  plans: PlanCatalogEntryDTO[]
+  nextAfterPlanCode: string
+}
+
 export interface CreatePlanDraftInput {
   requestId: string
   planCode: string
@@ -348,6 +366,7 @@ export interface CommercialFeatureDTO {
 export interface PreviewSubscriptionChangeInput {
   requestId: string
   action: SubscriptionChangeAction
+  salesScope?: string
   targetPlanCode: string
   targetPlanVersion: string | number
   effectiveAt: string
@@ -362,6 +381,11 @@ export interface ConfirmSubscriptionChangeInput {
 
 interface ListModulesResponse {
   modules?: ModuleDTO[]
+}
+
+interface ListPlansResponse {
+  plans?: PlanCatalogEntryDTO[]
+  nextAfterPlanCode?: string
 }
 
 interface ListPlanVersionsResponse {
@@ -492,6 +516,20 @@ export async function listPlatformModules(): Promise<ModuleDTO[]> {
   return Array.isArray(result.modules) ? result.modules : []
 }
 
+export async function listPlans(
+  options: { afterPlanCode?: string; pageSize?: number } = {},
+): Promise<ListPlansResult> {
+  const query = new URLSearchParams()
+  if (options.afterPlanCode?.trim()) query.set('afterPlanCode', options.afterPlanCode.trim())
+  if (options.pageSize !== undefined) query.set('pageSize', String(options.pageSize))
+  const suffix = query.size ? `?${query.toString()}` : ''
+  const result = await request<ListPlansResponse>(`/v1/platform/plans${suffix}`)
+  return {
+    plans: Array.isArray(result.plans) ? result.plans : [],
+    nextAfterPlanCode: String(result.nextAfterPlanCode ?? ''),
+  }
+}
+
 export async function listPlanVersions(
   planCode: string,
   options: { afterVersion?: string | number; pageSize?: number } = {},
@@ -608,6 +646,7 @@ export function previewSubscriptionChange(tenantId: string, input: PreviewSubscr
       ...input,
       tenantId,
       requestId,
+      salesScope: input.salesScope?.trim() ?? '',
       targetPlanVersion: String(input.targetPlanVersion),
     },
     { idempotencyKey: requestId },
