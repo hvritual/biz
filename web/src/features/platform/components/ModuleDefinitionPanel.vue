@@ -9,7 +9,14 @@ import type { ModuleDTO } from '@/services/commercial/platformCommercial'
 import type { ExistingModuleChangeKind } from '../composables/useModuleManagement'
 import { moduleAccessDefinitions, moduleChangeOperation, moduleMappingVersion, operationDefinition } from '@/services/commercial/moduleAccess'
 
-const props = defineProps<{ module: ModuleDTO; busy: boolean; writeUnresolved: boolean }>()
+const props = defineProps<{
+  module: ModuleDTO
+  busy: boolean
+  writeUnresolved: boolean
+  canEditMetadata: boolean
+  canManageSales: boolean
+  canManageTechnical: boolean
+}>()
 const emit = defineEmits<{ change: [kind: ExistingModuleChangeKind] }>()
 const router = useRouter()
 const tab = ref('overview')
@@ -69,7 +76,7 @@ function navigateTabs(event: KeyboardEvent) {
             <h3>基础配置</h3>
             <p>平台全局模块，不属于某个租户。只修改名称、分类和销售范围。</p>
           </div>
-          <UiButton class="btn" :disabled="busy || writeUnresolved" @click="emit('change', 'metadata')">编辑基础配置</UiButton>
+          <UiButton class="btn" :disabled="busy || writeUnresolved || !canEditMetadata" :title="canEditMetadata ? '编辑基础配置' : '需要 platform.module.manage'" @click="emit('change', 'metadata')">编辑基础配置</UiButton>
         </div>
         <dl class="module-facts">
           <div><dt>模块名称</dt><dd>{{ module.name }}</dd></div>
@@ -113,8 +120,8 @@ function navigateTabs(event: KeyboardEvent) {
           </div>
         </div>
         <div class="module-actions">
-          <UiButton class="btn" :disabled="busy || writeUnresolved" @click="emit('change', 'technical')">调整技术状态</UiButton>
-          <UiButton class="btn" :disabled="busy || writeUnresolved" @click="emit('change', 'sales')">{{ module.salesStatus === 'MODULE_SALES_STATUS_SELLABLE' ? '停售销售' : '恢复销售' }}</UiButton>
+          <UiButton class="btn" :disabled="busy || writeUnresolved || !canManageTechnical" :title="canManageTechnical ? '调整技术状态' : '需要 platform.module.technical.manage'" @click="emit('change', 'technical')">调整技术状态</UiButton>
+          <UiButton class="btn" :disabled="busy || writeUnresolved || !canManageSales" :title="canManageSales ? '调整销售状态' : '需要 platform.module.manage'" @click="emit('change', 'sales')">{{ module.salesStatus === 'MODULE_SALES_STATUS_SELLABLE' ? '停售销售' : '恢复销售' }}</UiButton>
         </div>
         <p class="module-note">额度定义不是租户剩余额度，字段规则不是当前成员权限。当前目录接口不提供历史审计或权限预览。</p>
       </template>
