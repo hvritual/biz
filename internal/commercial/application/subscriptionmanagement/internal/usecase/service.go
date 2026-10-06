@@ -275,8 +275,7 @@ func (s *service) BootstrapBaseSubscription(ctx context.Context, r *v1.Bootstrap
 		if e != nil {
 			return subscription.Subscription{}, e
 		}
-		sidSum := sha256.Sum256([]byte(r.TenantId))
-		sid := "sub-" + hex.EncodeToString(sidSum[:12])
+		sid := subscription.ID(r.TenantId)
 		for _, src := range planSources(r.TenantId, sid, now, pv) {
 			if e := src.ValidateShape(); e != nil {
 				return subscription.Subscription{}, e
