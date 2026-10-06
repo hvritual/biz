@@ -31,11 +31,21 @@ func (s *service) preview(ctx context.Context, actorID string, input change.Inpu
 	result, err := requestscope.JoinValue(ctx, s.repositories, func(sc *requestscope.View[ports.SubscriptionChangeRepositories]) (change.Preview, error) {
 		repos, call := sc.Repositories(), sc.Context()
 		repo := repos.Changes
-		raw, err := repo.LockTenant(call, input.TenantID)
+		i := input
+		var raw subscription.Subscription
+		var current *subscription.Subscription
+		var err error
+		if i.Action == change.Initial {
+			if tenantSelfService {
+				return change.Preview{}, change.ErrScope
+			}
+			current, err = repo.LockTenantOptional(call, i.TenantID)
+		} else {
+			raw, err = repo.LockTenant(call, i.TenantID)
+		}
 		if err != nil {
 			return change.Preview{}, err
 		}
-		i := input
 		if tenantSelfService {
 			i, err = normalizeTenantPreviewInput(i, raw)
 			if err != nil {
@@ -51,14 +61,22 @@ func (s *service) preview(ctx context.Context, actorID string, input change.Inpu
 		if existing != nil {
 			return *existing, nil
 		}
-		if raw.PendingChangeID != "" {
-			return change.Preview{}, change.ErrPending
-		}
-		if i.Action == change.StopRenewal && raw.RenewalStopped {
-			return change.Preview{}, change.ErrConflict
+		if i.Action == change.Initial {
+			if current != nil {
+				return change.Preview{}, change.ErrConflict
+			}
+		} else {
+			if raw.PendingChangeID != "" {
+				return change.Preview{}, change.ErrPending
+			}
+			if i.Action == change.StopRenewal && raw.RenewalStopped {
+				return change.Preview{}, change.ErrConflict
+			}
 		}
 		var material material
-		if tenantSelfService {
+		if i.Action == change.Initial {
+			material, err = s.captureInitial(call, repos, i)
+		} else if tenantSelfService {
 			material, err = s.captureTenant(call, repos, raw, i)
 		} else {
 			material, err = s.capture(call, repos, raw, i)
@@ -89,7 +107,12 @@ func (s *service) preview(ctx context.Context, actorID string, input change.Inpu
 		quotas := []change.QuotaImpact{}
 		deferred := false
 		if i.Action != change.StopRenewal {
-			sources, err := change.ProjectSources(material.before, material.old, material.target, material.state.Sources, id, at, end)
+			var sources []entitlement.Source
+			if i.Action == change.Initial {
+				sources, err = change.ProjectInitialSources(i.TenantID, material.target, material.state.Sources, id, at, end)
+			} else {
+				sources, err = change.ProjectSources(material.before, material.old, material.target, material.state.Sources, id, at, end)
+			}
 			if err != nil {
 				return change.Preview{}, err
 			}
