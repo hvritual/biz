@@ -116,6 +116,66 @@ func AuthorizedActions(grants []authz.Grant) []Action {
 	return out
 }
 
+// PlatformWebActions returns the existing public tenantless operations that are
+// callable by a trusted browser session. It derives the projection from the
+// generated Operation Catalog instead of maintaining a second platform action
+// table.
+func PlatformWebActions() []Action {
+	out := []Action{}
+	for _, action := range generatedActions {
+		if action.TenantRequired || !containsString(action.Authentication, "web-session") {
+			continue
+		}
+		if action.RPC == "" && len(action.HTTP) == 0 {
+			continue
+		}
+		out = append(out, cloneAction(action))
+	}
+	return out
+}
+
+// PermissionsForActions returns the unique permission keys required by the
+// supplied operation projection. The live grant resolver remains authoritative.
+func PermissionsForActions(actions []Action) []authz.PermissionKey {
+	seen := map[authz.PermissionKey]struct{}{}
+	for _, action := range actions {
+		for _, permission := range action.Permissions {
+			if permission != "" {
+				seen[permission] = struct{}{}
+			}
+		}
+	}
+	keys := make([]string, 0, len(seen))
+	for permission := range seen {
+		keys = append(keys, string(permission))
+	}
+	sort.Strings(keys)
+	out := make([]authz.PermissionKey, 0, len(keys))
+	for _, key := range keys {
+		out = append(out, authz.PermissionKey(key))
+	}
+	return out
+}
+
+// AuthorizedPlatformActions filters the generated platform browser operations
+// against current grants. The caller must obtain those grants from the live
+// principal resolver; browser session contents are never treated as authority.
+func AuthorizedPlatformActions(grants []authz.Grant) []Action {
+	allowed := map[authz.PermissionKey]struct{}{}
+	for _, grant := range grants {
+		if grant.Permission != "" {
+			allowed[grant.Permission] = struct{}{}
+		}
+	}
+	out := []Action{}
+	for _, action := range PlatformWebActions() {
+		if actionAllowed(action, allowed) {
+			out = append(out, cloneAction(action))
+		}
+	}
+	return out
+}
+
 func actionAllowed(action Action, allowed map[authz.PermissionKey]struct{}) bool {
 	if len(action.Permissions) == 0 {
 		return true
