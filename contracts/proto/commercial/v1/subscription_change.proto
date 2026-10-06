@@ -14,13 +14,15 @@ option (yunka.dsl.v1.domain) = { name: "commercial" version: "v1" };
 message PreviewSubscriptionChangeRequest {
  string tenant_id = 1;
  string request_id = 2;
- // SWITCH, RENEW or STOP_RENEWAL. Direction is calculated by the server.
+ // INITIAL, SWITCH, RENEW or STOP_RENEWAL. Direction is calculated by the server.
  string action = 3;
  string target_plan_code = 4;
  uint64 target_plan_version = 5;
  // Empty means the server's safe default; a future UTC instant schedules only.
  string effective_at = 6;
  string reason = 7;
+ // Required only for INITIAL. Existing subscriptions always use their stored scope.
+ string sales_scope = 8;
 }
 message ConfirmSubscriptionChangeRequest {
  string tenant_id = 1;
