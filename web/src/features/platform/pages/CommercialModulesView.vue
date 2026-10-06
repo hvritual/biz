@@ -11,10 +11,15 @@ import ModuleDefinitionPanel from '../components/ModuleDefinitionPanel.vue'
 import ModuleCreatePanel from '../components/ModuleCreatePanel.vue'
 import ModuleChangePanel from '../components/ModuleChangePanel.vue'
 import { useModuleManagement } from '../composables/useModuleManagement'
+import { currentAuthorizationAllows } from '@/services/runtime/authorization'
 import '../styles/moduleManagement.css'
 
 const vm = reactive(useModuleManagement())
 const journeyPanel = ref<HTMLElement>()
+const canCreate = computed(() => currentAuthorizationAllows('commercial.module.create'))
+const canEditMetadata = computed(() => currentAuthorizationAllows('commercial.module.update'))
+const canManageSales = computed(() => currentAuthorizationAllows('commercial.module.set_sales_status'))
+const canManageTechnical = computed(() => currentAuthorizationAllows('commercial.module.set_technical_status'))
 const loadError = computed(() => vm.loadState === 'blocked' ? vm.errorMessage : backendErrorFallback('commercial'))
 watch(() => vm.screen, async () => {
   await nextTick()
@@ -107,7 +112,7 @@ const submitLabel = computed(() => vm.kind === 'metadata' ? '保存基础配置'
             <p>技术与销售状态分别操作；配置或技术变更会按目录规则自动停售。</p>
           </div>
           <div class="module-actions">
-            <UiButton class="btn btn-primary" @click="vm.openCreate"><AppIcon name="plus" :size="16" />新增模块</UiButton>
+            <UiButton class="btn btn-primary" :disabled="!canCreate" :title="canCreate ? '新增模块' : '当前账号没有模块管理权限'" @click="vm.openCreate"><AppIcon name="plus" :size="16" />新增模块</UiButton>
             <UiButton class="btn" @click="vm.loadModules"><AppIcon name="refresh" :size="16" />刷新</UiButton>
           </div>
         </div>
@@ -153,7 +158,9 @@ const submitLabel = computed(() => vm.kind === 'metadata' ? '保存基础配置'
           :definition-error="vm.definitionError" @draft="Object.assign(vm.createDraft, $event)" />
         <ModuleDefinitionPanel
           v-else-if="vm.screen === 'detail' && vm.selected" :module="vm.selected" :busy="vm.busy"
-          :write-unresolved="vm.writeUnresolved" @change="vm.startChange" />
+          :write-unresolved="vm.writeUnresolved" :can-edit-metadata="canEditMetadata"
+          :can-manage-sales="canManageSales" :can-manage-technical="canManageTechnical"
+          @change="vm.startChange" />
         <ModuleChangePanel
           v-else-if="vm.selected" :selected="vm.selected" :before="vm.before" :fresh="vm.fresh"
           :screen="vm.screen" :kind="vm.kind" :next-sales="vm.nextSales" :busy="vm.busy"
