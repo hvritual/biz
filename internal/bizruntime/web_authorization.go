@@ -184,6 +184,48 @@ func (auth *runtimeWebAuth) handleCurrentAuthorization(writer http.ResponseWrite
 		Actions:         []accessauthorization.Action{},
 		ButtonCodes:     []string{},
 	}
+	if authentication.Session.ActorKind == accesspersistence.WebActorPlatform && strings.TrimSpace(authentication.Session.PlatformSubject) != "" {
+		store, _ := auth.currentAuthorizationDependencies()
+		if store == nil {
+			http.Error(writer, "authorization unavailable", http.StatusServiceUnavailable)
+			return
+		}
+		resolver, resolverErr := accesspersistence.NewPrincipalGrantResolver(store)
+		if resolverErr != nil {
+			http.Error(writer, "authorization unavailable", http.StatusServiceUnavailable)
+			return
+		}
+		candidates := accessauthorization.PlatformWebActions()
+		grants, grantErr := resolver.ResolveGrants(request.Context(), authz.GrantRequest{
+			Principal:   authentication.Principal,
+			TenantBound: false,
+			Operation:   "auth.authorization.current",
+			Permissions: accessauthorization.PermissionsForActions(candidates),
+		})
+		if grantErr != nil {
+			http.Error(writer, "authorization unavailable", http.StatusServiceUnavailable)
+			return
+		}
+		actions := accessauthorization.AuthorizedPlatformActions(grants)
+		grantFacts := make([]accesspersistence.CurrentGrantFact, 0, len(grants))
+		for _, grant := range grants {
+			grantFacts = append(grantFacts, accesspersistence.CurrentGrantFact{
+				Permission: grant.Permission,
+				RoleID:     grant.RoleID,
+				Scope:      grant.Scope,
+			})
+		}
+		buttonCodes := make([]string, 0, len(actions))
+		for _, action := range actions {
+			buttonCodes = append(buttonCodes, action.Code)
+		}
+		sort.Strings(buttonCodes)
+		base.Grants = grantFacts
+		base.Actions = actions
+		base.ButtonCodes = buttonCodes
+		writeJSON(writer, http.StatusOK, base)
+		return
+	}
 	if authentication.Session.ActorKind != accesspersistence.WebActorUser || strings.TrimSpace(authentication.Session.ActiveTenantID) == "" {
 		writeJSON(writer, http.StatusOK, base)
 		return
