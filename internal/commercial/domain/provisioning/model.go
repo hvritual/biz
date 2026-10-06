@@ -134,8 +134,9 @@ type Task struct {
 	LeaseToken         uint64      `json:"lease_token"`
 	LeaseUntil         *time.Time  `json:"lease_until,omitempty"`
 	FailureCode        string      `json:"failure_code,omitempty"`
-	RetryAllowed       bool        `json:"retry_allowed"`
-	RetryCycles        uint32      `json:"retry_cycles"`
+	RetryAllowed         bool        `json:"retry_allowed"`
+	CancellationDisabled bool        `json:"cancellation_disabled,omitempty"`
+	RetryCycles          uint32      `json:"retry_cycles"`
 	ActivationAttempts uint32      `json:"activation_attempts"`
 	Completion         *Completion `json:"completion,omitempty"`
 	Hash               string      `json:"hash"`
@@ -354,7 +355,7 @@ func (t *Task) Observe(owner string, token uint64, o Observation, now time.Time)
 	return nil
 }
 func (t Task) Cancellable() bool {
-	if t.State == Running || t.Terminal() {
+	if t.CancellationDisabled || t.State == Running || t.Terminal() {
 		return false
 	}
 	for _, s := range t.Steps {
