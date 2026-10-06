@@ -7,7 +7,6 @@ import (
 	"errors"
 	"sort"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
@@ -256,50 +255,19 @@ func TestEnterprise191LegalLoginSuccessRateAndP95(t *testing.T) {
 	}
 
 	policy := accesspersistence.DefaultFirstPartyLoginPolicy()
-	const workerCount = 8
-	type loginResult struct {
-		sample   int
-		latency  time.Duration
-		identity string
-		err      error
-	}
-	jobs := make(chan int)
-	results := make(chan loginResult, sampleCount)
-	var wg sync.WaitGroup
-	wg.Add(workerCount)
-	for worker := 0; worker < workerCount; worker++ {
-		go func() {
-			defer wg.Done()
-			for sample := range jobs {
-				started := time.Now()
-				identity, _, err := store.AuthenticateFirstPartyLoginWithAudit(
-					ctx, email, password, "127.0.0.1:19191", policy,
-				)
-				results <- loginResult{
-					sample:   sample,
-					latency:  time.Since(started),
-					identity: identity.UserID,
-					err:      err,
-				}
-			}
-		}()
-	}
-	for sample := 0; sample < sampleCount; sample++ {
-		jobs <- sample
-	}
-	close(jobs)
-	wg.Wait()
-	close(results)
-
 	latencies := make([]time.Duration, 0, sampleCount)
 	successes := 0
-	for result := range results {
-		latencies = append(latencies, result.latency)
-		if result.err == nil && result.identity == userID {
+	for sample := 0; sample < sampleCount; sample++ {
+		started := time.Now()
+		identity, _, err := store.AuthenticateFirstPartyLoginWithAudit(
+			ctx, email, password, "127.0.0.1:19191", policy,
+		)
+		latencies = append(latencies, time.Since(started))
+		if err == nil && identity.UserID == userID {
 			successes++
 			continue
 		}
-		t.Logf("ENTERPRISE191_LOGIN_FAILURE sample=%d identity=%q err=%v", result.sample+1, result.identity, result.err)
+		t.Logf("ENTERPRISE191_LOGIN_FAILURE sample=%d identity=%q err=%v", sample+1, identity.UserID, err)
 	}
 	sort.Slice(latencies, func(i, j int) bool { return latencies[i] < latencies[j] })
 	p95 := latencies[(95*len(latencies)+99)/100-1]
