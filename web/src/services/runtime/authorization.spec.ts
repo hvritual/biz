@@ -58,6 +58,39 @@ function snapshot(overrides: Record<string, unknown> = {}) {
   }
 }
 
+
+const platformSession = {
+  authenticated: true,
+  actor_kind: 'platform',
+  platform_subject: 'platform-admin',
+  context_version: 7,
+}
+
+function platformSnapshot(buttonCodes: string[], overrides: Record<string, unknown> = {}) {
+  return {
+    authenticated: true,
+    actor_kind: 'platform',
+    platform_subject: 'platform-admin',
+    roles: [],
+    grants: [],
+    data_policies: [],
+    site_ids: [],
+    modules: [],
+    actions: buttonCodes.map((code) => ({
+      code,
+      domain: 'commercial',
+      application: 'module_catalog',
+      use_case: code.split('.').at(-1) ?? code,
+      tenant_required: false,
+      authentication: ['web-session'],
+      permissions: [],
+      permission_mode: 'all',
+    })),
+    button_codes: buttonCodes,
+    ...overrides,
+  }
+}
+
 async function runtime() {
   vi.resetModules()
   vi.stubEnv('VITE_DATA_MODE', 'api')
@@ -201,6 +234,60 @@ describe('current authorization runtime', () => {
     expect(auth.currentAuthorizationState.session).toBeNull()
     expect(auth.currentAuthorizationState.contextKey).toBe('')
     expect(mocks.cancelTrusted).toHaveBeenCalledTimes(1)
+  })
+
+  it('accepts a matching platform subject and exposes only server-projected platform actions', async () => {
+    mocks.readSession.mockResolvedValue(platformSession)
+    mocks.readCurrentAuthorization.mockResolvedValue(platformSnapshot([
+      'commercial.module.list',
+      'commercial.module.create',
+    ]))
+    const auth = await runtime()
+
+    await auth.ensureCurrentAuthorization()
+
+    expect(auth.currentAuthorizationState.status).toBe('ready')
+    expect(auth.currentAuthorizationAllows('commercial.module.list')).toBe(true)
+    expect(auth.currentAuthorizationAllows('commercial.module.create')).toBe(true)
+    expect(auth.currentAuthorizationAllows('commercial.module.set_technical_status')).toBe(false)
+    expect(auth.currentAuthorizationMatchesSession(platformSession)).toBe(true)
+  })
+
+  it('fails closed when the platform authorization aggregate belongs to another subject', async () => {
+    mocks.readSession.mockResolvedValue(platformSession)
+    mocks.readCurrentAuthorization.mockResolvedValue(platformSnapshot(
+      ['commercial.module.list'],
+      { platform_subject: 'another-platform-admin' },
+    ))
+    const auth = await runtime()
+
+    await auth.ensureCurrentAuthorization()
+
+    expect(auth.currentAuthorizationState.status).toBe('forbidden')
+    expect(auth.currentAuthorizationAllows('commercial.module.list')).toBe(false)
+  })
+
+  it('forced platform projection refresh removes a revoked action without waiting for session expiry', async () => {
+    mocks.readSession.mockResolvedValue(platformSession)
+    mocks.readCurrentAuthorization
+      .mockResolvedValueOnce(platformSnapshot([
+        'commercial.module.list',
+        'commercial.module.create',
+        'commercial.module.set_sales_status',
+      ]))
+      .mockResolvedValueOnce(platformSnapshot(['commercial.module.list']))
+    const auth = await runtime()
+
+    await auth.ensureCurrentAuthorization()
+    expect(auth.currentAuthorizationAllows('commercial.module.create')).toBe(true)
+
+    await auth.ensureCurrentAuthorization(true)
+
+    expect(auth.currentAuthorizationState.status).toBe('ready')
+    expect(auth.currentAuthorizationAllows('commercial.module.list')).toBe(true)
+    expect(auth.currentAuthorizationAllows('commercial.module.create')).toBe(false)
+    expect(auth.currentAuthorizationAllows('commercial.module.set_sales_status')).toBe(false)
+    expect(mocks.readCurrentAuthorization).toHaveBeenCalledTimes(2)
   })
 
   it('does not turn authorization read failure into demo or cached allow', async () => {
