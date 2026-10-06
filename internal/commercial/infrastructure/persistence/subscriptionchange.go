@@ -75,14 +75,10 @@ func (r *subscriptionChangeRepository) Now(ctx context.Context) (time.Time, erro
 	return consistency.Now(r.tx.WithContext(ctx))
 }
 func (r *subscriptionChangeRepository) LockTenant(ctx context.Context, tenant string) (subscription.Subscription, error) {
-	current, err := r.LockTenantOptional(ctx, tenant)
-	if err != nil {
+	if _, err := consistency.LockCatalog(r.tx.WithContext(ctx), false); err != nil {
 		return subscription.Subscription{}, err
 	}
-	if current == nil {
-		return subscription.Subscription{}, subscription.ErrNotFound
-	}
-	return *current, nil
+	return (&subscriptionRepository{tx: r.tx}).GetBase(ctx, tenant, true)
 }
 
 func (r *subscriptionChangeRepository) LockTenantOptional(ctx context.Context, tenant string) (*subscription.Subscription, error) {
