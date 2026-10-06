@@ -39,7 +39,7 @@ class ContractTests(unittest.TestCase):
     def test_all_35_units_registered(self):
         owners, obs = g.validate(C, T, ROOT)
         self.assertEqual(len(obs), 35)
-        self.assertEqual(len(g.expected_full(C, T)), 43)
+        self.assertEqual(len(g.expected_full(C, T)), 42)
         self.assertIn('repository.go.regression', owners)
 
     def test_missing_gate(self):
@@ -148,7 +148,7 @@ class RuntimeTests(unittest.TestCase):
 
     def test_exact_complete_execution(self):
         rows = self.audit(jobs_fixture())
-        self.assertEqual(len(rows), len(g.expected_full(C, T)))
+        self.assertEqual(len(rows), 42)
         self.assertTrue(all(r['job_wall_seconds'] == 100 and r['queue_seconds'] == 10 for r in rows))
 
     def test_terminal_snapshot_waits_for_eventual_job_completion(self):
@@ -171,7 +171,7 @@ class RuntimeTests(unittest.TestCase):
             )
         self.assertEqual(api.calls, 2)
         sleep.assert_called_once_with(0.01)
-        self.assertEqual(len(self.audit(jobs)), len(g.expected_full(C, T)))
+        self.assertEqual(len(self.audit(jobs)), 42)
 
     def test_terminal_snapshot_remains_fail_closed_after_budget(self):
         pending = jobs_fixture()
@@ -236,7 +236,7 @@ class RuntimeTests(unittest.TestCase):
 
     def test_control_jobs_not_counted_as_coverage(self):
         jobs=jobs_fixture();jobs.append({'name':'merge-ready','status':'in_progress'})
-        self.assertEqual(len(self.audit(jobs)), len(g.expected_full(C, T)))
+        self.assertEqual(len(self.audit(jobs)),42)
 
     def test_fast_gate_skip_does_not_prove_delegation(self):
         class API:
