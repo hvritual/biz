@@ -21,7 +21,6 @@ func TestEnterprise173UserPasswordPolicy(t *testing.T) {
 	}
 }
 
-
 func TestPBKDF2SHA256KnownVectors(t *testing.T) {
 	tests := []struct {
 		iterations int
