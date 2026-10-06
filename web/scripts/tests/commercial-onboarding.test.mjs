@@ -67,6 +67,36 @@ test('internal or platform operations cannot be exposed as tenant UI actions', (
   assert.match(checkCommercialOnboardingUI(f.root).findings.join('\n'),/not a public tenant action/)
 })
 
+
+test('platform UI accepts only bound tenantless web-session operations', (t) => {
+  const f=fixture(t)
+  f.write('contracts/generated/operation-plans.json', {
+    schemaVersion: 2,
+    operations: [
+      { operationId: 'example.list', security: { tenantRequired: true }, bindings: { rpc: '/example.v1.App/List' } },
+      {
+        operationId: 'platform.example.list',
+        security: { tenantRequired: false, authentication: ['web-session'] },
+        bindings: { http: [{ method: 'GET', path: '/v1/platform/examples' }] },
+      },
+    ],
+  })
+  f.write('contracts/commercial/generated/catalog.json', {
+    schema_version: 1,
+    capabilities: [{ capability_code: 'example.use', module_code: 'example' }],
+    operations: [
+      { operation_id: 'example.list', classification: 'tenant_business', module_code: 'example', capability_codes: ['example.use'] },
+      { operation_id: 'platform.example.list', classification: 'platform_management', module_code: '', capability_codes: [] },
+    ],
+  })
+  f.write('web/src/router/index.ts', "import {createRouter} from 'vue-router'; export const router=createRouter({routes:[{path:'/example',component:()=>import('../Page.vue'),meta:{surface:'tenant',authorizationActions:['example.list']}},{path:'/platform/examples',component:()=>import('../Page.vue'),meta:{surface:'platform',authorizationActions:['platform.example.list']}}]})")
+  f.write('web/src/router/navigation.ts', "export const navigation=[{path:'/example',authorizationModule:'example',authorizationActions:['example.list']},{path:'/platform/examples',authorizationSurface:'platform',authorizationActions:['platform.example.list']}]")
+  assert.deepEqual(checkCommercialOnboardingUI(f.root).findings, [])
+
+  f.mutate('contracts/generated/operation-plans.json', text => text.replace('["web-session"]', '["api-key"]'))
+  assert.match(checkCommercialOnboardingUI(f.root).findings.join('\n'), /not a public platform web action/)
+})
+
 test('a commented authorization declaration cannot satisfy an indexed route', (t) => {
   const f=fixture(t)
   f.mutate('web/src/router/index.ts',text=>text.replace("authorizationActions:['example.list']","/* authorizationActions:['example.list'] */"))
