@@ -68,7 +68,7 @@ export function checkCommercialOnboardingUI(webRoot) {
     if (mappings.has(mapping.operation_id)) throw new Error(`Duplicate compiled operation ${mapping.operation_id}`)
     mappings.set(mapping.operation_id, mapping)
   }
-  const validateActions = (values, location, expectedModule, mode) => {
+  const validateActions = (values, location, expectedModule, mode, surface = 'tenant') => {
     const requiredModules = new Set()
     if (!Array.isArray(values) || values.length === 0 || new Set(values).size !== values.length || values.some((value) => typeof value !== 'string' || !value)) {
       findings.push(`${location}: explicit nonempty unique authorizationActions required`)
@@ -80,7 +80,15 @@ export function checkCommercialOnboardingUI(webRoot) {
       const op = operations.get(action)
       const mapping = mappings.get(action)
       if (!op || !mapping) { findings.push(`${location}: unknown authorization action ${action}`); continue }
-      if (!op.security?.tenantRequired || (!op.bindings?.rpc && !op.bindings?.http?.length)) findings.push(`${location}: ${action} is not a public tenant action`)
+      const bound = Boolean(op.bindings?.rpc || op.bindings?.http?.length)
+      if (surface === 'platform') {
+        const methods = Array.isArray(op.security?.authentication) ? op.security.authentication : []
+        if (op.security?.tenantRequired || !methods.includes('web-session') || !bound) {
+          findings.push(`${location}: ${action} is not a public platform web action`)
+        }
+      } else if (!op.security?.tenantRequired || !bound) {
+        findings.push(`${location}: ${action} is not a public tenant action`)
+      }
       if (mapping.classification === 'tenant_business') {
         requiredModules.add(mapping.module_code)
         if (expectedModule && expectedModule !== mapping.module_code) findings.push(`${location}: module ${expectedModule} conflicts with ${action} owner ${mapping.module_code}`)
@@ -96,7 +104,8 @@ export function checkCommercialOnboardingUI(webRoot) {
     if (routeMap.has(route.path)) findings.push(`Duplicate concrete route ${route.path}`)
     routeMap.set(route.path, route)
     if (!route.meta?.authorizationActions) continue
-    const needed = validateActions(route.meta.authorizationActions, route.path, route.meta.authorizationModule, route.meta.authorizationMode)
+    const surface = route.meta.surface === 'platform' ? 'platform' : 'tenant'
+    const needed = validateActions(route.meta.authorizationActions, route.path, route.meta.authorizationModule, route.meta.authorizationMode, surface)
     for (const module of needed) {
       if (!modules.get(module)?.ui_routes.includes(route.path)) findings.push(`${route.path}: missing onboarding consumer reference for ${module}`)
     }
@@ -123,7 +132,8 @@ export function checkCommercialOnboardingUI(webRoot) {
         if (props.has('authorizationActions') || props.has('authorizationModule')) {
           const value = (key) => props.has(key) ? reader.value(context, props.get(key).initializer) : undefined
           const line = context.ast.getLineAndCharacterOfPosition(node.getStart(context.ast)).line + 1
-          validateActions(value('authorizationActions'), `${local}:${line}`, value('authorizationModule'), value('authorizationMode'))
+          const surface = value('authorizationSurface') === 'platform' || value('surface') === 'platform' ? 'platform' : 'tenant'
+          validateActions(value('authorizationActions'), `${local}:${line}`, value('authorizationModule'), value('authorizationMode'), surface)
         }
       }
       ts.forEachChild(node, visit)

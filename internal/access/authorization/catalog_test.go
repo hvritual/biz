@@ -175,3 +175,69 @@ func TestEnterprise174BrandingMembershipPermissionHasSingleOperation(t *testing.
 		t.Fatalf("tenant.branding.read membership grant expanded beyond its frozen operation: %v", operations)
 	}
 }
+
+func TestPlatformModuleWebActionsDeriveReadManageAndTechnicalAuthority(t *testing.T) {
+	actions := PlatformWebActions()
+	byCode := map[string]Action{}
+	for _, action := range actions {
+		byCode[action.Code] = action
+		if action.TenantRequired || !containsString(action.Authentication, "web-session") {
+			t.Fatalf("non-platform-browser action leaked into projection: %+v", action)
+		}
+	}
+	for code, permission := range map[string]authz.PermissionKey{
+		"commercial.module.list":                 "platform.module.read",
+		"commercial.module.create":               "platform.module.manage",
+		"commercial.module.set_sales_status":     "platform.module.manage",
+		"commercial.module.set_technical_status": "platform.module.technical.manage",
+	} {
+		action, ok := byCode[code]
+		if !ok {
+			t.Fatalf("platform module action missing: %s", code)
+		}
+		if len(action.Permissions) != 1 || action.Permissions[0] != permission {
+			t.Fatalf("platform module permission mismatch for %s: %v", code, action.Permissions)
+		}
+	}
+	if _, ok := byCode["commercial.module.runtime.verify"]; ok {
+		t.Fatal("API-key-only runtime verification leaked into platform web projection")
+	}
+}
+
+func TestAuthorizedPlatformActionsShrinkWithCurrentGrantSet(t *testing.T) {
+	readOnly := AuthorizedPlatformActions([]authz.Grant{{Permission: "platform.module.read"}})
+	readCodes := map[string]bool{}
+	for _, action := range readOnly {
+		readCodes[action.Code] = true
+	}
+	if !readCodes["commercial.module.list"] || !readCodes["commercial.module.get"] {
+		t.Fatalf("read-only platform grants lost module reads: %v", readCodes)
+	}
+	if readCodes["commercial.module.create"] || readCodes["commercial.module.set_sales_status"] || readCodes["commercial.module.set_technical_status"] {
+		t.Fatalf("read-only platform grant leaked write action: %v", readCodes)
+	}
+
+	manageOnly := AuthorizedPlatformActions([]authz.Grant{{Permission: "platform.module.manage"}})
+	manageCodes := map[string]bool{}
+	for _, action := range manageOnly {
+		manageCodes[action.Code] = true
+	}
+	if !manageCodes["commercial.module.create"] || !manageCodes["commercial.module.set_sales_status"] {
+		t.Fatalf("manage grant lost module management actions: %v", manageCodes)
+	}
+	if manageCodes["commercial.module.set_technical_status"] {
+		t.Fatalf("manage grant incorrectly implied technical authority: %v", manageCodes)
+	}
+
+	technicalOnly := AuthorizedPlatformActions([]authz.Grant{{Permission: "platform.module.technical.manage"}})
+	technicalCodes := map[string]bool{}
+	for _, action := range technicalOnly {
+		technicalCodes[action.Code] = true
+	}
+	if !technicalCodes["commercial.module.set_technical_status"] {
+		t.Fatalf("technical grant lost technical action: %v", technicalCodes)
+	}
+	if technicalCodes["commercial.module.create"] || technicalCodes["commercial.module.set_sales_status"] {
+		t.Fatalf("technical grant incorrectly implied general management: %v", technicalCodes)
+	}
+}

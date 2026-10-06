@@ -35,14 +35,28 @@ const protectedActions = computed(() =>
     : [],
 )
 const protectedRoute = computed(() => authorizationApiMode() && protectedActions.value.length > 0)
-const authorizationContextCurrent = computed(() => currentAuthorizationMatchesSession(store.session))
+const protectedMode = computed(() => route.meta.authorizationMode === 'all' ? 'all' : 'any')
+const authorizationContextSession = computed(() =>
+  platformSurface.value ? currentAuthorizationState.session : store.session,
+)
+const authorizationContextCurrent = computed(() => currentAuthorizationMatchesSession(authorizationContextSession.value))
+const protectedActionsAllowed = computed(() => {
+  if (!protectedRoute.value) return true
+  return protectedMode.value === 'all'
+    ? protectedActions.value.every(currentAuthorizationAllows)
+    : currentAuthorizationAllowsAny(protectedActions.value)
+})
 const authorizationRenderable = computed(() =>
-  !protectedRoute.value || (currentAuthorizationState.status === 'ready' && authorizationContextCurrent.value),
+  !protectedRoute.value || (
+    currentAuthorizationState.status === 'ready'
+    && authorizationContextCurrent.value
+    && protectedActionsAllowed.value
+  ),
 )
 
 watch(
-  [() => currentAuthorizationState.status, protectedActions, authorizationContextCurrent] as const,
-  ([status, required, contextCurrent]) => {
+  [() => currentAuthorizationState.status, protectedActions, authorizationContextCurrent, protectedActionsAllowed] as const,
+  ([status, required, contextCurrent, allowed]) => {
     if (!authorizationApiMode() || !required.length) return
     if (status === 'unauthenticated') {
       redirectToTrustedLogin()
@@ -56,7 +70,7 @@ watch(
       void router.replace({ path: '/authorization-state', query: { reason: 'unavailable', from: route.fullPath } })
       return
     }
-    if (status === 'forbidden' || (status === 'ready' && !currentAuthorizationAllowsAny(required))) {
+    if (status === 'forbidden' || (status === 'ready' && !allowed)) {
       void router.replace({ path: '/authorization-state', query: { reason: 'forbidden', from: route.fullPath } })
     }
   },

@@ -11,6 +11,7 @@ export interface NavigationItem {
   groupId?: string
   authorizationActions?: string[]
   authorizationModule?: string
+  authorizationSurface?: 'tenant' | 'platform'
   authorizationMode?: 'any' | 'all'
   commercialAuthority?: CommercialAuthority
 }
@@ -42,7 +43,19 @@ export const primaryNavigation: NavigationItem[] = [
       'access.audit.list',
     ],
   },
-  { id: 'platform-commercial', label: '平台管理', icon: 'crown' },
+  {
+    id: 'platform-commercial',
+    label: '平台管理',
+    icon: 'crown',
+    authorizationSurface: 'platform',
+    authorizationActions: [
+      'tenant.list',
+      'commercial.module.list',
+      'commercial.feature.list',
+      'commercial.plan.list',
+      'commercial.entitlement.explain',
+    ],
+  },
   { id: 'system', label: '系统设置', icon: 'settings', authorizationModule: 'access-management', authorizationActions: ['notification.configuration.list'] },
 ]
 
@@ -58,16 +71,16 @@ export const enterpriseNavigation: NavigationItem[] = [
 ]
 
 export const platformCommercialNavigation: NavigationItem[] = [
-  { id: 'overview', label: '平台总览', icon: 'home', path: '/platform/overview', group: '总览', groupId: 'overview', commercialAuthority: 'real' },
-  { id: 'tenants', label: '租户管理', icon: 'company', path: '/platform/tenants', group: '租户生命周期', groupId: 'lifecycle', commercialAuthority: 'real' },
+  { id: 'overview', label: '平台总览', icon: 'home', path: '/platform/overview', group: '总览', groupId: 'overview', commercialAuthority: 'real', authorizationSurface: 'platform', authorizationActions: ['tenant.list', 'commercial.module.list', 'commercial.feature.list', 'commercial.plan.list', 'commercial.entitlement.explain'], authorizationMode: 'any' },
+  { id: 'tenants', label: '租户管理', icon: 'company', path: '/platform/tenants', group: '租户生命周期', groupId: 'lifecycle', commercialAuthority: 'real', authorizationSurface: 'platform', authorizationActions: ['tenant.list'] },
   { id: 'subscriptions', label: '租户订阅', icon: 'file', path: '/platform/commercial/subscriptions', group: '租户生命周期', groupId: 'lifecycle', commercialAuthority: 'preview' },
   { id: 'changes', label: '套餐变更', icon: 'refresh', path: '/platform/commercial/changes', group: '租户生命周期', groupId: 'lifecycle', commercialAuthority: 'preview' },
   { id: 'expiry', label: '到期与宽限', icon: 'clock', path: '/platform/commercial/expiry', group: '租户生命周期', groupId: 'lifecycle', commercialAuthority: 'preview' },
-  { id: 'modules', label: '模块目录', icon: 'database', path: '/platform/commercial/modules', group: '产品与定价', groupId: 'product', commercialAuthority: 'real' },
-  { id: 'features', label: '商业功能', icon: 'layers', path: '/platform/commercial/features', group: '产品与定价', groupId: 'product', commercialAuthority: 'real' },
-  { id: 'plans', label: '套餐版本', icon: 'crown', path: '/platform/commercial/plans', group: '产品与定价', groupId: 'product', commercialAuthority: 'real' },
+  { id: 'modules', label: '模块目录', icon: 'database', path: '/platform/commercial/modules', group: '产品与定价', groupId: 'product', commercialAuthority: 'real', authorizationSurface: 'platform', authorizationActions: ['commercial.module.list'] },
+  { id: 'features', label: '商业功能', icon: 'layers', path: '/platform/commercial/features', group: '产品与定价', groupId: 'product', commercialAuthority: 'real', authorizationSurface: 'platform', authorizationActions: ['commercial.feature.list'] },
+  { id: 'plans', label: '套餐版本', icon: 'crown', path: '/platform/commercial/plans', group: '产品与定价', groupId: 'product', commercialAuthority: 'real', authorizationSurface: 'platform', authorizationActions: ['commercial.plan.list'] },
   { id: 'add-ons', label: '增购项', icon: 'plus', path: '/platform/commercial/add-ons', group: '产品与定价', groupId: 'product', commercialAuthority: 'preview' },
-  { id: 'tenant-entitlements', label: '租户权益', icon: 'shield', path: '/platform/commercial/tenant-entitlements', group: '权益与授权', groupId: 'entitlement', commercialAuthority: 'real' },
+  { id: 'tenant-entitlements', label: '租户权益', icon: 'shield', path: '/platform/commercial/tenant-entitlements', group: '权益与授权', groupId: 'entitlement', commercialAuthority: 'real', authorizationSurface: 'platform', authorizationActions: ['commercial.subscription.get', 'commercial.entitlement.override.list', 'commercial.entitlement.explain'], authorizationMode: 'all' },
   { id: 'authorization', label: '授权诊断', icon: 'checks', path: '/platform/commercial/authorization', group: '权益与授权', groupId: 'entitlement', commercialAuthority: 'preview' },
   { id: 'quotas', label: '额度管理', icon: 'database', path: '/platform/commercial/quotas', group: '权益与授权', groupId: 'entitlement', commercialAuthority: 'preview' },
   { id: 'overrides', label: '专项授权', icon: 'key', path: '/platform/commercial/overrides', group: '权益与授权', groupId: 'entitlement', commercialAuthority: 'preview' },
@@ -80,9 +93,9 @@ export function visiblePlatformCommercialNavigation() {
 }
 
 export const platformCommercialQuickActions = [
-  { label: '打开租户管理', icon: 'company', path: '/platform/tenants' },
-  { label: '创建或发布套餐', icon: 'crown', path: '/platform/commercial/plans' },
-  { label: '调整租户权益', icon: 'shield', path: '/platform/commercial/tenant-entitlements' },
+  { label: '打开租户管理', icon: 'company', path: '/platform/tenants', authorizationSurface: 'platform', authorizationActions: ['tenant.list'] },
+  { label: '创建或发布套餐', icon: 'crown', path: '/platform/commercial/plans', authorizationSurface: 'platform', authorizationActions: ['commercial.plan.create', 'commercial.plan.publish'] },
+  { label: '调整租户权益', icon: 'shield', path: '/platform/commercial/tenant-entitlements', authorizationSurface: 'platform', authorizationActions: ['commercial.entitlement.override.create'] },
 ]
 
 export const systemNavigation: NavigationItem[] = [

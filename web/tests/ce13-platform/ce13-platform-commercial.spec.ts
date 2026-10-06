@@ -15,6 +15,15 @@ interface Fixture {
   allowed_api_key: string;
   allowed_subject: string;
   denied_subject: string;
+  read_only_email: string;
+  read_only_password: string;
+  read_only_subject: string;
+  manage_email: string;
+  manage_password: string;
+  manage_subject: string;
+  technical_email: string;
+  technical_password: string;
+  technical_subject: string;
   platform_oidc_issuer: string;
 }
 
@@ -31,6 +40,13 @@ interface BrowserResult {
   status: number;
   text: string;
   json: unknown;
+}
+
+interface AuthorizationView {
+  authenticated: boolean;
+  actor_kind: string;
+  platform_subject?: string;
+  button_codes: string[];
 }
 
 function fixture(): Fixture {
@@ -132,6 +148,10 @@ test("TestCE13PlatformCommercialTrustedWebSession", async ({ browser, request })
   expect(denied.session.actor_kind).toBe("platform");
   expect(denied.session.platform_subject).toBe(data.denied_subject);
   expect(denied.session.active_tenant_id ?? "").toBe("");
+  const deniedProjection = await browserRequest(denied.page, data.web_base_url, "/auth/authorization");
+  expect(deniedProjection.status, deniedProjection.text).toBe(200);
+  expect((deniedProjection.json as AuthorizationView).platform_subject).toBe(data.denied_subject);
+  expect((deniedProjection.json as AuthorizationView).button_codes).not.toContain("commercial.module.list");
   const deniedModules = await browserRequest(denied.page, data.web_base_url, "/v1/platform/modules");
   expect(deniedModules.status, deniedModules.text).toBe(403);
   await denied.context.close();
@@ -145,6 +165,17 @@ test("TestCE13PlatformCommercialTrustedWebSession", async ({ browser, request })
   expect(allowed.session.platform_subject).toBe(data.allowed_subject);
   expect(allowed.session.active_tenant_id ?? "").toBe("");
   expect(allowed.session.csrf_token).toBeTruthy();
+
+  const allowedProjection = await browserRequest(allowed.page, data.web_base_url, "/auth/authorization");
+  expect(allowedProjection.status, allowedProjection.text).toBe(200);
+  const allowedAuthorization = allowedProjection.json as AuthorizationView;
+  expect(allowedAuthorization.platform_subject).toBe(data.allowed_subject);
+  expect(allowedAuthorization.button_codes).toEqual(expect.arrayContaining([
+    "commercial.module.list",
+    "commercial.module.create",
+    "commercial.module.set_sales_status",
+    "commercial.module.set_technical_status",
+  ]));
 
   const modules = await browserRequest(allowed.page, data.web_base_url, "/v1/platform/modules");
   expect(modules.status, modules.text).toBe(200);
@@ -410,12 +441,136 @@ test("TestCE13PlatformCommercialVisibleConsoleFlow", async ({ browser }, testInf
   await context.close();
 });
 
+test("TestCE13PlatformModuleAuthorizationProjectionAndOperationQuadrants", async ({ browser }) => {
+  const data = fixture();
+
+  async function moduleFixture(page: Page) {
+    const response = await browserRequest(page, data.web_base_url, "/v1/platform/modules");
+    expect(response.status, response.text).toBe(200);
+    const modules = (response.json as { modules?: Array<{
+      moduleCode: string;
+      version: number | string;
+      technicalStatus: string;
+      salesStatus: string;
+    }> }).modules ?? [];
+    expect(modules.length).toBeGreaterThan(0);
+    return modules[0]!;
+  }
+
+  async function openModuleDetail(page: Page) {
+    await page.goto(`${data.web_base_url}/#/platform/commercial/modules`);
+    await expect(page.getByTestId("ce13-module-catalog")).toBeVisible();
+    await expect(page.getByRole("button", { name: "查看详情" }).first()).toBeVisible();
+    await page.getByRole("button", { name: "查看详情" }).first().click();
+    await expect(page.getByRole("dialog", { name: /模块详情/ })).toBeVisible();
+  }
+
+  const readOnly = await login(browser, data, data.read_only_email, data.read_only_password);
+  const readProjection = await browserRequest(readOnly.page, data.web_base_url, "/auth/authorization");
+  expect(readProjection.status, readProjection.text).toBe(200);
+  expect((readProjection.json as AuthorizationView).button_codes).toEqual(expect.arrayContaining([
+    "commercial.module.list",
+    "commercial.module.get",
+  ]));
+  expect((readProjection.json as AuthorizationView).button_codes).not.toEqual(expect.arrayContaining([
+    "commercial.module.create",
+    "commercial.module.set_sales_status",
+    "commercial.module.set_technical_status",
+  ]));
+  await openModuleDetail(readOnly.page);
+  await expect(readOnly.page.getByRole("button", { name: "新增模块" })).toBeDisabled();
+  await expect(readOnly.page.getByRole("button", { name: "编辑基础配置" })).toBeDisabled();
+  await expect(readOnly.page.getByRole("button", { name: "调整技术状态" })).toBeDisabled();
+  await expect(readOnly.page.getByRole("button", { name: /^(停售销售|恢复销售)$/ })).toBeDisabled();
+  await readOnly.context.close();
+
+  const manage = await login(browser, data, data.manage_email, data.manage_password);
+  const manageProjection = await browserRequest(manage.page, data.web_base_url, "/auth/authorization");
+  const manageAuthorization = manageProjection.json as AuthorizationView;
+  expect(manageProjection.status, manageProjection.text).toBe(200);
+  expect(manageAuthorization.button_codes).toEqual(expect.arrayContaining([
+    "commercial.module.list",
+    "commercial.module.create",
+    "commercial.module.update",
+    "commercial.module.set_sales_status",
+  ]));
+  expect(manageAuthorization.button_codes).not.toContain("commercial.module.set_technical_status");
+  const manageModule = await moduleFixture(manage.page);
+  await openModuleDetail(manage.page);
+  await expect(manage.page.getByRole("button", { name: "新增模块" })).toBeEnabled();
+  await expect(manage.page.getByRole("button", { name: "编辑基础配置" })).toBeEnabled();
+  await expect(manage.page.getByRole("button", { name: "调整技术状态" })).toBeDisabled();
+  await expect(manage.page.getByRole("button", { name: /^(停售销售|恢复销售)$/ })).toBeEnabled();
+  const manageSession = await browserRequest(manage.page, data.web_base_url, "/auth/session");
+  const manageCSRF = String((manageSession.json as SessionView).csrf_token ?? "");
+  expect(manageCSRF).not.toBe("");
+  const deniedTechnical = await browserRequest(
+    manage.page,
+    data.web_base_url,
+    `/v1/platform/modules/${encodeURIComponent(manageModule.moduleCode)}/technical-status`,
+    {
+      method: "POST",
+      headers: { "X-CSRF-Token": manageCSRF, "Idempotency-Key": `ce13-manage-no-tech-${Date.now()}` },
+      body: {
+        requestId: `ce13-manage-no-tech-${Date.now()}`,
+        moduleCode: manageModule.moduleCode,
+        technicalStatus: manageModule.technicalStatus === "MODULE_TECHNICAL_STATUS_READY"
+          ? "MODULE_TECHNICAL_STATUS_NOT_READY"
+          : "MODULE_TECHNICAL_STATUS_READY",
+        version: String(manageModule.version),
+        reason: "manage must not imply technical authority",
+      },
+    },
+  );
+  expect(deniedTechnical.status, deniedTechnical.text).toBe(403);
+  await manage.context.close();
+
+  const technical = await login(browser, data, data.technical_email, data.technical_password);
+  const technicalProjection = await browserRequest(technical.page, data.web_base_url, "/auth/authorization");
+  const technicalAuthorization = technicalProjection.json as AuthorizationView;
+  expect(technicalProjection.status, technicalProjection.text).toBe(200);
+  expect(technicalAuthorization.button_codes).toEqual(expect.arrayContaining([
+    "commercial.module.list",
+    "commercial.module.set_technical_status",
+  ]));
+  expect(technicalAuthorization.button_codes).not.toContain("commercial.module.create");
+  expect(technicalAuthorization.button_codes).not.toContain("commercial.module.set_sales_status");
+  const technicalModule = await moduleFixture(technical.page);
+  await openModuleDetail(technical.page);
+  await expect(technical.page.getByRole("button", { name: "新增模块" })).toBeDisabled();
+  await expect(technical.page.getByRole("button", { name: "编辑基础配置" })).toBeDisabled();
+  await expect(technical.page.getByRole("button", { name: "调整技术状态" })).toBeEnabled();
+  await expect(technical.page.getByRole("button", { name: /^(停售销售|恢复销售)$/ })).toBeDisabled();
+  const technicalSession = await browserRequest(technical.page, data.web_base_url, "/auth/session");
+  const technicalCSRF = String((technicalSession.json as SessionView).csrf_token ?? "");
+  expect(technicalCSRF).not.toBe("");
+  const deniedSales = await browserRequest(
+    technical.page,
+    data.web_base_url,
+    `/v1/platform/modules/${encodeURIComponent(technicalModule.moduleCode)}/sales-status`,
+    {
+      method: "POST",
+      headers: { "X-CSRF-Token": technicalCSRF, "Idempotency-Key": `ce13-tech-no-manage-${Date.now()}` },
+      body: {
+        requestId: `ce13-tech-no-manage-${Date.now()}`,
+        moduleCode: technicalModule.moduleCode,
+        salesStatus: technicalModule.salesStatus === "MODULE_SALES_STATUS_SELLABLE"
+          ? "MODULE_SALES_STATUS_RETIRED"
+          : "MODULE_SALES_STATUS_SELLABLE",
+        version: String(technicalModule.version),
+        reason: "technical authority must not imply module management",
+      },
+    },
+  );
+  expect(deniedSales.status, deniedSales.text).toBe(403);
+  await technical.context.close();
+});
+
 test("TestCE13TenantSessionCannotUsePlatformConsole", async ({ browser }) => {
   const data = fixture();
   const tenant = await login(browser, data, data.tenant_email, data.tenant_password);
   await tenant.page.goto(`${data.web_base_url}/#/platform/commercial/modules`);
-  await expect(tenant.page.getByRole("heading", { name: "模块目录", exact: true })).toBeVisible();
-  await expect(tenant.page.getByText("当前账号无平台商业管理权限")).toBeVisible();
-  await expect(tenant.page.getByRole("button", { name: "查看详情" })).toHaveCount(0);
+  await expect(tenant.page).toHaveURL(/#\/authorization-state\?reason=forbidden/);
+  await expect(tenant.page.getByRole("heading", { name: "模块目录", exact: true })).toHaveCount(0);
   await tenant.context.close();
 });

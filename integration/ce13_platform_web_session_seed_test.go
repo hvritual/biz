@@ -31,6 +31,15 @@ type ce13PlatformBrowserFixture struct {
 	AllowedAPIKey      string `json:"allowed_api_key"`
 	AllowedSubject     string `json:"allowed_subject"`
 	DeniedSubject      string `json:"denied_subject"`
+	ReadOnlyEmail      string `json:"read_only_email"`
+	ReadOnlyPassword   string `json:"read_only_password"`
+	ReadOnlySubject    string `json:"read_only_subject"`
+	ManageEmail        string `json:"manage_email"`
+	ManagePassword     string `json:"manage_password"`
+	ManageSubject      string `json:"manage_subject"`
+	TechnicalEmail     string `json:"technical_email"`
+	TechnicalPassword  string `json:"technical_password"`
+	TechnicalSubject   string `json:"technical_subject"`
 	PlatformOIDCIssuer string `json:"platform_oidc_issuer"`
 }
 
@@ -64,22 +73,37 @@ func TestCE13PlatformWebSessionSeed(t *testing.T) {
 	webBaseURL := valueOrDefault(os.Getenv("CE13_WEB_BASE_URL"), baseURL)
 	issuer := valueOrDefault(os.Getenv("CE13_IDP_ISSUER"), "http://127.0.0.1:18081/idp")
 	const (
-		allowedUserID   = "ce13-platform-allow-user"
-		allowedEmail    = "ce13.platform.allow@example.invalid"
-		allowedPassword = "CE13-Allow-Correct-Horse-2026!"
-		allowedSubject  = "ce13-platform-allow"
-		allowedAPIKey   = "ce13-platform-api-key-allow"
-		deniedUserID    = "ce13-platform-denied-user"
-		deniedEmail     = "ce13.platform.denied@example.invalid"
-		deniedPassword  = "CE13-Denied-Correct-Horse-2026!"
-		deniedSubject   = "ce13-platform-denied"
-		tenantUserID    = "ce13-tenant-only-user"
-		tenantEmail     = "ce13.tenant.only@example.invalid"
-		tenantPassword  = "CE13-Tenant-Correct-Horse-2026!"
+		allowedUserID     = "ce13-platform-allow-user"
+		allowedEmail      = "ce13.platform.allow@example.invalid"
+		allowedPassword   = "CE13-Allow-Correct-Horse-2026!"
+		allowedSubject    = "ce13-platform-allow"
+		allowedAPIKey     = "ce13-platform-api-key-allow"
+		deniedUserID      = "ce13-platform-denied-user"
+		deniedEmail       = "ce13.platform.denied@example.invalid"
+		deniedPassword    = "CE13-Denied-Correct-Horse-2026!"
+		deniedSubject     = "ce13-platform-denied"
+		readOnlyUserID    = "ce13-platform-read-user"
+		readOnlyEmail     = "ce13.platform.read@example.invalid"
+		readOnlyPassword  = "CE13-Read-Correct-Horse-2026!"
+		readOnlySubject   = "ce13-platform-read"
+		manageUserID      = "ce13-platform-manage-user"
+		manageEmail       = "ce13.platform.manage@example.invalid"
+		managePassword    = "CE13-Manage-Correct-Horse-2026!"
+		manageSubject     = "ce13-platform-manage"
+		technicalUserID   = "ce13-platform-technical-user"
+		technicalEmail    = "ce13.platform.technical@example.invalid"
+		technicalPassword = "CE13-Technical-Correct-Horse-2026!"
+		technicalSubject  = "ce13-platform-technical"
+		tenantUserID      = "ce13-tenant-only-user"
+		tenantEmail       = "ce13.tenant.only@example.invalid"
+		tenantPassword    = "CE13-Tenant-Correct-Horse-2026!"
 	)
 
 	seedCE13WebUser(t, store, "ce13-platform-allow-home", allowedUserID, allowedEmail, allowedPassword)
 	seedCE13WebUser(t, store, "ce13-platform-denied-home", deniedUserID, deniedEmail, deniedPassword)
+	seedCE13WebUser(t, store, "ce13-platform-read-home", readOnlyUserID, readOnlyEmail, readOnlyPassword)
+	seedCE13WebUser(t, store, "ce13-platform-manage-home", manageUserID, manageEmail, managePassword)
+	seedCE13WebUser(t, store, "ce13-platform-technical-home", technicalUserID, technicalEmail, technicalPassword)
 
 	if err := store.BootstrapPlatform(ctx, accesspersistence.PlatformBootstrap{
 		Subject: allowedSubject,
@@ -115,11 +139,37 @@ func TestCE13PlatformWebSessionSeed(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
+	for _, operator := range []struct {
+		subject     string
+		token       string
+		permissions []authz.PermissionKey
+	}{
+		{subject: readOnlySubject, token: "ce13-platform-api-key-read", permissions: []authz.PermissionKey{"platform.module.read"}},
+		{subject: manageSubject, token: "ce13-platform-api-key-manage", permissions: []authz.PermissionKey{"platform.module.read", "platform.module.manage"}},
+		{subject: technicalSubject, token: "ce13-platform-api-key-technical", permissions: []authz.PermissionKey{"platform.module.read", "platform.module.technical.manage"}},
+	} {
+		if err := store.BootstrapPlatform(ctx, accesspersistence.PlatformBootstrap{
+			Subject: operator.subject, Token: operator.token, Permissions: operator.permissions,
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
 	if err := store.BindOIDCPlatformIdentity(ctx, issuer, "biz-user:"+allowedUserID, allowedSubject, allowedEmail); err != nil {
 		t.Fatal(err)
 	}
 	if err := store.BindOIDCPlatformIdentity(ctx, issuer, "biz-user:"+deniedUserID, deniedSubject, deniedEmail); err != nil {
 		t.Fatal(err)
+	}
+	for _, binding := range []struct {
+		userID, subject, email string
+	}{
+		{readOnlyUserID, readOnlySubject, readOnlyEmail},
+		{manageUserID, manageSubject, manageEmail},
+		{technicalUserID, technicalSubject, technicalEmail},
+	} {
+		if err := store.BindOIDCPlatformIdentity(ctx, issuer, "biz-user:"+binding.userID, binding.subject, binding.email); err != nil {
+			t.Fatal(err)
+		}
 	}
 
 	fixture := ce13PlatformBrowserFixture{
@@ -136,6 +186,15 @@ func TestCE13PlatformWebSessionSeed(t *testing.T) {
 		AllowedAPIKey:      allowedAPIKey,
 		AllowedSubject:     allowedSubject,
 		DeniedSubject:      deniedSubject,
+		ReadOnlyEmail:      readOnlyEmail,
+		ReadOnlyPassword:   readOnlyPassword,
+		ReadOnlySubject:    readOnlySubject,
+		ManageEmail:        manageEmail,
+		ManagePassword:     managePassword,
+		ManageSubject:      manageSubject,
+		TechnicalEmail:     technicalEmail,
+		TechnicalPassword:  technicalPassword,
+		TechnicalSubject:   technicalSubject,
 		PlatformOIDCIssuer: issuer,
 	}
 	payload, err := json.MarshalIndent(fixture, "", "  ")
