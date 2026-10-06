@@ -75,10 +75,34 @@ func (r *subscriptionChangeRepository) Now(ctx context.Context) (time.Time, erro
 	return consistency.Now(r.tx.WithContext(ctx))
 }
 func (r *subscriptionChangeRepository) LockTenant(ctx context.Context, tenant string) (subscription.Subscription, error) {
-	if _, err := consistency.LockCatalog(r.tx.WithContext(ctx), false); err != nil {
+	current, err := r.LockTenantOptional(ctx, tenant)
+	if err != nil {
 		return subscription.Subscription{}, err
 	}
-	return (&subscriptionRepository{tx: r.tx}).GetBase(ctx, tenant, true)
+	if current == nil {
+		return subscription.Subscription{}, subscription.ErrNotFound
+	}
+	return *current, nil
+}
+
+func (r *subscriptionChangeRepository) LockTenantOptional(ctx context.Context, tenant string) (*subscription.Subscription, error) {
+	if _, err := consistency.LockCatalog(r.tx.WithContext(ctx), false); err != nil {
+		return nil, err
+	}
+	// Entitlement state is the stable per-tenant serialization row that also
+	// exists before a first base subscription. Locking it prevents two platform
+	// administrators from concurrently creating different first subscriptions.
+	if _, err := (&entitlementRepository{tx: r.tx}).Lock(ctx, tenant); err != nil {
+		return nil, err
+	}
+	value, err := (&subscriptionRepository{tx: r.tx}).GetBase(ctx, tenant, true)
+	if errors.Is(err, subscription.ErrNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &value, nil
 }
 func (r *subscriptionChangeRepository) Preview(ctx context.Context, tenant, id string, current bool) (*change.Preview, error) {
 	db := r.tx.WithContext(ctx)
@@ -188,6 +212,22 @@ func (r *subscriptionChangeRepository) SaveCurrent(ctx context.Context, before, 
 	}
 	return nil
 }
+func (r *subscriptionChangeRepository) CreateCurrent(ctx context.Context, value subscription.Subscription) error {
+	if value.Origin != subscription.OriginInitialActivation || value.Revision != 1 || value.Validate() != nil {
+		return change.ErrConflict
+	}
+	repo := &subscriptionRepository{tx: r.tx}
+	if _, err := repo.GetBase(ctx, value.TenantID, true); err == nil {
+		return change.ErrConflict
+	} else if !errors.Is(err, subscription.ErrNotFound) {
+		return err
+	}
+	if err := repo.SaveBase(ctx, value); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (r *subscriptionChangeRepository) Complete(ctx context.Context, v change.Receipt) error {
 	if err := v.Integrity(); err != nil {
 		return err
