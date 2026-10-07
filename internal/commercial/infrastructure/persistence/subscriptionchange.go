@@ -17,8 +17,8 @@ import (
 )
 
 type changePreviewRow struct {
-	SourcePlanCode    string
-	SourcePlanVersion uint64
+	SourcePlanCode    *string
+	SourcePlanVersion *uint64
 	TargetPlanCode    string
 	TargetPlanVersion uint64
 	ChangeID          string `gorm:"column:change_id;primaryKey"`
@@ -33,6 +33,14 @@ type changePreviewRow struct {
 }
 
 func (changePreviewRow) TableName() string { return "biz_commercial_change_previews" }
+
+func (r changePreviewRow) matchesSource(p change.Preview) bool {
+	if p.Input.Action == change.Initial {
+		return r.SourcePlanCode == nil && r.SourcePlanVersion == nil && p.Before == (subscription.Subscription{})
+	}
+	return r.SourcePlanCode != nil && r.SourcePlanVersion != nil &&
+		*r.SourcePlanCode == p.Before.PlanCode && *r.SourcePlanVersion == p.Before.PlanVersion
+}
 
 type changeReceiptRow struct {
 	ChangeID      string `gorm:"column:change_id;primaryKey"`
@@ -114,7 +122,7 @@ func (r *subscriptionChangeRepository) Preview(ctx context.Context, tenant, id s
 		return nil, err
 	}
 	var p change.Preview
-	if json.Unmarshal([]byte(row.Payload), &p) != nil || p.Before.PlanCode != row.SourcePlanCode || p.Before.PlanVersion != row.SourcePlanVersion || p.Target.PlanCode != row.TargetPlanCode || p.Target.Number != row.TargetPlanVersion || p.ChangeID != row.ChangeID || p.Input.TenantID != row.TenantID || p.ActorID != row.ActorID || p.Input.RequestID != row.RequestID || p.Fingerprint != row.Fingerprint || p.Hash != row.PayloadSHA256 || !p.CreatedAt.Equal(row.CreatedAt) || !p.ExpiresAt.Equal(row.ExpiresAt) || p.Integrity() != nil {
+	if json.Unmarshal([]byte(row.Payload), &p) != nil || !row.matchesSource(p) || p.Target.PlanCode != row.TargetPlanCode || p.Target.Number != row.TargetPlanVersion || p.ChangeID != row.ChangeID || p.Input.TenantID != row.TenantID || p.ActorID != row.ActorID || p.Input.RequestID != row.RequestID || p.Fingerprint != row.Fingerprint || p.Hash != row.PayloadSHA256 || !p.CreatedAt.Equal(row.CreatedAt) || !p.ExpiresAt.Equal(row.ExpiresAt) || p.Integrity() != nil {
 		return nil, change.ErrCorrupt
 	}
 	return &p, nil
@@ -127,7 +135,19 @@ func (r *subscriptionChangeRepository) SavePreview(ctx context.Context, p change
 	if err != nil {
 		return err
 	}
-	return r.tx.WithContext(ctx).Create(&changePreviewRow{SourcePlanCode: p.Before.PlanCode, SourcePlanVersion: p.Before.PlanVersion, TargetPlanCode: p.Target.PlanCode, TargetPlanVersion: p.Target.Number, ChangeID: p.ChangeID, TenantID: p.Input.TenantID, ActorID: p.ActorID, RequestID: p.Input.RequestID, Fingerprint: p.Fingerprint, PayloadSHA256: p.Hash, Payload: string(b), CreatedAt: p.CreatedAt, ExpiresAt: p.ExpiresAt}).Error
+	row := changePreviewRow{
+		TargetPlanCode: p.Target.PlanCode, TargetPlanVersion: p.Target.Number,
+		ChangeID: p.ChangeID, TenantID: p.Input.TenantID, ActorID: p.ActorID,
+		RequestID: p.Input.RequestID, Fingerprint: p.Fingerprint,
+		PayloadSHA256: p.Hash, Payload: string(b), CreatedAt: p.CreatedAt, ExpiresAt: p.ExpiresAt,
+	}
+	// SQL NULL means no prior plan. Empty/zero would fabricate a plan reference
+	// and violate the historical exact-version foreign key.
+	if p.Input.Action != change.Initial {
+		row.SourcePlanCode = &p.Before.PlanCode
+		row.SourcePlanVersion = &p.Before.PlanVersion
+	}
+	return r.tx.WithContext(ctx).Create(&row).Error
 }
 func decodeChangeReceipt(row changeReceiptRow) (*change.Receipt, error) {
 	var v change.Receipt

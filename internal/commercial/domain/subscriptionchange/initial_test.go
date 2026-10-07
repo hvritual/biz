@@ -24,7 +24,7 @@ func TestInitialSubscriptionChangeRequiresExplicitTenantSalesScope(t *testing.T)
 	}
 
 	for name, mutate := range map[string]func(*Input){
-		"missing sales scope": func(value *Input) { value.SalesScope = "" },
+		"missing sales scope":   func(value *Input) { value.SalesScope = "" },
 		"wildcard tenant scope": func(value *Input) { value.SalesScope = "*" },
 		"missing exact version": func(value *Input) { value.TargetPlanVersion = 0 },
 		"scheduled initial activation": func(value *Input) {
@@ -78,17 +78,17 @@ func TestProjectInitialSourcesPreservesExistingNonPlanAuthority(t *testing.T) {
 	target := ce09Version("office-pro", ce09Terms(20, false), at)
 	end := at.AddDate(0, 0, 30)
 	existing := []entitlement.Source{{
-		ID: "override-initial",
-		TenantID: "tenant-initial",
-		SourceKind: entitlement.OverrideSource,
-		ModuleCode: "device-operations",
-		Kind: entitlement.Capability,
-		Key: "device.lifecycle",
-		Effect: entitlement.Grant,
+		ID:          "override-initial",
+		TenantID:    "tenant-initial",
+		SourceKind:  entitlement.OverrideSource,
+		ModuleCode:  "device-operations",
+		Kind:        entitlement.Capability,
+		Key:         "device.lifecycle",
+		Effect:      entitlement.Grant,
 		EffectiveAt: at.Add(-time.Hour),
-		Reason: "existing explicit override",
-		ActorID: "platform",
-		Version: 1,
+		Reason:      "existing explicit override",
+		ActorID:     "platform",
+		Version:     1,
 	}}
 	before := Digest(existing)
 
@@ -144,22 +144,22 @@ func TestInitialReceiptAllowsDirectAndProvisionedFinalRevisions(t *testing.T) {
 		value := base
 		value.Revision = revision
 		receipt := Receipt{
-			ChangeID:                 "chg-initial",
-			TenantID:                 value.TenantID,
-			ActorID:                  "platform-admin",
-			RequestID:                "confirm-initial",
-			Fingerprint:              Digest("confirm"),
-			PreviewHash:              Digest("preview"),
-			Action:                   Initial,
-			Status:                   Applied,
-			Mode:                     Immediate,
-			ConfirmedAt:              at,
-			EffectiveAt:              at,
-			Reason:                   "first activation",
-			After:                    value,
-			AfterSourceVersion:       1,
-			AfterEntitlementVersion:  2,
-			PricingAuthority:         "PLATFORM_MANUAL_APPROVAL",
+			ChangeID:                "chg-initial",
+			TenantID:                value.TenantID,
+			ActorID:                 "platform-admin",
+			RequestID:               "confirm-initial",
+			Fingerprint:             Digest("confirm"),
+			PreviewHash:             Digest("preview"),
+			Action:                  Initial,
+			Status:                  Applied,
+			Mode:                    Immediate,
+			ConfirmedAt:             at,
+			EffectiveAt:             at,
+			Reason:                  "first activation",
+			After:                   value,
+			AfterSourceVersion:      1,
+			AfterEntitlementVersion: 2,
+			PricingAuthority:        "PLATFORM_MANUAL_APPROVAL",
 		}
 		receipt = receipt.Seal()
 		if err := receipt.Integrity(); err != nil {

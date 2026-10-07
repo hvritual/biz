@@ -18,10 +18,10 @@ var (
 )
 
 const (
-	KindBase        = "BASE"
-	StateTrial      = "TRIAL"
-	StateActive     = "ACTIVE"
-	StateGrace      = "GRACE"
+	KindBase          = "BASE"
+	StateTrial        = "TRIAL"
+	StateActive       = "ACTIVE"
+	StateGrace        = "GRACE"
 	StateRestricted   = "RESTRICTED"
 	StateProvisioning = "PROVISIONING"
 	StateEnded        = "ENDED"
@@ -85,27 +85,27 @@ func Ordered(rules []Rule) []Rule {
 
 type Subscription struct {
 	// CE-08 payloads without these fields are normalized from immutable plan terms.
-	Revision                 uint64     `json:"revision,omitempty"`
-	PeriodStart              time.Time  `json:"period_start,omitempty"`
-	PeriodEnd                *time.Time `json:"period_end,omitempty"`
-	RenewalStopped           bool       `json:"renewal_stopped,omitempty"`
-	PendingChangeID          string     `json:"pending_change_id,omitempty"`
-	SourceNamespace          string     `json:"source_namespace,omitempty"`
+	Revision        uint64     `json:"revision,omitempty"`
+	PeriodStart     time.Time  `json:"period_start,omitempty"`
+	PeriodEnd       *time.Time `json:"period_end,omitempty"`
+	RenewalStopped  bool       `json:"renewal_stopped,omitempty"`
+	PendingChangeID string     `json:"pending_change_id,omitempty"`
+	SourceNamespace string     `json:"source_namespace,omitempty"`
 	// Origin was added after CE-08. Empty means a legacy default-rule
 	// subscription and is accepted only when rule provenance is complete.
-	Origin                   string     `json:"origin,omitempty"`
-	ID                       string     `json:"subscription_id"`
-	TenantID                 string     `json:"tenant_id"`
-	Kind                     string     `json:"kind"`
-	State                    string     `json:"state"`
-	PlanCode                 string     `json:"plan_code"`
-	PlanVersion              uint64     `json:"plan_version"`
-	RuleID                   string     `json:"rule_id"`
-	RuleVersion              uint64     `json:"rule_version"`
-	SalesScope               string     `json:"sales_scope"`
-	EntitlementSourceVersion uint64     `json:"entitlement_source_version"`
-	CreatedAt                time.Time  `json:"created_at"`
-	MatchExplanation         string     `json:"match_explanation"`
+	Origin                   string    `json:"origin,omitempty"`
+	ID                       string    `json:"subscription_id"`
+	TenantID                 string    `json:"tenant_id"`
+	Kind                     string    `json:"kind"`
+	State                    string    `json:"state"`
+	PlanCode                 string    `json:"plan_code"`
+	PlanVersion              uint64    `json:"plan_version"`
+	RuleID                   string    `json:"rule_id"`
+	RuleVersion              uint64    `json:"rule_version"`
+	SalesScope               string    `json:"sales_scope"`
+	EntitlementSourceVersion uint64    `json:"entitlement_source_version"`
+	CreatedAt                time.Time `json:"created_at"`
+	MatchExplanation         string    `json:"match_explanation"`
 }
 
 func (s Subscription) validOrigin() bool {
