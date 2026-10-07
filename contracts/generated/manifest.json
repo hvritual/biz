@@ -6118,6 +6118,13 @@
           "number": 7,
           "kind": "scalar",
           "type": "string"
+        },
+        {
+          "name": "sales_scope",
+          "jsonName": "salesScope",
+          "number": 8,
+          "kind": "scalar",
+          "type": "string"
         }
       ],
       "dto": {
