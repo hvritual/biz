@@ -190,3 +190,350 @@ test('TestCE13TenantOverrideCreateAndRevokeUseSourceVersionCas', async ({ page }
   expect(revokeHeaders?.['x-csrf-token']).toBe('csrf-entitlement-write')
   expect(revokeHeaders?.authorization).toBeUndefined()
 })
+
+
+function initialPlanVersion() {
+  return {
+    planCode: 'office-pro',
+    version: '3',
+    revision: '1',
+    planRevision: '3',
+    state: 'PUBLISHED',
+    name: '办公专业版',
+    terms: {
+      modules: [{
+        moduleCode: 'device',
+        capabilityCodes: ['device.lifecycle'],
+        quotas: [{ key: 'device.count', unlimited: false, value: '100' }],
+        fields: [],
+      }],
+      salesScope: ['default'],
+      validityMode: 'fixed_days',
+      validityDays: 365,
+      priceRef: '',
+    },
+    contentSha256: 'published-office-pro-v3',
+    createdAt: '2026-10-01T00:00:00Z',
+    publishedAt: '2026-10-02T00:00:00Z',
+    retiredAt: '',
+    actorId: 'platform-admin',
+    reason: '发布办公专业版',
+  }
+}
+
+function initialEntitlement(applied: boolean) {
+  return {
+    tenantId: 'tenant-initial',
+    sourceVersion: applied ? '1' : '0',
+    resolverVersion: '4',
+    evaluatedAt: '2026-10-07T00:00:00Z',
+    validUntil: '',
+    nextTransitionAt: '',
+    catalogVersions: [{ moduleCode: 'device', version: '3' }],
+    decisions: applied ? [{
+      kind: 'capability',
+      moduleCode: 'device',
+      key: 'device.lifecycle',
+      fieldAction: '',
+      allowed: true,
+      reason: 'GRANTED',
+      masked: false,
+      sources: [],
+    }, {
+      kind: 'quota',
+      moduleCode: 'device',
+      key: 'device.count',
+      fieldAction: '',
+      allowed: true,
+      reason: 'PLAN_LIMIT',
+      limit: { unlimited: false, value: '100' },
+      masked: false,
+      sources: [],
+    }] : [],
+    entitlementVersion: applied ? '2' : '1',
+    catalogRevision: '3',
+    permissionVersion: '',
+    permissionSubject: '',
+  }
+}
+
+async function mockInitialTargetDiscovery(page: Page) {
+  await page.route('**/api/v1/platform/plans?pageSize=100', (route) => fulfillJson(route, {
+    plans: [{
+      planCode: 'office-pro',
+      name: '办公专业版',
+      latestVersion: '3',
+      latestRevision: '1',
+      planRevision: '3',
+      state: 'PUBLISHED',
+      salesScope: ['default'],
+      createdAt: '2026-10-01T00:00:00Z',
+      publishedAt: '2026-10-02T00:00:00Z',
+      retiredAt: '',
+    }],
+    nextAfterPlanCode: '',
+  }))
+  await page.route('**/api/v1/platform/plans/office-pro/versions?pageSize=50', (route) => fulfillJson(route, {
+    versions: [initialPlanVersion()],
+    nextAfterVersion: '',
+  }))
+  await page.route('**/api/v1/platform/plans/office-pro/versions/3/eligibility', (route) => fulfillJson(route, {
+    eligible: true,
+    reason: 'eligible',
+    version: initialPlanVersion(),
+  }))
+}
+
+test('TestCE340FirstSubscriptionRequiresExactPublishedVersionAndFinalEntitlementReadback', async ({ page }) => {
+  await mockModules(page)
+  await mockInitialTargetDiscovery(page)
+  let applied = false
+  let previewBody: Record<string, unknown> | undefined
+  let confirmBody: Record<string, unknown> | undefined
+
+  await page.route('**/api/auth/session', (route) => fulfillJson(route, { authenticated: true, csrf_token: 'csrf-initial' }))
+  await page.route('**/api/v1/platform/tenants/tenant-initial/subscription', (route) => {
+    if (!applied) return fulfillJson(route, { message: 'subscription not found' }, 404)
+    return fulfillJson(route, {
+      subscriptionId: 'sub-initial',
+      tenantId: 'tenant-initial',
+      kind: 'BASE',
+      state: 'ACTIVE',
+      planCode: 'office-pro',
+      planVersion: '3',
+      ruleId: '',
+      ruleVersion: '0',
+      salesScope: 'default',
+      entitlementSourceVersion: '1',
+      createdAt: '2026-10-07T00:00:00Z',
+      matchExplanation: '首次开通',
+      revision: '1',
+      periodStart: '2026-10-07T00:00:00Z',
+      periodEnd: '2027-10-07T00:00:00Z',
+      renewalStopped: false,
+      pendingChangeId: '',
+    })
+  })
+  await page.route('**/api/v1/platform/tenants/tenant-initial/entitlement-overrides', (route) => fulfillJson(route, { sources: [], sourceVersion: applied ? '1' : '0' }))
+  await page.route('**/api/v1/platform/tenants/tenant-initial/entitlements', (route) => fulfillJson(route, initialEntitlement(applied)))
+
+  await page.route('**/api/v1/platform/tenants/tenant-initial/subscription/change-previews', async (route) => {
+    previewBody = route.request().postDataJSON() as Record<string, unknown>
+    await fulfillJson(route, {
+      changeId: 'chg-initial-1',
+      tenantId: 'tenant-initial',
+      actorId: 'platform-admin',
+      requestId: String(previewBody.requestId),
+      action: 'INITIAL',
+      classification: 'INITIAL',
+      mode: 'IMMEDIATE',
+      previewHash: 'a'.repeat(64),
+      target: initialPlanVersion(),
+      subscriptionRevision: '0',
+      sourceVersion: '0',
+      entitlementVersion: '1',
+      catalogRevision: '3',
+      createdAt: '2026-10-07T00:00:00Z',
+      expiresAt: '2099-10-07T00:10:00Z',
+      effectiveAt: '2026-10-07T00:00:00Z',
+      entitlementExpiresAt: '2027-10-07T00:00:00Z',
+      currentEntitlements: initialEntitlement(false),
+      projectedEntitlements: initialEntitlement(true),
+      dependencies: [],
+      quotaImpacts: [],
+      impacts: [],
+      impactDetails: [],
+      pricingBasis: 'NO_PRICE_REFERENCE',
+      quotaValidationRequired: false,
+      provisioningRequirements: [],
+    })
+  })
+  await page.route('**/api/v1/platform/tenants/tenant-initial/subscription/changes/chg-initial-1/confirm', async (route) => {
+    confirmBody = route.request().postDataJSON() as Record<string, unknown>
+    applied = true
+    await fulfillJson(route, {
+      changeId: 'chg-initial-1',
+      tenantId: 'tenant-initial',
+      actorId: 'platform-admin',
+      requestId: String(confirmBody.requestId),
+      previewHash: 'a'.repeat(64),
+      action: 'INITIAL',
+      status: 'APPLIED',
+      mode: 'IMMEDIATE',
+      confirmedAt: '2026-10-07T00:00:01Z',
+      effectiveAt: '2026-10-07T00:00:01Z',
+      entitlementExpiresAt: '2027-10-07T00:00:01Z',
+      reason: '平台首次开通确认',
+      after: {
+        subscriptionId: 'sub-initial',
+        tenantId: 'tenant-initial',
+        kind: 'BASE',
+        state: 'ACTIVE',
+        planCode: 'office-pro',
+        planVersion: '3',
+        salesScope: 'default',
+        entitlementSourceVersion: '1',
+        revision: '1',
+      },
+      beforeSourceVersion: '0',
+      afterSourceVersion: '1',
+      beforeEntitlementVersion: '1',
+      afterEntitlementVersion: '2',
+      quotaValidationRequired: false,
+      pricingAuthority: 'PLATFORM_MANUAL_APPROVAL',
+      quotaImpacts: [],
+      provisioningTaskId: '',
+      failureCode: '',
+    })
+  })
+
+  await page.goto('/#/platform/commercial/tenant-entitlements')
+  await page.getByLabel('租户编号').fill('tenant-initial')
+  await page.getByRole('button', { name: '读取权益' }).click()
+
+  await expect(page.getByRole('heading', { name: '首次开通套餐' })).toBeVisible()
+  await expect(page.getByText('完成首次开通不会自动给成员分配角色或操作权限。')).toBeVisible()
+
+  await page.getByLabel('适用范围').fill('default')
+  await selectUiOption(page.getByLabel('套餐', { exact: true }), 'office-pro')
+  await page.getByRole('button', { name: '检查已发布版本' }).click()
+  await expect(page.getByText('exact v3')).toBeVisible()
+
+  await page.getByLabel('首次开通原因').fill('为新租户开通办公套餐')
+  await page.getByRole('button', { name: '查看首次开通方案' }).click()
+  expect(previewBody).toMatchObject({
+    tenantId: 'tenant-initial',
+    action: 'INITIAL',
+    salesScope: 'default',
+    targetPlanCode: 'office-pro',
+    targetPlanVersion: '3',
+  })
+
+  await page.getByText(/我已核对 exact 套餐版本/).click()
+  await page.getByLabel('确认原因').fill('平台首次开通确认')
+  await page.getByRole('button', { name: '确认首次开通' }).click()
+
+  await expect(page.getByText('首次开通已完成并通过最终权益回读')).toBeVisible()
+  expect(confirmBody).toMatchObject({
+    tenantId: 'tenant-initial',
+    changeId: 'chg-initial-1',
+    previewHash: 'a'.repeat(64),
+  })
+})
+
+test('TestCE340ProvisioningFailureRetriesSameTaskWithoutSecondSubscription', async ({ page }) => {
+  await mockModules(page)
+  await mockInitialTargetDiscovery(page)
+
+  await page.route('**/api/auth/session', (route) => fulfillJson(route, { authenticated: true, csrf_token: 'csrf-provisioning' }))
+  await page.route('**/api/v1/platform/tenants/tenant-initial/subscription', (route) => fulfillJson(route, { message: 'subscription not found' }, 404))
+  await page.route('**/api/v1/platform/tenants/tenant-initial/entitlement-overrides', (route) => fulfillJson(route, { sources: [], sourceVersion: '0' }))
+  await page.route('**/api/v1/platform/tenants/tenant-initial/entitlements', (route) => fulfillJson(route, initialEntitlement(false)))
+
+  let previewCalls = 0
+  await page.route('**/api/v1/platform/tenants/tenant-initial/subscription/change-previews', async (route) => {
+    previewCalls += 1
+    await fulfillJson(route, {
+      changeId: 'chg-initial-provisioning',
+      tenantId: 'tenant-initial',
+      actorId: 'platform-admin',
+      requestId: 'preview-provisioning',
+      action: 'INITIAL',
+      classification: 'INITIAL',
+      mode: 'IMMEDIATE',
+      previewHash: 'b'.repeat(64),
+      target: initialPlanVersion(),
+      sourceVersion: '0',
+      entitlementVersion: '1',
+      catalogRevision: '3',
+      createdAt: '2026-10-07T00:00:00Z',
+      expiresAt: '2099-10-07T00:10:00Z',
+      effectiveAt: '2026-10-07T00:00:00Z',
+      currentEntitlements: initialEntitlement(false),
+      projectedEntitlements: initialEntitlement(true),
+      dependencies: [],
+      quotaImpacts: [],
+      impacts: [],
+      impactDetails: [],
+      pricingBasis: 'NO_PRICE_REFERENCE',
+      quotaValidationRequired: false,
+      provisioningRequirements: [{ code: 'prepare-device', adapter: 'device-provider', version: 'v1', maxAttempts: 2 }],
+    })
+  })
+  await page.route('**/api/v1/platform/tenants/tenant-initial/subscription/changes/chg-initial-provisioning/confirm', (route) => fulfillJson(route, {
+    changeId: 'chg-initial-provisioning',
+    tenantId: 'tenant-initial',
+    actorId: 'platform-admin',
+    requestId: 'confirm-provisioning',
+    previewHash: 'b'.repeat(64),
+    action: 'INITIAL',
+    status: 'PROVISIONING',
+    mode: 'IMMEDIATE',
+    confirmedAt: '2026-10-07T00:00:01Z',
+    effectiveAt: '2026-10-07T00:00:01Z',
+    reason: '需要设备侧准备',
+    afterSourceVersion: '1',
+    afterEntitlementVersion: '2',
+    provisioningTaskId: 'job-initial-1',
+    quotaImpacts: [],
+  }))
+
+  let taskRevision = '4'
+  await page.route('**/api/v1/platform/tenants/tenant-initial/provisioning/tasks/job-initial-1', (route) => fulfillJson(route, {
+    taskId: 'job-initial-1',
+    tenantId: 'tenant-initial',
+    changeId: 'chg-initial-provisioning',
+    state: 'FAILED',
+    revision: taskRevision,
+    targetPlanCode: 'office-pro',
+    targetPlanVersion: '3',
+    steps: [],
+    stepIndex: 0,
+    stage: 'PREPARE',
+    failureCode: 'PREPARATION_RETRIES_EXHAUSTED',
+    retryAllowed: true,
+    cancellationAllowed: false,
+    retryCycles: 1,
+  }))
+
+  let retryBody: Record<string, unknown> | undefined
+  await page.route('**/api/v1/platform/tenants/tenant-initial/provisioning/tasks/job-initial-1/retry', async (route) => {
+    retryBody = route.request().postDataJSON() as Record<string, unknown>
+    taskRevision = '5'
+    await fulfillJson(route, {
+      taskId: 'job-initial-1',
+      tenantId: 'tenant-initial',
+      changeId: 'chg-initial-provisioning',
+      state: 'QUEUED',
+      revision: taskRevision,
+      targetPlanCode: 'office-pro',
+      targetPlanVersion: '3',
+      steps: [],
+      retryAllowed: false,
+      cancellationAllowed: false,
+      retryCycles: 2,
+    })
+  })
+
+  await page.goto('/#/platform/commercial/tenant-entitlements')
+  await page.getByLabel('租户编号').fill('tenant-initial')
+  await page.getByRole('button', { name: '读取权益' }).click()
+  await page.getByLabel('适用范围').fill('default')
+  await selectUiOption(page.getByLabel('套餐', { exact: true }), 'office-pro')
+  await page.getByRole('button', { name: '检查已发布版本' }).click()
+  await page.getByLabel('首次开通原因').fill('需要设备准备')
+  await page.getByRole('button', { name: '查看首次开通方案' }).click()
+  await page.getByText(/我已核对 exact 套餐版本/).click()
+  await page.getByLabel('确认原因').fill('批准带准备任务的首次开通')
+  await page.getByRole('button', { name: '确认首次开通' }).click()
+
+  await expect(page.getByText('处理失败')).toBeVisible()
+  await page.getByRole('button', { name: '恢复原准备任务' }).click()
+  await expect(page.getByText('已恢复原准备任务；不会创建第二份首次订阅。')).toBeVisible()
+  expect(retryBody).toMatchObject({
+    tenantId: 'tenant-initial',
+    taskId: 'job-initial-1',
+    expectedRevision: '4',
+  })
+  expect(previewCalls).toBe(1)
+})
