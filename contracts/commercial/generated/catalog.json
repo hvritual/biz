@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
-  "mapping_version": "29",
+  "mapping_version": "30",
   "inputs_sha256": {
-    "contracts/commercial/operation-capabilities.v1.json": "03b5e88c8b95b0ca714667418d2d40b344da642a4d7ba20a00c624e6fb7509c3",
-    "contracts/generated/manifest.json": "481fad9690c771c93bcd9cfc709389b747574a18fb2f1ee4ec61244022eb53f6",
-    "contracts/generated/operation-plans.json": "44cb96c4f6ec9802f6cff9e712d48c8452faf2e6eba4e4e82f54656ee7aaedd3",
+    "contracts/commercial/operation-capabilities.v1.json": "0b415d7dc7503f6b79285b739501b073997a49e5a414b58a2d7bd1436dcaa336",
+    "contracts/generated/manifest.json": "e2777628b43161145e222222f9d9fab97fdd0c9d9da4b6dcacf8c4c41270a8b7",
+    "contracts/generated/operation-plans.json": "67e7bd392e0e8cb54635467598fd157bb531a7711d269868cc8ac82b8e472e45",
     "internal/access/application/member_business_scope.go": "9401a3c99e75c62aeb364d49d21ef6028e32be54d6daf8c75f393e62f09ba76e",
     "internal/access/application/tenant_data_policy.go": "e50a4bbf3ce4b7eca729278a92c5be04676dfa0375d3e73b637b3befefea6cf2",
     "internal/access/application/tenant_delegation.go": "b43e6709e61b7867395bc04a901a19c2a54cf4ec9565e875b354b1622e636589",
@@ -14,8 +14,8 @@
     "internal/commercial/application/planmanagement/internal/usecase/service.go": "363fbef037c5ec8049eca198626449d97c87a76a0bd2c77f7c9904a263d40702",
     "internal/commercial/application/planmanagement/internal/usecase/tenant_change.go": "13e38c0942b14e4a8fe35cfdb8965bdb6ea76b9c30de0f7a354f85941eb8b16f",
     "internal/commercial/application/provisioning/internal/usecase/service.go": "92437abf3396ad9a5e3942998cd73940935949f2d06e9d366488448752273341",
-    "internal/commercial/application/subscriptionchanges/internal/usecase/confirm.go": "8b125f27910d65f6fbca1588ef5680e8bd60d3e18c4f595a9c8aee3ff5a96bf7",
-    "internal/commercial/application/subscriptionchanges/internal/usecase/context.go": "ef95142ad369ef4f1e77445b8901c3debb278465c47e59ee8c602890d479cbfc",
+    "internal/commercial/application/subscriptionchanges/internal/usecase/confirm.go": "48d8401d21438790558ba853b903c8887182051a618660766bf4fd39bf657683",
+    "internal/commercial/application/subscriptionchanges/internal/usecase/context.go": "c22c204e7f01b20b1ee5aee6620c91bc0aa0a50eff13cc396f8602690ed0784c",
     "internal/commercial/application/subscriptionchanges/internal/usecase/selfservice.go": "03f65f299498dc1f26b00d0583acbce3587d06a60c67e6960b02295739f66e81",
     "internal/commercial/application/subscriptionmanagement/internal/usecase/service.go": "d9981ade9db8999de1a02289e774bf097e7805cb3f29edd8e8d4a4069006ea76",
     "internal/commercial/application/subscriptionmanagement/internal/usecase/usage.go": "1f685e5e93b210d3adf881d02acf811adbfe5dc2c8688bde4ce4f569e6a33c0c",
@@ -820,6 +820,12 @@
           "mode": "conditional",
           "condition": "uncommitted valid change path; eligibility is omitted for STOP_RENEWAL",
           "source": "internal/commercial/application/subscriptionchanges/internal/usecase/context.go#capture"
+        },
+        {
+          "operation_id": "tenant.get",
+          "mode": "conditional",
+          "condition": "INITIAL first activation only; validates that the target tenant exists before preview or confirmation admission",
+          "source": "internal/commercial/application/subscriptionchanges/internal/usecase/context.go#validateInitialTenant"
         }
       ],
       "consumer_type": "platform",
@@ -957,6 +963,12 @@
           "mode": "conditional",
           "condition": "uncommitted valid change path; eligibility is omitted for STOP_RENEWAL",
           "source": "internal/commercial/application/subscriptionchanges/internal/usecase/context.go#capture"
+        },
+        {
+          "operation_id": "tenant.get",
+          "mode": "conditional",
+          "condition": "INITIAL first activation only; validates that the target tenant exists before preview or confirmation admission",
+          "source": "internal/commercial/application/subscriptionchanges/internal/usecase/context.go#validateInitialTenant"
         }
       ],
       "consumer_type": "platform",

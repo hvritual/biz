@@ -4,7 +4,7 @@ package authorization
 
 import "yunka.io/gateway/authz"
 
-const CommercialCapabilityMappingVersion = "29"
+const CommercialCapabilityMappingVersion = "30"
 
 var generatedActions = []Action{
 	{

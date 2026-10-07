@@ -1827,14 +1827,17 @@
         "requiresOperations": [
           "commercial.module.plan_catalog",
           "commercial.plan.eligibility",
-          "commercial.plan.get"
+          "commercial.plan.get",
+          "tenant.get"
         ],
         "permissionClosure": [
           "commercial.catalog.read",
-          "platform.plan.read"
+          "platform.plan.read",
+          "platform.tenant.read"
         ]
       },
       "applicationRequires": [
+        "access/tenant_lifecycle",
         "commercial/module_catalog",
         "commercial/plan_management"
       ],
@@ -1885,6 +1888,7 @@
         ]
       },
       "applicationRequires": [
+        "access/tenant_lifecycle",
         "commercial/module_catalog",
         "commercial/plan_management"
       ],
@@ -1923,6 +1927,7 @@
       },
       "composition": {},
       "applicationRequires": [
+        "access/tenant_lifecycle",
         "commercial/module_catalog",
         "commercial/plan_management"
       ],
@@ -1960,6 +1965,7 @@
       },
       "composition": {},
       "applicationRequires": [
+        "access/tenant_lifecycle",
         "commercial/module_catalog",
         "commercial/plan_management"
       ],
@@ -1997,6 +2003,7 @@
       },
       "composition": {},
       "applicationRequires": [
+        "access/tenant_lifecycle",
         "commercial/module_catalog",
         "commercial/plan_management"
       ],
@@ -2034,6 +2041,7 @@
       },
       "composition": {},
       "applicationRequires": [
+        "access/tenant_lifecycle",
         "commercial/module_catalog",
         "commercial/plan_management"
       ],
@@ -2074,6 +2082,7 @@
         ]
       },
       "applicationRequires": [
+        "access/tenant_lifecycle",
         "commercial/module_catalog",
         "commercial/plan_management"
       ],
@@ -2108,14 +2117,17 @@
         "requiresOperations": [
           "commercial.module.plan_catalog",
           "commercial.plan.eligibility",
-          "commercial.plan.get"
+          "commercial.plan.get",
+          "tenant.get"
         ],
         "permissionClosure": [
           "commercial.catalog.read",
-          "platform.plan.read"
+          "platform.plan.read",
+          "platform.tenant.read"
         ]
       },
       "applicationRequires": [
+        "access/tenant_lifecycle",
         "commercial/module_catalog",
         "commercial/plan_management"
       ],
@@ -2154,6 +2166,7 @@
       },
       "composition": {},
       "applicationRequires": [
+        "access/tenant_lifecycle",
         "commercial/module_catalog",
         "commercial/plan_management"
       ],
@@ -2203,6 +2216,7 @@
         ]
       },
       "applicationRequires": [
+        "access/tenant_lifecycle",
         "commercial/module_catalog",
         "commercial/plan_management"
       ],
@@ -2241,6 +2255,7 @@
       },
       "composition": {},
       "applicationRequires": [
+        "access/tenant_lifecycle",
         "commercial/module_catalog",
         "commercial/plan_management"
       ],
@@ -2288,6 +2303,7 @@
         ]
       },
       "applicationRequires": [
+        "access/tenant_lifecycle",
         "commercial/module_catalog",
         "commercial/plan_management"
       ],
@@ -2526,6 +2542,7 @@
         "boundary": "local"
       },
       "applicationRequires": [
+        "access/tenant_lifecycle",
         "commercial/module_catalog",
         "commercial/plan_management"
       ],
@@ -2566,6 +2583,7 @@
         ]
       },
       "applicationRequires": [
+        "access/tenant_lifecycle",
         "commercial/module_catalog",
         "commercial/plan_management"
       ],

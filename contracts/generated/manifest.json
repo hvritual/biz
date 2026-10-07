@@ -13669,6 +13669,7 @@
       "application": {
         "name": "subscription_changes",
         "requires": [
+          "access/tenant_lifecycle",
           "commercial/module_catalog",
           "commercial/plan_management"
         ],
@@ -13846,7 +13847,8 @@
             "requiresOperations": [
               "commercial.module.plan_catalog",
               "commercial.plan.eligibility",
-              "commercial.plan.get"
+              "commercial.plan.get",
+              "tenant.get"
             ],
             "composition": "local",
             "execution": {
@@ -14200,7 +14202,8 @@
             "requiresOperations": [
               "commercial.module.plan_catalog",
               "commercial.plan.eligibility",
-              "commercial.plan.get"
+              "commercial.plan.get",
+              "tenant.get"
             ],
             "composition": "local",
             "execution": {

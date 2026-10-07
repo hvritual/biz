@@ -5,10 +5,40 @@ package application
 import (
 	context "context"
 	errors "errors"
+	accessv1 "github.com/hvritual/biz/contracts/gen/access/v1"
 	commercialv1 "github.com/hvritual/biz/contracts/gen/commercial/v1"
+	accesspolicy "github.com/hvritual/biz/internal/access/policy"
 	commercialpolicy "github.com/hvritual/biz/internal/commercial/policy"
 	operation "yunka.io/framework/operation"
 )
+
+type SubscriptionChangesToAccessTenantLifecycleChildCapability interface {
+	GetTenant(context.Context, *accessv1.GetTenantRequest) (*accessv1.TenantDTO, error)
+}
+
+// SubscriptionChangesToAccessTenantLifecycleTargetApplication is the consumer-edge-owned view of the target Application.
+type SubscriptionChangesToAccessTenantLifecycleTargetApplication interface {
+	GetTenant(context.Context, *accessv1.GetTenantRequest) (*accessv1.TenantDTO, error)
+}
+
+type c9SubscriptionChangesToAccessTenantLifecycleChildCapability struct {
+	application SubscriptionChangesToAccessTenantLifecycleTargetApplication
+	executor    operation.Executor
+}
+
+func NewSubscriptionChangesToAccessTenantLifecycleChildCapability(application SubscriptionChangesToAccessTenantLifecycleTargetApplication, executor operation.Executor) (SubscriptionChangesToAccessTenantLifecycleChildCapability, error) {
+	if application == nil {
+		return nil, errors.New("contract C9 child capability: target application is required")
+	}
+	if executor == nil {
+		return nil, errors.New("contract C9 child capability: operation executor is required")
+	}
+	return &c9SubscriptionChangesToAccessTenantLifecycleChildCapability{application: application, executor: executor}, nil
+}
+
+func (capability *c9SubscriptionChangesToAccessTenantLifecycleChildCapability) GetTenant(ctx context.Context, request *accessv1.GetTenantRequest) (*accessv1.TenantDTO, error) {
+	return operation.ExecuteChildTyped(ctx, capability.executor, accesspolicy.OperationPlanTenantLifecycleGetTenant(), request, capability.application.GetTenant)
+}
 
 type SubscriptionChangesToCommercialModuleCatalogChildCapability interface {
 	ReadPlanCatalog(context.Context, *commercialv1.ListModulesRequest) (*commercialv1.ListModulesResponse, error)
@@ -78,6 +108,7 @@ func (capability *c9SubscriptionChangesToCommercialPlanManagementChildCapability
 
 // SubscriptionChangesCapabilities exposes edge-owned C9 child-Operation wrappers for declared operation dependencies.
 type SubscriptionChangesCapabilities interface {
+	AccessTenantLifecycle() SubscriptionChangesToAccessTenantLifecycleChildCapability
 	CommercialModuleCatalog() SubscriptionChangesToCommercialModuleCatalogChildCapability
 	CommercialPlanManagement() SubscriptionChangesToCommercialPlanManagementChildCapability
 }
