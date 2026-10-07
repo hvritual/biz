@@ -192,7 +192,7 @@ export function useInitialSubscription(tenantId: () => string, onRefresh: () => 
   async function createPreview() {
     const target = selectedVersion.value
     if (!target || !selectedCandidate.value?.eligible) {
-      errorMessage.value = '请选择服务端确认可适用的已发布版本。'
+      errorMessage.value = '请选择当前资格检查确认可适用的已发布版本。'
       return
     }
     if (!previewReason.value.trim()) {
@@ -383,7 +383,7 @@ export function useInitialSubscription(tenantId: () => string, onRefresh: () => 
         return
       }
     } catch {
-      // Preserve the conflict if authoritative readback is unavailable.
+      // Preserve the conflict if the authoritative result cannot be read.
     }
     errorMessage.value = '首次开通事实已发生变化。请重新读取租户状态后再继续，不会覆盖其他管理员的操作。'
   }
