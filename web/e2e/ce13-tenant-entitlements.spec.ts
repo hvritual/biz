@@ -413,7 +413,7 @@ test('TestCE340FirstSubscriptionRequiresExactPublishedVersionAndFinalEntitlement
   await page.getByLabel('确认原因').fill('平台首次开通确认')
   await page.getByRole('button', { name: '确认首次开通' }).click()
 
-  await expect(page.getByText('首次开通已完成并通过最终权益回读')).toBeVisible()
+  await expect(page.getByText('首次开通已完成，最终权益已确认')).toBeVisible()
   expect(confirmBody).toMatchObject({
     tenantId: 'tenant-initial',
     changeId: 'chg-initial-1',
