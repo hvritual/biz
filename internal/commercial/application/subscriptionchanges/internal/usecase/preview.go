@@ -70,6 +70,9 @@ func (s *service) preview(ctx context.Context, actorID string, input change.Inpu
 			if current != nil {
 				return change.Preview{}, change.ErrConflict
 			}
+			if err = s.validateInitialTenant(call, i.TenantID); err != nil {
+				return change.Preview{}, err
+			}
 		} else {
 			if raw.PendingChangeID != "" {
 				return change.Preview{}, change.ErrPending
