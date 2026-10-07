@@ -10,6 +10,7 @@ import StatusBadge from '@/ui/common/StatusBadge.vue'
 import EntitlementDecisionTable from '@/features/platform/components/EntitlementDecisionTable.vue'
 import EntitlementOverrideDialog from '@/features/platform/components/EntitlementOverrideDialog.vue'
 import EntitlementOverrideTable from '@/features/platform/components/EntitlementOverrideTable.vue'
+import InitialSubscriptionWorkspace from '@/features/platform/components/InitialSubscriptionWorkspace.vue'
 import SubscriptionChangeWorkspace from '@/features/platform/components/SubscriptionChangeWorkspace.vue'
 import {
   CommercialApiError,
@@ -261,7 +262,10 @@ onMounted(loadModules)
         <p v-else class="empty-text">当前没有可读取的租户订阅记录。</p>
       </section>
 
-      <div data-ui-region="change-workspace"><SubscriptionChangeWorkspace :tenant-id="activeTenantId" :subscription="subscription" @refresh="loadWorkspace" /></div>
+      <div data-ui-region="change-workspace">
+        <SubscriptionChangeWorkspace v-if="subscription" :tenant-id="activeTenantId" :subscription="subscription" @refresh="loadWorkspace" />
+        <InitialSubscriptionWorkspace v-else :tenant-id="activeTenantId" @refresh="loadWorkspace" />
+      </div>
 
       <section class="resolver-meta card" data-ui-region="resolver-meta">
         <span>计算时间 {{ formatTime(entitlement.evaluatedAt) }}</span>
