@@ -8,7 +8,7 @@ import (
 )
 
 func (f applicationFactories) BuildCommercialSubscriptionChanges(d assembly.CommercialSubscriptionChangesDependencies) (app.SubscriptionChangesApplication, error) {
-	application, err := subscriptionchanges.Build(persistence.NewSubscriptionChangeTimeRepositoryFactory(f.commercialLifecycle.Timezone()), subscriptionChangeCapabilities{plan: d.CommercialPlanManagement, catalog: d.CommercialModuleCatalog}, f.snapshots, f.quotaChangePolicy, f.commercialLifecycle, f.provisioningPolicy)
+	application, err := subscriptionchanges.Build(persistence.NewSubscriptionChangeTimeRepositoryFactory(f.commercialLifecycle.Timezone()), subscriptionChangeCapabilities{tenant: d.AccessTenantLifecycle, plan: d.CommercialPlanManagement, catalog: d.CommercialModuleCatalog}, f.snapshots, f.quotaChangePolicy, f.commercialLifecycle, f.provisioningPolicy)
 	if err != nil {
 		return nil, err
 	}
@@ -19,10 +19,14 @@ func (f applicationFactories) BuildCommercialSubscriptionChanges(d assembly.Comm
 }
 
 type subscriptionChangeCapabilities struct {
+	tenant  app.SubscriptionChangesToAccessTenantLifecycleChildCapability
 	plan    app.SubscriptionChangesToCommercialPlanManagementChildCapability
 	catalog app.SubscriptionChangesToCommercialModuleCatalogChildCapability
 }
 
+func (c subscriptionChangeCapabilities) AccessTenantLifecycle() app.SubscriptionChangesToAccessTenantLifecycleChildCapability {
+	return c.tenant
+}
 func (c subscriptionChangeCapabilities) CommercialPlanManagement() app.SubscriptionChangesToCommercialPlanManagementChildCapability {
 	return c.plan
 }
