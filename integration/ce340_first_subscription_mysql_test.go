@@ -22,7 +22,11 @@ func ce340NoSubscriptionTenant(t *testing.T, e *ce09Environment) string {
 		t.Fatal(err)
 	}
 	id := "ce340-" + ce04Random(t)
-	tenant := accessdomain.NewTenant(id, "CE340 no-subscription "+id, time.Now().UTC())
+	now := time.Now().UTC().Truncate(time.Microsecond)
+	tenant := accessdomain.NewTenant(id, "CE340 no-subscription "+id, now)
+	if err := tenant.Activate(now); err != nil {
+		t.Fatal(err)
+	}
 	if err := repository.Create(context.Background(), &tenant); err != nil {
 		t.Fatal(err)
 	}
