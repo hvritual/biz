@@ -33,6 +33,7 @@ const {
   versionKey,
   formatValidity,
   limitLabel,
+  loadPlanCatalog,
   loadPublishedVersions,
   createPreview,
   confirmPreview,
@@ -67,15 +68,23 @@ const {
         <small>必须是具体范围；系统会据此判断套餐版本是否可开通。</small>
       </label>
 
+      <div class="field">
+        <span>套餐目录</span>
+        <UiButton class="btn" type="button" :disabled="loadingPlans || !salesScope.trim()" @click="loadPlanCatalog">
+          {{ loadingPlans ? '正在读取…' : (plans.length ? '重新读取套餐' : '读取套餐目录') }}
+        </UiButton>
+        <small>只负责发现平台套餐；最终可开通资格仍以版本检查结果为准。</small>
+      </div>
+
       <label class="field" for="initial-plan-code">
         <span>套餐</span>
-        <UiSelect id="initial-plan-code" v-model="planCode" class="input" :disabled="loadingPlans">
+        <UiSelect id="initial-plan-code" v-model="planCode" class="input" :disabled="loadingPlans || !plans.length">
           <UiOption value="">请选择套餐</UiOption>
           <UiOption v-for="plan in plans" :key="plan.planCode" :value="plan.planCode">
             {{ plan.name || backendTermLabel('plan', plan.planCode) }} · {{ plan.planCode }}
           </UiOption>
         </UiSelect>
-        <small v-if="loadingPlans">正在读取平台套餐目录…</small>
+        <small v-if="!loadingPlans && !plans.length">先读取当前套餐目录。</small>
       </label>
 
       <div class="target-action">
@@ -228,7 +237,7 @@ const {
 .section-header p, .section-subhead p, .target-detail header p { margin: 5px 0 0; color: var(--color-text-muted); font-size: 12px; line-height: 1.5; }
 .guard-note { display: grid; gap: 4px; margin: 16px 20px 0; padding: 12px; border: 1px solid var(--color-warning); border-radius: 8px; font-size: 12px; }
 .guard-note span { color: var(--color-text-secondary); }
-.target-grid { display: grid; grid-template-columns: minmax(180px, .8fr) minmax(240px, 1.2fr) auto; gap: 12px; align-items: end; padding: 18px 20px; }
+.target-grid { display: grid; grid-template-columns: minmax(170px, .75fr) minmax(180px, .7fr) minmax(240px, 1.2fr) auto; gap: 12px; align-items: end; padding: 18px 20px; }
 .field { display: grid; gap: 6px; min-width: 0; font-size: 12px; color: var(--color-text-secondary); }
 .field small { color: var(--color-text-muted); line-height: 1.4; }
 .field.wide { width: 100%; }
