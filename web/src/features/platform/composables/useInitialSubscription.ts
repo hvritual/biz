@@ -28,7 +28,7 @@ export type InitialSubscriptionTargetCandidate = {
   reason: string
 }
 
-type ReadbackState = 'idle' | 'pending' | 'verified' | 'failed'
+type VerificationState = 'idle' | 'pending' | 'verified' | 'failed'
 
 export function useInitialSubscription(tenantId: () => string, onRefresh: () => void) {
   const plans = ref<PlanCatalogEntryDTO[]>([])
@@ -43,7 +43,7 @@ export function useInitialSubscription(tenantId: () => string, onRefresh: () => 
   const receipt = ref<SubscriptionChangeReceiptDTO | null>(null)
   const task = ref<ProvisioningTaskDTO | null>(null)
   const finalSubscription = ref<TenantSubscriptionDTO | null>(null)
-  const readbackState = ref<ReadbackState>('idle')
+  const verificationState = ref<VerificationState>('idle')
   const loadingPlans = ref(false)
   const loadingTargets = ref(false)
   const pending = ref(false)
@@ -93,7 +93,7 @@ export function useInitialSubscription(tenantId: () => string, onRefresh: () => 
     receipt.value = null
     task.value = null
     finalSubscription.value = null
-    readbackState.value = 'idle'
+    verificationState.value = 'idle'
     previewReason.value = ''
     confirmReason.value = ''
     approved.value = false
@@ -205,7 +205,7 @@ export function useInitialSubscription(tenantId: () => string, onRefresh: () => 
     statusMessage.value = ''
     receipt.value = null
     task.value = null
-    readbackState.value = 'idle'
+    verificationState.value = 'idle'
     try {
       preview.value = await previewSubscriptionChange(tenantId(), {
         requestId: commercialRequestId('platform-initial-preview'),
@@ -249,11 +249,11 @@ export function useInitialSubscription(tenantId: () => string, onRefresh: () => 
       if (receipt.value.status === 'APPLIED') {
         await verifyReadback()
       } else if (receipt.value.status === 'PROVISIONING' && receipt.value.provisioningTaskId) {
-        readbackState.value = 'pending'
+        verificationState.value = 'pending'
         task.value = await getProvisioningTask(tenantId(), receipt.value.provisioningTaskId)
         statusMessage.value = '首次开通已进入准备流程；套餐权益尚未正式生效。'
       } else {
-        readbackState.value = 'pending'
+        verificationState.value = 'pending'
         statusMessage.value = '首次开通结果仍在确认中，请重新读取结果。'
       }
     } catch (error) {
@@ -291,7 +291,7 @@ export function useInitialSubscription(tenantId: () => string, onRefresh: () => 
 
   async function verifyReadback() {
     if (!receipt.value || !selectedVersion.value) return
-    readbackState.value = 'pending'
+    verificationState.value = 'pending'
     try {
       const [subscription, entitlements] = await Promise.all([
         getTenantSubscription(tenantId()),
@@ -307,17 +307,17 @@ export function useInitialSubscription(tenantId: () => string, onRefresh: () => 
       const decisionsMatch = expectedDecisionCoverage(entitlements, selectedVersion.value)
 
       if (!targetMatches || !versionsMatch || !decisionsMatch) {
-        readbackState.value = 'failed'
+        verificationState.value = 'failed'
         statusMessage.value = ''
         errorMessage.value = '订阅回执已存在，但最终权益尚未完成一致性确认。请重新读取结果，不要重复首次开通。'
         return
       }
 
-      readbackState.value = 'verified'
+      verificationState.value = 'verified'
       statusMessage.value = '首次开通已完成，并已从最终权益结果确认目标套餐能力。'
       onRefresh()
     } catch {
-      readbackState.value = 'failed'
+      verificationState.value = 'failed'
       errorMessage.value = '首次开通回执已保留，但最终权益读取失败。请重新读取结果，不要重复提交。'
     }
   }
@@ -336,14 +336,14 @@ export function useInitialSubscription(tenantId: () => string, onRefresh: () => 
       }
       if (latest.provisioningTaskId) {
         task.value = await getProvisioningTask(tenantId(), latest.provisioningTaskId)
-        readbackState.value = 'pending'
+        verificationState.value = 'pending'
         if (task.value.state === 'APPLIED') {
           receipt.value = await getSubscriptionChangeReceipt(tenantId(), preview.value.changeId)
           if (receipt.value.status === 'APPLIED') await verifyReadback()
         }
         return
       }
-      readbackState.value = 'pending'
+      verificationState.value = 'pending'
       statusMessage.value = '当前结果仍未形成最终权益事实。'
     } catch (error) {
       errorMessage.value = describeError(error, '结果读取失败。')
@@ -413,7 +413,7 @@ export function useInitialSubscription(tenantId: () => string, onRefresh: () => 
     receipt,
     task,
     finalSubscription,
-    readbackState,
+    verificationState,
     loadingPlans,
     loadingTargets,
     pending,
