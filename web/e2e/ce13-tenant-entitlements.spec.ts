@@ -284,7 +284,7 @@ async function mockInitialTargetDiscovery(page: Page) {
   }))
 }
 
-test('TestCE340FirstSubscriptionRequiresExactPublishedVersionAndFinalEntitlementReadback', async ({ page }) => {
+async function runFirstSubscriptionJourney(page: Page) {
   await mockModules(page)
   await mockInitialTargetDiscovery(page)
   let applied = false
@@ -413,13 +413,31 @@ test('TestCE340FirstSubscriptionRequiresExactPublishedVersionAndFinalEntitlement
   await page.getByLabel('确认原因').fill('平台首次开通确认')
   await page.getByRole('button', { name: '确认首次开通' }).click()
 
-  await expect(page.getByText('首次开通已完成，最终权益已确认')).toBeVisible()
+  await expect(page.locator('.subscription-card').getByText('办公专业版 v3')).toBeVisible()
   expect(confirmBody).toMatchObject({
     tenantId: 'tenant-initial',
     changeId: 'chg-initial-1',
     previewHash: 'a'.repeat(64),
   })
-})
+}
+
+const ce340Viewports = [
+  { width: 1366, height: 768 },
+  { width: 1440, height: 900 },
+  { width: 1536, height: 1024 },
+  { width: 390, height: 844 },
+]
+
+for (const viewport of ce340Viewports) {
+  test(`TestCE340FirstSubscriptionRequiresExactPublishedVersionAndFinalEntitlementReadback ${viewport.width}x${viewport.height}`, async ({ page }, testInfo) => {
+    await page.setViewportSize(viewport)
+    await runFirstSubscriptionJourney(page)
+    await page.screenshot({
+      path: testInfo.outputPath(`ce340-first-subscription-${viewport.width}x${viewport.height}.png`),
+      fullPage: true,
+    })
+  })
+}
 
 test('TestCE340ProvisioningFailureRetriesSameTaskWithoutSecondSubscription', async ({ page }) => {
   await mockModules(page)
