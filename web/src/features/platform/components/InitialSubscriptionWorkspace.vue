@@ -78,7 +78,7 @@ const {
 
       <label class="field" for="initial-plan-code">
         <span>套餐</span>
-        <UiSelect id="initial-plan-code" v-model="planCode" class="input" :disabled="loadingPlans || !plans.length">
+        <UiSelect id="initial-plan-code" v-model="planCode" class="input" aria-label="套餐" :disabled="loadingPlans || !plans.length">
           <UiOption value="">请选择套餐</UiOption>
           <UiOption v-for="plan in plans" :key="plan.planCode" :value="plan.planCode">
             {{ plan.name || backendTermLabel('plan', plan.planCode) }} · {{ plan.planCode }}
