@@ -22,7 +22,7 @@ SET @ce340_preview_migration_sql = (
   MODIFY source_plan_version BIGINT UNSIGNED NULL,
   ADD CONSTRAINT ce340_preview_tenant FOREIGN KEY(tenant_id)
     REFERENCES biz_commercial_entitlement_state(tenant_id) ON DELETE RESTRICT ON UPDATE RESTRICT,
-  ADD CONSTRAINT ce09_preview_source_plan FOREIGN KEY(source_plan_code,source_plan_version)
+  ADD CONSTRAINT ce340_preview_source_plan FOREIGN KEY(source_plan_code,source_plan_version)
     REFERENCES biz_commercial_plan_versions(plan_code,version) ON DELETE RESTRICT ON UPDATE RESTRICT,
   ADD CONSTRAINT ce340_preview_source_shape CHECK (
     (COALESCE(JSON_UNQUOTE(JSON_EXTRACT(payload,''$.input.action'')),'''')=''INITIAL''

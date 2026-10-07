@@ -36,7 +36,7 @@ func TestCE340MySQLPreviewMigrationPreservesHistoryAndConstraints(t *testing.T) 
 	legacySchema := `ALTER TABLE biz_commercial_change_previews
  DROP CHECK ce340_preview_source_shape,
  DROP FOREIGN KEY ce340_preview_tenant,
- DROP FOREIGN KEY ce09_preview_source_plan,
+ DROP FOREIGN KEY ce340_preview_source_plan,
  MODIFY tenant_id VARCHAR(64) NOT NULL,
  MODIFY source_plan_code VARCHAR(96) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
  MODIFY source_plan_version BIGINT UNSIGNED NOT NULL,
