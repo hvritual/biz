@@ -402,7 +402,7 @@ async function runFirstSubscriptionJourney(page: Page) {
 
   await page.getByLabel('首次开通原因').fill('为新租户开通办公套餐')
   await page.getByRole('button', { name: '查看首次开通方案' }).click()
-  expect(previewBody).toMatchObject({
+  await expect.poll(() => previewBody).toMatchObject({
     tenantId: 'tenant-initial',
     action: 'INITIAL',
     salesScope: 'default',
