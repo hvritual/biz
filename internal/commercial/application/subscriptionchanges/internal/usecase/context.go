@@ -37,6 +37,16 @@ func (s *service) captureInitial(ctx context.Context, repos ports.SubscriptionCh
 	if i.Action != change.Initial || i.Validate() != nil {
 		return out, change.ErrInvalid
 	}
+	tenant, err := s.capabilities.AccessTenantLifecycle().GetTenant(ctx, &accessv1.GetTenantRequest{Id: i.TenantID})
+	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			return out, change.ErrNotFound
+		}
+		return out, err
+	}
+	if tenant == nil || tenant.Id != i.TenantID {
+		return out, change.ErrCorrupt
+	}
 	eligible, err := s.capabilities.CommercialPlanManagement().CheckPlanEligibility(ctx, &v1.CheckPlanEligibilityRequest{PlanCode: i.TargetPlanCode, Version: i.TargetPlanVersion, SalesScope: i.SalesScope})
 	if err != nil {
 		if status.Code(err) == codes.NotFound {
