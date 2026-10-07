@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      YUNKA_SHA: 9ee6640f5e19777b4c04d9e4937a93e2035eacda
+      YUNKA_SHA: 06076ce2fc170c89c7356ee070d74ebf1de340cf
     steps:
       - name: Checkout exact Biz candidate
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
@@ -191,7 +191,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      YUNKA_SHA: 9ee6640f5e19777b4c04d9e4937a93e2035eacda
+      YUNKA_SHA: 06076ce2fc170c89c7356ee070d74ebf1de340cf
       YUNKA_TEST_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/biz_b12?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true
     services:
       mysql:
