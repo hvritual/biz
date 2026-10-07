@@ -3027,6 +3027,9 @@
           "requestId": {
             "type": "string"
           },
+          "salesScope": {
+            "type": "string"
+          },
           "targetPlanCode": {
             "type": "string"
           },
