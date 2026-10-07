@@ -46,7 +46,7 @@ const {
     <header class="section-header">
       <div>
         <h2>首次开通套餐</h2>
-        <p>当前租户没有基础订阅。请选择精确已发布版本，确认后再以最终权益回读作为完成依据。</p>
+        <p>当前租户没有基础订阅。请选择精确已发布版本，确认后再以最终权益结果作为完成依据。</p>
       </div>
       <StatusBadge
         v-if="receipt"
@@ -64,7 +64,7 @@ const {
       <label class="field" for="initial-sales-scope">
         <span>适用范围</span>
         <UiInput id="initial-sales-scope" v-model="salesScope" class="input" placeholder="例如 rental、office、enterprise" />
-        <small>必须是具体范围；服务端会据此判断套餐版本是否可开通。</small>
+        <small>必须是具体范围；系统会据此判断套餐版本是否可开通。</small>
       </label>
 
       <label class="field" for="initial-plan-code">
@@ -87,7 +87,7 @@ const {
 
     <section v-if="candidates.length" class="versions-panel">
       <div class="section-subhead">
-        <div><h3>精确版本</h3><p>只列出真实已发布版本；是否可用来自服务端资格检查。</p></div>
+        <div><h3>精确版本</h3><p>只列出真实已发布版本；是否可用以当前资格检查结果为准。</p></div>
         <span>{{ eligibleCandidates.length }} 个可用</span>
       </div>
       <div class="version-list">
@@ -198,8 +198,8 @@ const {
       </div>
 
       <div v-else-if="readbackState === 'verified'" class="verified-state">
-        <strong>首次开通已完成并通过最终权益回读</strong>
-        <span>当前订阅为 {{ finalSubscription?.planCode }} · v{{ finalSubscription?.planVersion }}；页面显示的是服务端最终权益，不是浏览器本地预测。</span>
+        <strong>首次开通已完成，最终权益已确认</strong>
+        <span>当前订阅为 {{ finalSubscription?.planCode }} · v{{ finalSubscription?.planVersion }}；页面显示的是当前最终权益结果，不是预估结果。</span>
       </div>
 
       <div v-else-if="readbackState === 'failed'" class="readback-state">
@@ -210,7 +210,7 @@ const {
 
       <div v-else class="processing-state">
         <strong>结果待确认</strong>
-        <span>当前不会显示租户已获得目标模块，直到最终权益回读完成。</span>
+        <span>当前不会显示租户已获得目标模块，直到最终权益确认完成。</span>
         <UiButton class="btn" type="button" :disabled="pending" @click="refreshResult">读取最新结果</UiButton>
       </div>
     </section>
