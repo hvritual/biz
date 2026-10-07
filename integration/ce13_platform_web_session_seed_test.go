@@ -229,8 +229,8 @@ func seedCE13NoSubscriptionTenant(t *testing.T, db *gorm.DB) string {
 	var subscriptions, memberships, roles int64
 	for table, out := range map[string]*int64{
 		"biz_commercial_subscriptions": &subscriptions,
-		"biz_memberships":               &memberships,
-		"biz_roles":                     &roles,
+		"biz_memberships":              &memberships,
+		"biz_roles":                    &roles,
 	} {
 		if err := db.Table(table).Where("tenant_id=?", id).Count(out).Error; err != nil {
 			t.Fatal(err)
