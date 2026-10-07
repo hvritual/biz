@@ -1,4 +1,4 @@
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { backendStateTone } from '@/i18n/backend-terms'
 import {
   CommercialApiError,
@@ -110,7 +110,6 @@ export function useInitialSubscription(tenantId: () => string, onRefresh: () => 
     planCode.value = ''
     plans.value = []
     clearFlow(false)
-    void loadPlanCatalog()
   }
 
   watch(tenantId, reset)
@@ -398,9 +397,7 @@ export function useInitialSubscription(tenantId: () => string, onRefresh: () => 
     return error instanceof Error ? error.message : fallback
   }
 
-  onMounted(loadPlanCatalog)
-
-  return {
+    return {
     plans,
     salesScope,
     planCode,
@@ -426,6 +423,7 @@ export function useInitialSubscription(tenantId: () => string, onRefresh: () => 
     versionKey,
     formatValidity,
     limitLabel,
+    loadPlanCatalog,
     loadPublishedVersions,
     createPreview,
     confirmPreview,
