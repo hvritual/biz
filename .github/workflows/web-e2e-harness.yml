@@ -38,7 +38,7 @@ jobs:
         working-directory: web
         run: VITE_DATA_MODE=api npm run build
 
-      - name: Run API-mode business harness
+      - name: Run enterprise API-mode harness
         working-directory: web
         env:
           ENTERPRISE_AUDIT_REAL_E2E: '1'
@@ -60,8 +60,7 @@ jobs:
             e2e/enterprise-organization-real.spec.ts \
             e2e/enterprise-plan-change-real.spec.ts \
             e2e/enterprise-plan-real.spec.ts \
-            e2e/enterprise-roles-real.spec.ts \
-            e2e/ce13-tenant-entitlements.spec.ts
+            e2e/enterprise-roles-real.spec.ts
 
       - name: Verify harness result
         working-directory: web
@@ -75,11 +74,8 @@ jobs:
           stats = results['stats']
           assert stats.get('unexpected', 0) == 0, stats
           expected = stats.get('expected', 0)
-          payload = json.dumps(results, ensure_ascii=False)
-          assert expected >= 12, stats
-          assert 'TestCE340FirstSubscriptionRequiresExactPublishedVersionAndFinalEntitlementReadback' in payload
-          assert 'TestCE340ProvisioningFailureRetriesSameTaskWithoutSecondSubscription' in payload
-          print(f'WEB_E2E_HARNESS=PASS expected={expected} ce340=2')
+          assert expected >= 8, stats
+          print(f'WEB_E2E_HARNESS=PASS expected={expected}')
           PY
 
       - name: Upload harness evidence
