@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, ref, type EffectScope } from 'vue'
 import { flushPromises } from '@vue/test-utils'
 import { useInitialSubscription } from './useInitialSubscription'
-import { initialSubscriptionReadbackMatches } from '@/services/commercial/initialSubscriptionReadback'
+import { initialSubscriptionReadbackMatches } from '@/services/commercial/initialSubscriptionOutcome'
 import * as api from '@/services/commercial/platformCommercial'
 import { subscribeSessionContextChange } from '@/services/runtime/sessionCoordinator'
 
@@ -15,7 +15,7 @@ vi.mock('@/services/commercial/platformCommercial', async (original) => {
 })
 // This suite isolates orchestration. The actual readback policy has its own
 // positive/negative matrix in initialSubscriptionReadback.spec.ts.
-vi.mock('@/services/commercial/initialSubscriptionReadback', () => ({ initialSubscriptionReadbackMatches: vi.fn() }))
+vi.mock('@/services/commercial/initialSubscriptionOutcome', () => ({ initialSubscriptionReadbackMatches: vi.fn() }))
 vi.mock('@/services/runtime/sessionCoordinator', () => ({ subscribeSessionContextChange: vi.fn(() => vi.fn()) }))
 
 function deferred<T>() {

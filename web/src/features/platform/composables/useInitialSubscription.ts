@@ -1,5 +1,5 @@
 import { computed, onScopeDispose, ref, watch } from 'vue'
-import { initialSubscriptionReadbackMatches } from '@/services/commercial/initialSubscriptionReadback'
+import { initialSubscriptionReadbackMatches } from '@/services/commercial/initialSubscriptionOutcome'
 import { subscribeSessionContextChange } from '@/services/runtime/sessionCoordinator'
 import { backendStateTone } from '@/i18n/backend-terms'
 import {

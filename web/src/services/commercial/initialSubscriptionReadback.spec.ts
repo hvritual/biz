@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { initialSubscriptionReadbackMatches, type InitialSubscriptionReadback } from './initialSubscriptionReadback'
+import { initialSubscriptionReadbackMatches, type InitialSubscriptionReadback } from './initialSubscriptionOutcome'
 import type { EntitlementDecisionDTO, PlanVersionDTO, TenantSubscriptionDTO } from './platformCommercial'
 
 function fixture(): InitialSubscriptionReadback {
