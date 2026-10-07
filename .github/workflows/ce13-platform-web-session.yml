@@ -237,9 +237,11 @@ jobs:
           assert stats.get('unexpected', 0) == 0, stats
           assert stats.get('skipped', 0) == 0, stats
           assert stats.get('flaky', 0) == 0, stats
-          assert stats.get('expected', 0) >= 3, stats
-          assert 'TestCE13PlatformCommercialTrustedWebSession' in json.dumps(result), 'CE-13 platform browser acceptance identity missing'
-          print('CE13_PLATFORM_WEB_SESSION=PASS')
+          assert stats.get('expected', 0) >= 4, stats
+          payload = json.dumps(result)
+          assert 'TestCE13PlatformCommercialTrustedWebSession' in payload, 'CE-13 platform browser acceptance identity missing'
+          assert 'TestCE340PlatformFirstSubscriptionThroughTrustedWebSession' in payload, 'CE-340 first subscription browser acceptance identity missing'
+          print('CE13_PLATFORM_WEB_SESSION=PASS CE340_FIRST_SUBSCRIPTION=PASS')
           PY
 
       - name: Write CE13 performance receipt
