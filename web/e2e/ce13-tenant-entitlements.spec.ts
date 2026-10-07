@@ -395,6 +395,7 @@ async function runFirstSubscriptionJourney(page: Page) {
   await expect(page.getByText('完成首次开通不会自动给成员分配角色或操作权限。')).toBeVisible()
 
   await page.getByLabel('适用范围').fill('default')
+  await page.getByRole('button', { name: '读取套餐目录' }).click()
   await selectUiOption(page.getByLabel('套餐', { exact: true }), 'office-pro')
   await page.getByRole('button', { name: '检查已发布版本' }).click()
   await expect(page.getByText('exact v3')).toBeVisible()
@@ -537,6 +538,7 @@ test('TestCE340ProvisioningFailureRetriesSameTaskWithoutSecondSubscription', asy
   await page.getByLabel('租户编号').fill('tenant-initial')
   await page.getByRole('button', { name: '读取权益' }).click()
   await page.getByLabel('适用范围').fill('default')
+  await page.getByRole('button', { name: '读取套餐目录' }).click()
   await selectUiOption(page.getByLabel('套餐', { exact: true }), 'office-pro')
   await page.getByRole('button', { name: '检查已发布版本' }).click()
   await page.getByLabel('首次开通原因').fill('需要设备准备')
