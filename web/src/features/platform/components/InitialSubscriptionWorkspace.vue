@@ -20,7 +20,7 @@ const {
   receipt,
   task,
   finalSubscription,
-  readbackState,
+  verificationState,
   loadingPlans,
   loadingTargets,
   pending,
@@ -197,12 +197,12 @@ const {
         </div>
       </div>
 
-      <div v-else-if="readbackState === 'verified'" class="verified-state">
+      <div v-else-if="verificationState === 'verified'" class="verified-state">
         <strong>首次开通已完成，最终权益已确认</strong>
         <span>当前订阅为 {{ finalSubscription?.planCode }} · v{{ finalSubscription?.planVersion }}；页面显示的是当前最终权益结果，不是预估结果。</span>
       </div>
 
-      <div v-else-if="readbackState === 'failed'" class="readback-state">
+      <div v-else-if="verificationState === 'failed'" class="verification-state">
         <strong>订阅回执已存在，最终权益仍待确认</strong>
         <span>不要再次提交首次开通。重新读取 Subscription、Change Receipt 和 Entitlement 后再判断结果。</span>
         <UiButton class="btn" type="button" :disabled="pending" @click="refreshResult">重新读取结果</UiButton>
@@ -257,8 +257,8 @@ const {
 .term-grid p { margin: 5px 0 0; font-size: 12px; }
 .preview-form, .confirm-box { display: grid; gap: 12px; padding: 16px 20px 20px; border-top: 1px solid var(--color-border); }
 .check { display: flex; align-items: flex-start; gap: 8px; color: var(--color-text-secondary); font-size: 12px; line-height: 1.5; }
-.processing-state, .verified-state, .readback-state { display: grid; gap: 6px; padding: 18px 20px; font-size: 13px; }
-.processing-state span, .verified-state span, .readback-state span { color: var(--color-text-secondary); line-height: 1.5; }
+.processing-state, .verified-state, .verification-state { display: grid; gap: 6px; padding: 18px 20px; font-size: 13px; }
+.processing-state span, .verified-state span, .verification-state span { color: var(--color-text-secondary); line-height: 1.5; }
 .result-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
 .notice { margin: 0 20px 18px; padding: 10px 12px; border: 1px solid var(--color-border); border-radius: 8px; font-size: 12px; }
 .notice.success { border-color: var(--color-success); }
