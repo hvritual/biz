@@ -204,6 +204,10 @@
     "scenario": "平台管理 · 业务列表 · EntitlementOverrideTable",
     "scope": "仅用于平台管理业务域及其页面组合；需要跨业务复用时必须下沉到 ui/common，不得复制样式或绕过 ui/base。"
   },
+  "platform/components/InitialSubscriptionWorkspace.vue": {
+    "scenario": "平台管理 · 无订阅租户首次套餐开通、准备恢复与最终权益回读",
+    "scope": "仅用于平台租户权益工作台的首次开通任务；目标资格、Subscription、Provisioning 与 Entitlement 均以服务端 Authority 为准，不授予成员 IAM。"
+  },
   "platform/components/ModuleChangePanel.vue": {
     "scenario": "平台管理 · 模块配置及独立技术销售状态确认与结果",
     "scope": "仅承载父级控制的草稿、版本对比、回执和读回状态；不直接发请求，不将不确定结果显示为成功。"
