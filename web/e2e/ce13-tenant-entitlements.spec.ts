@@ -231,6 +231,15 @@ function initialEntitlement(applied: boolean) {
     nextTransitionAt: '',
     catalogVersions: [{ moduleCode: 'device', version: '3' }],
     decisions: applied ? [{
+      kind: 'module',
+      moduleCode: 'device',
+      key: 'device',
+      fieldAction: '',
+      allowed: true,
+      reason: 'ALLOWED',
+      masked: false,
+      sources: [],
+    }, {
       kind: 'capability',
       moduleCode: 'device',
       key: 'device.lifecycle',

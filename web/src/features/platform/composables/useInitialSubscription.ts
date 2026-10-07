@@ -1,4 +1,6 @@
-import { computed, ref, watch } from 'vue'
+import { computed, onScopeDispose, ref, watch } from 'vue'
+import { initialSubscriptionReadbackMatches } from '@/services/commercial/initialSubscriptionReadback'
+import { subscribeSessionContextChange } from '@/services/runtime/sessionCoordinator'
 import { backendStateTone } from '@/i18n/backend-terms'
 import {
   CommercialApiError,
@@ -13,7 +15,6 @@ import {
   listPlanVersions,
   previewSubscriptionChange,
   retryProvisioningTask,
-  type EntitlementView,
   type PlanCatalogEntryDTO,
   type PlanVersionDTO,
   type ProvisioningTaskDTO,
@@ -49,6 +50,10 @@ export function useInitialSubscription(tenantId: () => string, onRefresh: () => 
   const pending = ref(false)
   const errorMessage = ref('')
   const statusMessage = ref('')
+  const confirmationSubmitted = ref(false)
+  let contextEpoch = 0
+  let readbackEpoch = 0
+  let disposed = false
 
   const selectedCandidate = computed(() =>
     candidates.value.find((item) => versionKey(item.version) === selectedVersionKey.value) ?? null,
@@ -89,6 +94,12 @@ export function useInitialSubscription(tenantId: () => string, onRefresh: () => 
   }
 
   function clearFlow(keepTarget = false) {
+    contextEpoch++
+    readbackEpoch++
+    pending.value = false
+    loadingPlans.value = false
+    loadingTargets.value = false
+    confirmationSubmitted.value = false
     preview.value = null
     receipt.value = null
     task.value = null
@@ -112,12 +123,26 @@ export function useInitialSubscription(tenantId: () => string, onRefresh: () => 
     clearFlow(false)
   }
 
-  watch(tenantId, reset)
-  watch(salesScope, () => clearFlow(false))
-  watch(planCode, () => clearFlow(false))
-  watch(selectedVersionKey, () => clearFlow(true))
+  watch(tenantId, reset, { flush: 'sync' })
+  watch(salesScope, () => clearFlow(false), { flush: 'sync' })
+  watch(planCode, () => clearFlow(false), { flush: 'sync' })
+  watch(selectedVersionKey, () => clearFlow(true), { flush: 'sync' })
+  const unsubscribe = subscribeSessionContextChange(reset)
+  onScopeDispose(() => {
+    disposed = true
+    readbackEpoch++
+    unsubscribe()
+  })
+
+  function captureContext() {
+    const generation = contextEpoch
+    const tenant = tenantId()
+    return { tenant, current: () => !disposed && generation === contextEpoch && tenantId() === tenant }
+  }
 
   async function loadPlanCatalog() {
+    if (loadingPlans.value || pending.value || confirmationSubmitted.value || disposed) return
+    const context = captureContext()
     loadingPlans.value = true
     errorMessage.value = ''
     try {
@@ -125,6 +150,7 @@ export function useInitialSubscription(tenantId: () => string, onRefresh: () => 
       let after = ''
       for (let page = 0; page < 20; page++) {
         const result = await listPlans({ afterPlanCode: after || undefined, pageSize: 100 })
+        if (!context.current()) return
         found.push(...result.plans)
         const next = result.nextAfterPlanCode.trim()
         if (!next || next === after) break
@@ -134,13 +160,14 @@ export function useInitialSubscription(tenantId: () => string, onRefresh: () => 
       plans.value = [...unique.values()].sort((a, b) => a.planCode.localeCompare(b.planCode))
       if (!plans.value.length) statusMessage.value = '当前没有可发现的套餐目录。'
     } catch (error) {
-      errorMessage.value = describeError(error, '套餐目录读取失败。')
+      if (context.current()) errorMessage.value = describeError(error, '套餐目录读取失败。')
     } finally {
-      loadingPlans.value = false
+      if (context.current()) loadingPlans.value = false
     }
   }
 
   async function loadPublishedVersions() {
+    if (loadingTargets.value || pending.value || confirmationSubmitted.value || disposed) return
     const scope = salesScope.value.trim()
     const code = planCode.value.trim()
     clearFlow(false)
@@ -153,12 +180,14 @@ export function useInitialSubscription(tenantId: () => string, onRefresh: () => 
       return
     }
 
+    const context = captureContext()
     loadingTargets.value = true
     try {
       const versions: PlanVersionDTO[] = []
       let after: string | number | undefined
       for (let page = 0; page < 20; page++) {
         const result = await listPlanVersions(code, { afterVersion: after, pageSize: 50 })
+        if (!context.current()) return
         versions.push(...result.versions.filter((item) => item.state === 'PUBLISHED'))
         const next = result.nextAfterVersion
         if (next === '' || next === undefined || String(next) === String(after ?? '')) break
@@ -175,6 +204,8 @@ export function useInitialSubscription(tenantId: () => string, onRefresh: () => 
         }
       }))
 
+      if (!context.current()) return
+      loadingTargets.value = false
       candidates.value = checked.sort((left, right) => Number(right.version.version) - Number(left.version.version))
       const firstEligible = checked.find((item) => item.eligible)
       selectedVersionKey.value = firstEligible ? versionKey(firstEligible.version) : ''
@@ -182,13 +213,15 @@ export function useInitialSubscription(tenantId: () => string, onRefresh: () => 
         ? (eligibleCandidates.value.length ? '请选择一个精确已发布版本继续。' : '当前套餐没有符合该适用范围的可开通版本。')
         : '当前套餐没有已发布版本。'
     } catch (error) {
-      errorMessage.value = describeError(error, '套餐版本资格检查失败。')
+      if (context.current()) errorMessage.value = describeError(error, '套餐版本资格检查失败。')
     } finally {
-      loadingTargets.value = false
+      if (context.current()) loadingTargets.value = false
     }
   }
 
   async function createPreview() {
+    if (pending.value || confirmationSubmitted.value || disposed) return
+    const context = captureContext()
     const target = selectedVersion.value
     if (!target || !selectedCandidate.value?.eligible) {
       errorMessage.value = '请选择当前资格检查确认可适用的已发布版本。'
@@ -206,7 +239,7 @@ export function useInitialSubscription(tenantId: () => string, onRefresh: () => 
     task.value = null
     verificationState.value = 'idle'
     try {
-      preview.value = await previewSubscriptionChange(tenantId(), {
+      const result = await previewSubscriptionChange(context.tenant, {
         requestId: commercialRequestId('platform-initial-preview'),
         action: 'INITIAL',
         salesScope: salesScope.value.trim(),
@@ -215,17 +248,21 @@ export function useInitialSubscription(tenantId: () => string, onRefresh: () => 
         effectiveAt: '',
         reason: previewReason.value.trim(),
       })
+      if (!context.current()) return
+      preview.value = result
       approved.value = false
       confirmReason.value = ''
       statusMessage.value = '首次开通方案已生成；确认前系统仍会重新核对套餐、目录和当前租户事实。'
     } catch (error) {
-      errorMessage.value = describeError(error, '首次开通方案生成失败。')
+      if (context.current()) errorMessage.value = describeError(error, '首次开通方案生成失败。')
     } finally {
-      pending.value = false
+      if (context.current()) pending.value = false
     }
   }
 
   async function confirmPreview() {
+    if (pending.value || confirmationSubmitted.value || disposed) return
+    const context = captureContext()
     if (!preview.value || !selectedVersion.value) return
     if (!approved.value) {
       errorMessage.value = '请先确认已核对首次开通影响。'
@@ -239,144 +276,154 @@ export function useInitialSubscription(tenantId: () => string, onRefresh: () => 
     pending.value = true
     errorMessage.value = ''
     statusMessage.value = ''
+    confirmationSubmitted.value = true
     try {
-      receipt.value = await confirmSubscriptionChange(tenantId(), preview.value.changeId, {
+      const confirmed = await confirmSubscriptionChange(context.tenant, preview.value.changeId, {
         requestId: commercialRequestId('platform-initial-confirm'),
         previewHash: preview.value.previewHash,
         reason: confirmReason.value.trim(),
       })
+      if (!context.current()) return
+      receipt.value = confirmed
       if (receipt.value.status === 'APPLIED') {
         await verifyReadback()
       } else if (receipt.value.status === 'PROVISIONING' && receipt.value.provisioningTaskId) {
         verificationState.value = 'pending'
-        task.value = await getProvisioningTask(tenantId(), receipt.value.provisioningTaskId)
+        const prepared = await getProvisioningTask(context.tenant, receipt.value.provisioningTaskId)
+        if (!context.current()) return
+        task.value = prepared
         statusMessage.value = '首次开通已进入准备流程；套餐权益尚未正式生效。'
       } else {
         verificationState.value = 'pending'
         statusMessage.value = '首次开通结果仍在确认中，请重新读取结果。'
       }
     } catch (error) {
+      if (!context.current()) return
       if (error instanceof CommercialApiError && error.code === 'conflict') {
-        await recoverConcurrentActivation()
+        await recoverConcurrentActivation(context)
       } else {
-        errorMessage.value = describeError(error, '首次开通确认失败。')
+        if (!receipt.value && error instanceof CommercialApiError && ['unauthenticated', 'forbidden'].includes(error.code)) {
+          confirmationSubmitted.value = false
+        }
+        errorMessage.value = describeError(error, '首次开通确认结果未知。请先读取原变更结果，不要重复提交。')
       }
     } finally {
-      pending.value = false
+      if (context.current()) pending.value = false
     }
-  }
-
-  function versionAtLeast(current: string | number, expected: string | number) {
-    const a = Number(current)
-    const b = Number(expected)
-    if (Number.isFinite(a) && Number.isFinite(b)) return a >= b
-    return String(current) === String(expected)
-  }
-
-  function expectedDecisionCoverage(view: EntitlementView, target: PlanVersionDTO) {
-    const decisions = view.decisions ?? []
-    for (const module of target.terms?.modules ?? []) {
-      const moduleDecisions = decisions.filter((item) => item.moduleCode === module.moduleCode)
-      if (!moduleDecisions.length) return false
-      for (const capability of module.capabilityCodes ?? []) {
-        if (!moduleDecisions.some((item) => item.kind === 'capability' && item.key === capability)) return false
-      }
-      for (const quota of module.quotas ?? []) {
-        if (!moduleDecisions.some((item) => item.kind === 'quota' && item.key === quota.key)) return false
-      }
-    }
-    return true
   }
 
   async function verifyReadback() {
-    if (!receipt.value || !selectedVersion.value) return
+    const confirmed = receipt.value
+    const selected = selectedVersion.value
+    const proposed = preview.value
+    if (!confirmed || !selected || !proposed) return
+    const active = captureContext()
+    const context = { tenantId: active.tenant, salesScope: salesScope.value.trim(), target: selected, preview: proposed, receipt: confirmed }
+    const generation = ++readbackEpoch
+    const current = () => active.current() && generation === readbackEpoch
+      && tenantId() === context.tenantId && receipt.value === confirmed
+      && preview.value === proposed && selectedVersion.value === selected
     verificationState.value = 'pending'
+    finalSubscription.value = null
+    statusMessage.value = ''
     try {
       const [subscription, entitlements] = await Promise.all([
-        getTenantSubscription(tenantId()),
-        explainTenantEntitlements(tenantId(), []),
+        getTenantSubscription(context.tenantId),
+        explainTenantEntitlements(context.tenantId, []),
       ])
-      finalSubscription.value = subscription
-
-      const targetMatches = subscription.planCode === selectedVersion.value.planCode
-        && String(subscription.planVersion) === String(selectedVersion.value.version)
-        && subscription.state !== 'PROVISIONING'
-      const versionsMatch = versionAtLeast(entitlements.sourceVersion, receipt.value.afterSourceVersion)
-        && versionAtLeast(entitlements.entitlementVersion, receipt.value.afterEntitlementVersion)
-      const decisionsMatch = expectedDecisionCoverage(entitlements, selectedVersion.value)
-
-      if (!targetMatches || !versionsMatch || !decisionsMatch) {
+      if (!current()) return
+      if (!initialSubscriptionReadbackMatches({ ...context, subscription, entitlements })) {
         verificationState.value = 'failed'
-        statusMessage.value = ''
         errorMessage.value = '订阅回执已存在，但最终权益尚未完成一致性确认。请重新读取结果，不要重复首次开通。'
         return
       }
-
+      finalSubscription.value = subscription
       verificationState.value = 'verified'
+      errorMessage.value = ''
       statusMessage.value = '首次开通已完成，并已从最终权益结果确认目标套餐能力。'
       onRefresh()
     } catch {
+      if (!current()) return
       verificationState.value = 'failed'
       errorMessage.value = '首次开通回执已保留，但最终权益读取失败。请重新读取结果，不要重复提交。'
     }
   }
 
+  async function readResult(context: ReturnType<typeof captureContext>) {
+    const changeId = preview.value?.changeId
+    if (!changeId || !context.current()) return
+    const latest = await getSubscriptionChangeReceipt(context.tenant, changeId)
+    if (!context.current()) return
+    receipt.value = latest
+    if (latest.status === 'APPLIED') {
+      await verifyReadback()
+      return
+    }
+    verificationState.value = 'pending'
+    if (latest.provisioningTaskId) {
+      const prepared = await getProvisioningTask(context.tenant, latest.provisioningTaskId)
+      if (!context.current()) return
+      task.value = prepared
+      if (prepared.state === 'APPLIED') {
+        const applied = await getSubscriptionChangeReceipt(context.tenant, changeId)
+        if (!context.current()) return
+        receipt.value = applied
+        if (applied.status === 'APPLIED') await verifyReadback()
+      }
+      return
+    }
+    statusMessage.value = '当前结果仍未形成最终权益事实。'
+  }
+
   async function refreshResult() {
-    if (!preview.value) return
+    if (!preview.value || pending.value || disposed) return
+    const context = captureContext()
     pending.value = true
     errorMessage.value = ''
+    statusMessage.value = ''
+    verificationState.value = 'pending'
     try {
-      const latest = await getSubscriptionChangeReceipt(tenantId(), preview.value.changeId)
-      receipt.value = latest
-
-      if (latest.status === 'APPLIED') {
-        await verifyReadback()
-        return
-      }
-      if (latest.provisioningTaskId) {
-        task.value = await getProvisioningTask(tenantId(), latest.provisioningTaskId)
-        verificationState.value = 'pending'
-        if (task.value.state === 'APPLIED') {
-          receipt.value = await getSubscriptionChangeReceipt(tenantId(), preview.value.changeId)
-          if (receipt.value.status === 'APPLIED') await verifyReadback()
-        }
-        return
-      }
-      verificationState.value = 'pending'
-      statusMessage.value = '当前结果仍未形成最终权益事实。'
+      await readResult(context)
     } catch (error) {
-      errorMessage.value = describeError(error, '结果读取失败。')
+      if (context.current()) errorMessage.value = describeError(error, '结果读取失败。')
     } finally {
-      pending.value = false
+      if (context.current()) pending.value = false
     }
   }
 
   async function retryTask() {
-    if (!task.value?.retryAllowed || !receipt.value?.provisioningTaskId) return
+    if (pending.value || disposed || !task.value?.retryAllowed || !receipt.value?.provisioningTaskId) return
+    const context = captureContext()
     pending.value = true
     errorMessage.value = ''
     try {
-      task.value = await retryProvisioningTask(tenantId(), receipt.value.provisioningTaskId, {
+      const prepared = await retryProvisioningTask(context.tenant, receipt.value.provisioningTaskId, {
         requestId: commercialRequestId('platform-initial-retry'),
         expectedRevision: task.value.revision,
         reason: '继续首次开通准备任务',
       })
+      if (!context.current()) return
+      task.value = prepared
       statusMessage.value = '已恢复原准备任务；不会创建第二份首次订阅。'
     } catch (error) {
+      if (!context.current()) return
       if (error instanceof CommercialApiError && error.code === 'conflict') {
-        await refreshResult()
+        try { await readResult(context) } catch (readError) {
+          if (context.current()) errorMessage.value = describeError(readError, '结果读取失败。')
+        }
       } else {
         errorMessage.value = describeError(error, '准备任务恢复失败。')
       }
     } finally {
-      pending.value = false
+      if (context.current()) pending.value = false
     }
   }
 
-  async function recoverConcurrentActivation() {
+  async function recoverConcurrentActivation(context: ReturnType<typeof captureContext>) {
     try {
-      const existing = await getTenantSubscription(tenantId())
-      if (existing?.subscriptionId) {
+      const existing = await getTenantSubscription(context.tenant)
+      if (!context.current()) return
+      if (existing?.subscriptionId && existing.tenantId === context.tenant) {
         statusMessage.value = '该租户已被其他管理员完成或接管首次开通，正在切换到当前真实订阅。'
         onRefresh()
         return
@@ -384,6 +431,7 @@ export function useInitialSubscription(tenantId: () => string, onRefresh: () => 
     } catch {
       // Preserve the conflict if the authoritative result cannot be read.
     }
+    if (!context.current()) return
     errorMessage.value = '首次开通事实已发生变化。请重新读取租户状态后再继续，不会覆盖其他管理员的操作。'
   }
 
@@ -397,7 +445,7 @@ export function useInitialSubscription(tenantId: () => string, onRefresh: () => 
     return error instanceof Error ? error.message : fallback
   }
 
-    return {
+  return {
     plans,
     salesScope,
     planCode,
@@ -414,6 +462,7 @@ export function useInitialSubscription(tenantId: () => string, onRefresh: () => 
     loadingPlans,
     loadingTargets,
     pending,
+    confirmationSubmitted,
     errorMessage,
     statusMessage,
     selectedVersion,

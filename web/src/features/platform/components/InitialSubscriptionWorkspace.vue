@@ -24,6 +24,7 @@ const {
   loadingPlans,
   loadingTargets,
   pending,
+  confirmationSubmitted,
   errorMessage,
   statusMessage,
   selectedVersion,
@@ -64,13 +65,13 @@ const {
     <div class="target-grid">
       <label class="field" for="initial-sales-scope">
         <span>适用范围</span>
-        <UiInput id="initial-sales-scope" v-model="salesScope" class="input" placeholder="例如 rental、office、enterprise" />
+        <UiInput id="initial-sales-scope" v-model="salesScope" class="input" :disabled="pending || confirmationSubmitted" placeholder="例如 rental、office、enterprise" />
         <small>必须是具体范围；系统会据此判断套餐版本是否可开通。</small>
       </label>
 
       <div class="field">
         <span>套餐目录</span>
-        <UiButton class="btn" type="button" :disabled="loadingPlans || !salesScope.trim()" @click="loadPlanCatalog">
+        <UiButton class="btn" type="button" :disabled="pending || confirmationSubmitted || loadingPlans || !salesScope.trim()" @click="loadPlanCatalog">
           {{ loadingPlans ? '正在读取…' : (plans.length ? '重新读取套餐' : '读取套餐目录') }}
         </UiButton>
         <small>只负责发现平台套餐；最终可开通资格仍以版本检查结果为准。</small>
@@ -78,7 +79,7 @@ const {
 
       <label class="field" for="initial-plan-code">
         <span>套餐</span>
-        <UiSelect id="initial-plan-code" v-model="planCode" class="input" aria-label="套餐" :disabled="loadingPlans || !plans.length">
+        <UiSelect id="initial-plan-code" v-model="planCode" class="input" aria-label="套餐" :disabled="pending || confirmationSubmitted || loadingPlans || !plans.length">
           <UiOption value="">请选择套餐</UiOption>
           <UiOption v-for="plan in plans" :key="plan.planCode" :value="plan.planCode">
             {{ plan.name || backendTermLabel('plan', plan.planCode) }} · {{ plan.planCode }}
@@ -88,7 +89,7 @@ const {
       </label>
 
       <div class="target-action">
-        <UiButton class="btn primary" type="button" :disabled="loadingTargets || !salesScope.trim() || !planCode" @click="loadPublishedVersions">
+        <UiButton class="btn primary" type="button" :disabled="pending || confirmationSubmitted || loadingTargets || !salesScope.trim() || !planCode" @click="loadPublishedVersions">
           {{ loadingTargets ? '正在检查…' : '检查已发布版本' }}
         </UiButton>
       </div>
@@ -111,7 +112,7 @@ const {
             type="radio"
             name="initial-plan-version"
             :value="versionKey(candidate.version)"
-            :disabled="!candidate.eligible"
+            :disabled="pending || confirmationSubmitted || !candidate.eligible"
           />
           <span>
             <strong>{{ candidate.version.name || backendTermLabel('plan', candidate.version.planCode) }} · v{{ candidate.version.version }}</strong>
@@ -187,8 +188,15 @@ const {
           <span>确认原因</span>
           <UiTextarea id="initial-confirm-reason" v-model="confirmReason" class="input" rows="2" placeholder="说明本次批准依据" />
         </label>
-        <UiButton class="btn primary" type="button" :disabled="pending" @click="confirmPreview">确认首次开通</UiButton>
+        <UiButton class="btn primary" type="button" :disabled="pending || confirmationSubmitted" @click="confirmPreview">确认首次开通</UiButton>
       </div>
+    </section>
+
+    <section v-if="confirmationSubmitted && !receipt" class="result-panel verification-state" aria-live="polite">
+      <strong>首次开通结果待确认</strong>
+      <span>确认请求已发出，但尚未取得回执。请读取原变更结果，不要再次提交或更换目标。</span>
+      <span>变更编号 {{ preview?.changeId }}</span>
+      <UiButton class="btn" type="button" :disabled="pending" @click="refreshResult">读取原变更结果</UiButton>
     </section>
 
     <section v-if="receipt" class="result-panel">
