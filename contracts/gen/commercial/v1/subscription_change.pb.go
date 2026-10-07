@@ -29,13 +29,15 @@ type PreviewSubscriptionChangeRequest struct {
 	state     protoimpl.MessageState `protogen:"open.v1"`
 	TenantId  string                 `protobuf:"bytes,1,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
 	RequestId string                 `protobuf:"bytes,2,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
-	// SWITCH, RENEW or STOP_RENEWAL. Direction is calculated by the server.
+	// INITIAL, SWITCH, RENEW or STOP_RENEWAL. Direction is calculated by the server.
 	Action            string `protobuf:"bytes,3,opt,name=action,proto3" json:"action,omitempty"`
 	TargetPlanCode    string `protobuf:"bytes,4,opt,name=target_plan_code,json=targetPlanCode,proto3" json:"target_plan_code,omitempty"`
 	TargetPlanVersion uint64 `protobuf:"varint,5,opt,name=target_plan_version,json=targetPlanVersion,proto3" json:"target_plan_version,omitempty"`
 	// Empty means the server's safe default; a future UTC instant schedules only.
-	EffectiveAt   string `protobuf:"bytes,6,opt,name=effective_at,json=effectiveAt,proto3" json:"effective_at,omitempty"`
-	Reason        string `protobuf:"bytes,7,opt,name=reason,proto3" json:"reason,omitempty"`
+	EffectiveAt string `protobuf:"bytes,6,opt,name=effective_at,json=effectiveAt,proto3" json:"effective_at,omitempty"`
+	Reason      string `protobuf:"bytes,7,opt,name=reason,proto3" json:"reason,omitempty"`
+	// Required only for INITIAL. Existing subscriptions always use their stored scope.
+	SalesScope    string `protobuf:"bytes,8,opt,name=sales_scope,json=salesScope,proto3" json:"sales_scope,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -115,6 +117,13 @@ func (x *PreviewSubscriptionChangeRequest) GetEffectiveAt() string {
 func (x *PreviewSubscriptionChangeRequest) GetReason() string {
 	if x != nil {
 		return x.Reason
+	}
+	return ""
+}
+
+func (x *PreviewSubscriptionChangeRequest) GetSalesScope() string {
+	if x != nil {
+		return x.SalesScope
 	}
 	return ""
 }
@@ -1844,7 +1853,7 @@ var File_commercial_v1_subscription_change_proto protoreflect.FileDescriptor
 
 const file_commercial_v1_subscription_change_proto_rawDesc = "" +
 	"\n" +
-	"'commercial/v1/subscription_change.proto\x12\rcommercial.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x1ayunka/dsl/v1/options.proto\x1a\x18commercial/v1/plan.proto\x1a commercial/v1/subscription.proto\x1a\x1fcommercial/v1/entitlement.proto\x1a commercial/v1/provisioning.proto\"\x8b\x02\n" +
+	"'commercial/v1/subscription_change.proto\x12\rcommercial.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x1ayunka/dsl/v1/options.proto\x1a\x18commercial/v1/plan.proto\x1a commercial/v1/subscription.proto\x1a\x1fcommercial/v1/entitlement.proto\x1a commercial/v1/provisioning.proto\"\xac\x02\n" +
 	" PreviewSubscriptionChangeRequest\x12\x1b\n" +
 	"\ttenant_id\x18\x01 \x01(\tR\btenantId\x12\x1d\n" +
 	"\n" +
@@ -1853,7 +1862,9 @@ const file_commercial_v1_subscription_change_proto_rawDesc = "" +
 	"\x10target_plan_code\x18\x04 \x01(\tR\x0etargetPlanCode\x12.\n" +
 	"\x13target_plan_version\x18\x05 \x01(\x04R\x11targetPlanVersion\x12!\n" +
 	"\feffective_at\x18\x06 \x01(\tR\veffectiveAt\x12\x16\n" +
-	"\x06reason\x18\a \x01(\tR\x06reason\"\xb6\x01\n" +
+	"\x06reason\x18\a \x01(\tR\x06reason\x12\x1f\n" +
+	"\vsales_scope\x18\b \x01(\tR\n" +
+	"salesScope\"\xb6\x01\n" +
 	" ConfirmSubscriptionChangeRequest\x12\x1b\n" +
 	"\ttenant_id\x18\x01 \x01(\tR\btenantId\x12\x1b\n" +
 	"\tchange_id\x18\x02 \x01(\tR\bchangeId\x12\x1d\n" +
