@@ -410,6 +410,7 @@ test("TestCE340PlatformFirstSubscriptionThroughTrustedWebSession", async ({ brow
   await expect(initial.getByText("完成首次开通不会自动给成员分配角色或操作权限。")).toBeVisible();
 
   await initial.getByLabel("适用范围").fill("default");
+  await initial.getByRole("button", { name: "读取套餐目录" }).click();
   await initial.getByLabel("套餐", { exact: true }).click();
   await allowed.page.locator(`[data-slot="select-item"][data-ui-option-value="${planCode}"]`).click();
   await initial.getByRole("button", { name: "检查已发布版本" }).click();
