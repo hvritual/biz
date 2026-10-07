@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 
+	accessv1 "github.com/hvritual/biz/contracts/gen/access/v1"
 	v1 "github.com/hvritual/biz/contracts/gen/commercial/v1"
 	projection "github.com/hvritual/biz/internal/commercial/application/planprojection"
 	"github.com/hvritual/biz/internal/commercial/domain/entitlement"
@@ -32,20 +33,24 @@ func (s *service) captureTenant(ctx context.Context, repos ports.SubscriptionCha
 	return s.captureWithPlanAuthority(ctx, repos, raw, i, true)
 }
 
+func (s *service) validateInitialTenant(ctx context.Context, tenantID string) error {
+	tenant, err := s.capabilities.AccessTenantLifecycle().GetTenant(ctx, &accessv1.GetTenantRequest{Id: tenantID})
+	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			return change.ErrNotFound
+		}
+		return err
+	}
+	if tenant == nil || tenant.Id != tenantID {
+		return change.ErrCorrupt
+	}
+	return nil
+}
+
 func (s *service) captureInitial(ctx context.Context, repos ports.SubscriptionChangeRepositories, i change.Input) (material, error) {
 	out := material{}
 	if i.Action != change.Initial || i.Validate() != nil {
 		return out, change.ErrInvalid
-	}
-	tenant, err := s.capabilities.AccessTenantLifecycle().GetTenant(ctx, &accessv1.GetTenantRequest{Id: i.TenantID})
-	if err != nil {
-		if status.Code(err) == codes.NotFound {
-			return out, change.ErrNotFound
-		}
-		return out, err
-	}
-	if tenant == nil || tenant.Id != i.TenantID {
-		return out, change.ErrCorrupt
 	}
 	eligible, err := s.capabilities.CommercialPlanManagement().CheckPlanEligibility(ctx, &v1.CheckPlanEligibilityRequest{PlanCode: i.TargetPlanCode, Version: i.TargetPlanVersion, SalesScope: i.SalesScope})
 	if err != nil {
