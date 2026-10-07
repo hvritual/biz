@@ -6,7 +6,9 @@ import {
   createEntitlementOverride,
   createPlanDraft,
   explainTenantEntitlements,
+  getProvisioningTask,
   listEntitlementOverrides,
+  retryProvisioningTask,
   listPlans,
   listPlanVersions,
   listPlatformModules,
@@ -303,6 +305,31 @@ describe('CE-13 platform commercial service', () => {
       salesScope: 'rental',
       targetPlanCode: 'rental-pro-2026',
       targetPlanVersion: '4',
+    })
+  })
+
+  it('reads and retries the same provisioning task without inventing a second activation', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(new Response(JSON.stringify({ taskId: 'job-1', state: 'FAILED', revision: '4', retryAllowed: true }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ authenticated: true, csrf_token: 'csrf-retry' }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ taskId: 'job-1', state: 'QUEUED', revision: '5' }), { status: 200 }))
+
+    await getProvisioningTask('tenant-1', 'job-1')
+    await retryProvisioningTask('tenant-1', 'job-1', {
+      requestId: 'retry-job-1',
+      expectedRevision: '4',
+      reason: '继续首次开通准备任务',
+    })
+
+    expect(String(fetchMock.mock.calls[0]?.[0])).toContain('/v1/platform/tenants/tenant-1/provisioning/tasks/job-1')
+    const [, retryInit] = fetchMock.mock.calls[2] ?? []
+    const headers = new Headers(retryInit?.headers)
+    expect(headers.get('Idempotency-Key')).toBe('retry-job-1')
+    expect(JSON.parse(String(retryInit?.body))).toMatchObject({
+      tenantId: 'tenant-1',
+      taskId: 'job-1',
+      expectedRevision: '4',
+      requestId: 'retry-job-1',
     })
   })
 
