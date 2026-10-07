@@ -328,7 +328,7 @@ async function verifyReadback() {
     readbackState.value = 'verified'
     statusMessage.value = '首次开通已完成，并已从最终权益结果确认目标套餐能力。'
     emit('refresh')
-  } catch (error) {
+  } catch {
     readbackState.value = 'failed'
     errorMessage.value = '首次开通回执已保留，但最终权益读取失败。请重新读取结果，不要重复提交。'
   }
