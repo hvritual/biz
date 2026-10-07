@@ -312,6 +312,48 @@ export interface SubscriptionChangePreviewDTO {
   provisioningRequirements: ProvisioningRequirementDTO[]
 }
 
+export interface ProvisioningStepDTO {
+  requirement?: ProvisioningRequirementDTO
+  state: string
+  effect: string
+  attempts: number
+  cycleAttempts: number
+  reconciliations: number
+  evidence: string
+  failureCode: string
+}
+
+export interface ProvisioningCompletionDTO {
+  changeId: string
+  subscriptionRevision: string | number
+  sourceVersion: string | number
+  entitlementVersion: string | number
+  appliedAt: string
+}
+
+export interface ProvisioningTaskDTO {
+  taskId: string
+  tenantId: string
+  changeId: string
+  actorId: string
+  state: string
+  revision: string | number
+  targetPlanCode: string
+  targetPlanVersion: string | number
+  steps: ProvisioningStepDTO[]
+  stepIndex: number
+  stage: string
+  nextAttemptAt: string
+  failureCode: string
+  retryAllowed: boolean
+  cancellationAllowed: boolean
+  createdAt: string
+  updatedAt: string
+  deadline: string
+  completion?: ProvisioningCompletionDTO
+  retryCycles: number
+}
+
 export interface SubscriptionChangeReceiptDTO {
   changeId: string
   tenantId: string
@@ -681,5 +723,31 @@ export function getSubscriptionChangePreview(tenantId: string, changeId: string)
 export function getSubscriptionChangeReceipt(tenantId: string, changeId: string) {
   return request<SubscriptionChangeReceiptDTO>(
     `/v1/platform/tenants/${encoded(tenantId)}/subscription/changes/${encoded(changeId)}`,
+  )
+}
+
+export function getProvisioningTask(tenantId: string, taskId: string) {
+  return request<ProvisioningTaskDTO>(
+    `/v1/platform/tenants/${encoded(tenantId)}/provisioning/tasks/${encoded(taskId)}`,
+  )
+}
+
+export function retryProvisioningTask(
+  tenantId: string,
+  taskId: string,
+  input: { requestId: string; expectedRevision: string | number; reason: string },
+) {
+  const requestId = input.requestId.trim()
+  return mutate<ProvisioningTaskDTO>(
+    `/v1/platform/tenants/${encoded(tenantId)}/provisioning/tasks/${encoded(taskId)}/retry`,
+    'POST',
+    {
+      tenantId,
+      taskId,
+      requestId,
+      expectedRevision: String(input.expectedRevision),
+      reason: input.reason.trim(),
+    },
+    { idempotencyKey: requestId },
   )
 }
