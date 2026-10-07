@@ -101,6 +101,9 @@ func (s *service) confirm(ctx context.Context, actorID, tenantID, changeID, requ
 			if current != nil {
 				return change.Receipt{}, change.ErrConflict
 			}
+			if err = s.validateInitialTenant(call, tenantID); err != nil {
+				return change.Receipt{}, err
+			}
 		} else if raw.PendingChangeID != "" {
 			return change.Receipt{}, change.ErrPending
 		}
