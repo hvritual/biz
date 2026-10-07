@@ -12,6 +12,7 @@ interface Fixture {
   tenant_email: string;
   tenant_password: string;
   tenant_id: string;
+  initial_tenant_id: string;
   allowed_api_key: string;
   allowed_subject: string;
   denied_subject: string;
@@ -338,6 +339,119 @@ test("TestCE13PlatformCommercialLifecycleThroughTrustedWebSession", async ({ bro
   const readback = await browserRequest(allowed.page, data.web_base_url, `/v1/platform/tenants/${data.tenant_id}/subscription/changes/${encodeURIComponent(previewDTO.changeId)}`);
   expect(readback.status, readback.text).toBe(200);
   expect((readback.json as { changeId: string }).changeId).toBe(previewDTO.changeId);
+  await allowed.context.close();
+});
+
+test("TestCE340PlatformFirstSubscriptionThroughTrustedWebSession", async ({ browser }) => {
+  const data = fixture();
+  const allowed = await login(browser, data, data.allowed_email, data.allowed_password);
+  const csrf = allowed.session.csrf_token;
+  expect(csrf).toBeTruthy();
+
+  const requestID = (name: string) => `ce340-browser-${name}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const write = (path: string, body: unknown, idempotencyKey: string, method = "POST") => browserRequest(
+    allowed.page,
+    data.web_base_url,
+    path,
+    {
+      method,
+      headers: { "X-CSRF-Token": String(csrf), "Idempotency-Key": idempotencyKey },
+      body,
+    },
+  );
+
+  const before = await browserRequest(
+    allowed.page,
+    data.web_base_url,
+    `/v1/platform/tenants/${encodeURIComponent(data.initial_tenant_id)}/subscription`,
+  );
+  expect(before.status).toBe(404);
+
+  const planCode = `ce340-first-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
+  const createID = requestID("plan-create");
+  const created = await write("/v1/platform/plans", {
+    requestId: createID,
+    planCode,
+    name: "CE-340 首次开通套餐",
+    terms: {
+      modules: [{
+        moduleCode: "device-operations",
+        capabilityCodes: ["device.lifecycle"],
+        quotas: [{ key: "tenant.devices", value: "100", unlimited: false }],
+        fields: [],
+      }],
+      salesScope: ["default"],
+      validityMode: "fixed_days",
+      validityDays: 365,
+      priceRef: "",
+    },
+    reason: "CE-340 trusted first activation fixture",
+  }, createID);
+  expect(created.status, created.text).toBe(200);
+  const draft = created.json as { version: number; revision: number; state: string };
+  expect(draft.state).toBe("DRAFT");
+
+  const publishID = requestID("plan-publish");
+  const published = await write(`/v1/platform/plans/${encodeURIComponent(planCode)}/versions/${draft.version}/publish`, {
+    requestId: publishID,
+    planCode,
+    version: draft.version,
+    expectedRevision: draft.revision,
+    reason: "publish CE-340 exact target",
+  }, publishID);
+  expect(published.status, published.text).toBe(200);
+  expect((published.json as { state: string }).state).toBe("PUBLISHED");
+
+  await allowed.page.goto(`${data.web_base_url}/#/platform/commercial/tenant-entitlements`);
+  await allowed.page.getByLabel("租户编号").fill(data.initial_tenant_id);
+  await allowed.page.getByRole("button", { name: "读取权益" }).click();
+  const initial = allowed.page.getByTestId("platform-initial-subscription");
+  await expect(initial.getByRole("heading", { name: "首次开通套餐" })).toBeVisible();
+  await expect(initial.getByText("完成首次开通不会自动给成员分配角色或操作权限。")).toBeVisible();
+
+  await initial.getByLabel("适用范围").fill("default");
+  await initial.getByLabel("套餐", { exact: true }).click();
+  await allowed.page.locator(`[data-slot="select-item"][data-ui-option-value="${planCode}"]`).click();
+  await initial.getByRole("button", { name: "检查已发布版本" }).click();
+  await expect(initial.getByText(`exact v${draft.version}`)).toBeVisible();
+
+  await initial.getByLabel("首次开通原因").fill("CE-340 平台首次开通");
+  await initial.getByRole("button", { name: "查看首次开通方案" }).click();
+  await initial.getByText(/我已核对 exact 套餐版本/).click();
+  await initial.getByLabel("确认原因").fill("CE-340 真实平台会话批准");
+  await initial.getByRole("button", { name: "确认首次开通" }).click();
+
+  await expect(allowed.page.locator(".subscription-card").getByText(/CE-340 首次开通套餐/)).toBeVisible();
+  const finalSubscription = await browserRequest(
+    allowed.page,
+    data.web_base_url,
+    `/v1/platform/tenants/${encodeURIComponent(data.initial_tenant_id)}/subscription`,
+  );
+  expect(finalSubscription.status, finalSubscription.text).toBe(200);
+  expect(finalSubscription.json).toMatchObject({
+    tenantId: data.initial_tenant_id,
+    planCode,
+    planVersion: String(draft.version),
+    salesScope: "default",
+  });
+
+  const entitlements = await browserRequest(
+    allowed.page,
+    data.web_base_url,
+    `/v1/platform/tenants/${encodeURIComponent(data.initial_tenant_id)}/entitlements`,
+    {
+      method: "POST",
+      headers: { "X-CSRF-Token": String(csrf), "Idempotency-Key": requestID("entitlements") },
+      body: { tenantId: data.initial_tenant_id, capabilityCodes: ["device.lifecycle"] },
+    },
+  );
+  expect(entitlements.status, entitlements.text).toBe(200);
+  const decisions = (entitlements.json as { decisions?: Array<{ kind: string; key: string; allowed: boolean }> }).decisions ?? [];
+  expect(decisions).toEqual(expect.arrayContaining([
+    expect.objectContaining({ kind: "capability", key: "device.lifecycle", allowed: true }),
+    expect.objectContaining({ kind: "quota", key: "tenant.devices" }),
+  ]));
+
   await allowed.context.close();
 });
 
