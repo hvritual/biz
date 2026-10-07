@@ -32,8 +32,8 @@ type service struct {
 }
 
 func New(r requestscope.RepositoryFactory[ports.SubscriptionChangeRepositories], c app.SubscriptionChangesCapabilities, snapshots ports.EntitlementSnapshotReader, q ports.QuotaChangePolicy, lifecycle subscription.LifecyclePolicy, policies ...ports.ProvisioningPolicy) (app.SubscriptionChangesApplication, error) {
-	if r == nil || c == nil || c.CommercialPlanManagement() == nil || c.CommercialModuleCatalog() == nil || snapshots == nil {
-		return nil, errors.New("subscription changes: repository, typed plan/catalog and snapshot capabilities required")
+	if r == nil || c == nil || c.AccessTenantLifecycle() == nil || c.CommercialPlanManagement() == nil || c.CommercialModuleCatalog() == nil || snapshots == nil {
+		return nil, errors.New("subscription changes: repository, typed tenant/plan/catalog and snapshot capabilities required")
 	}
 	if err := lifecycle.Validate(); err != nil {
 		return nil, err
