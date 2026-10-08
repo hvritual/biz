@@ -3,6 +3,7 @@ import json
 import os
 from pathlib import Path
 import re
+import select
 import shutil
 import signal
 import subprocess
@@ -38,6 +39,30 @@ def ce12_preparation_step():
     return textwrap.dedent(source.split(start, 1)[1].split(end, 1)[0])
 
 
+def recorded_child_alive(root):
+    if not (root / 'child-pid').exists():
+        return False
+    # A nested PID namespace may share an outer /proc mount. The child records
+    # its own /proc/self identity; the shell PID is only used for local signals.
+    original = (root / 'child-proc-stat').read_text()
+    proc_pid = original.split(' ', 1)[0]
+    original_fields = original.rsplit(') ', 1)[1].split()
+    try:
+        current = (Path('/proc') / proc_pid / 'stat').read_text()
+    except FileNotFoundError:
+        return False
+    current_fields = current.rsplit(') ', 1)[1].split()
+    return current_fields[19] == original_fields[19] and current_fields[0] != 'Z'
+
+
+def terminate_recorded_child(root):
+    if recorded_child_alive(root):
+        try:
+            os.kill(int((root / 'child-pid').read_text()), signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+
+
 class PlanChangeBrowserPreparationTests(unittest.TestCase):
     def probe(self, missing_font=False, workflow_step=False, layout="root", invalid_web=None, **overrides):
         with tempfile.TemporaryDirectory() as directory:
@@ -60,14 +85,21 @@ class PlanChangeBrowserPreparationTests(unittest.TestCase):
             if not missing_font:
                 font.touch()
             commands = {
+                'stage-progress': '(record_child_identity; while :; do '
+                                  'if [[ "$1" == font-check ]]; then echo "$1-download-progress" >&2; '
+                                  'else echo "$1-download-progress"; fi; sleep 0.02; done) & '
+                                  'child=$!; echo "$child" > "$CHILD_PID"; wait "$child"',
                 'npx': 'printf "npx %s cwd=%s workspace=%s\\n" "$*" "$PWD" "$GITHUB_WORKSPACE" >> "$TRACE"; '
                        'touch "$BROWSER_STARTED"; '
+                       'if [[ "${CE12_HANG_STAGE:-}" == os-browser ]]; then stage-progress os-browser; fi; '
                        'if [[ "${CHECK_OVERLAP:-0}" == 1 ]]; then '
                        'for attempt in $(seq 1 80); do [[ -f "$FONT_STARTED" ]] && break; sleep 0.02; done; '
                        '[[ -f "$FONT_STARTED" ]] || exit 57; fi; '
-                       'if [[ "${HANG_STAGE:-}" == browser ]]; then sleep 30 & child=$!; echo "$child" > "$CHILD_PID"; wait "$child"; fi; '
+                       'if [[ "${HANG_STAGE:-}" == browser ]]; then '
+                       '(record_child_identity; exec sleep 30) & child=$!; echo "$child" > "$CHILD_PID"; wait "$child"; fi; '
                        'exit "${INSTALL_EXIT:-0}"',
-                'fc-match': 'if [[ -f "$FONT" ]]; then echo "Noto Sans CJK SC"; else echo "DejaVu Sans"; fi',
+                'fc-match': 'if [[ "${CE12_HANG_STAGE:-}" == font-check ]]; then stage-progress font-check; fi; '
+                            'if [[ -f "$FONT" ]]; then echo "Noto Sans CJK SC"; else echo "DejaVu Sans"; fi',
                 'sudo': 'printf "sudo %s\\n" "$*" >> "$TRACE"; '
                         'if [[ "$*" == *"update"* ]]; then '
                         'touch "$FONT_STARTED"; '
@@ -77,11 +109,14 @@ class PlanChangeBrowserPreparationTests(unittest.TestCase):
                         'exit "${APT_UPDATE_EXIT:-0}"; fi; '
                         '[[ "${APT_INSTALL_EXIT:-0}" == 0 ]] || exit "$APT_INSTALL_EXIT"; '
                         'if [[ "${HANG_STAGE:-}" == font ]]; then '
-                        '(while :; do echo "font-download-progress"; sleep 0.02; done) & '
+                        '(record_child_identity; while :; do echo "font-download-progress"; sleep 0.02; done) & '
                         'child=$!; echo "$child" > "$CHILD_PID"; wait "$child"; fi; '
+                        'if [[ "${CE12_HANG_STAGE:-}" == noto ]]; then stage-progress noto; fi; '
                         '[[ "${NO_FONT_AFTER_INSTALL:-0}" == 1 ]] || touch "$FONT"',
                 'node': 'cat > "$SMOKE_SOURCE"; printf "node %s cwd=%s\\n" "$*" "$PWD" >> "$TRACE"; '
-                        'if [[ "${HANG_STAGE:-}" == launch ]]; then sleep 30 & child=$!; echo "$child" > "$CHILD_PID"; wait "$child"; fi; '
+                        'if [[ "${HANG_STAGE:-}" == launch ]]; then '
+                        '(record_child_identity; exec sleep 30) & child=$!; echo "$child" > "$CHILD_PID"; wait "$child"; fi; '
+                        'if [[ "${CE12_HANG_STAGE:-}" == launch ]]; then stage-progress launch; fi; '
                         'exit "${SMOKE_EXIT:-0}"',
                 # Use GNU timeout itself, shortening only the clock in hang probes.
                 'timeout': 'printf "timeout %s\\n" "$*" >> "$TRACE"; '
@@ -95,17 +130,25 @@ class PlanChangeBrowserPreparationTests(unittest.TestCase):
                        'touch "$NPM_STARTED"; '
                        'if [[ "${CHECK_BUILD_OVERLAP:-0}" == 1 ]]; then '
                        'for attempt in $(seq 1 80); do [[ -f "$BUILD_STARTED" ]] && break; sleep 0.02; done; '
-                       '[[ -f "$BUILD_STARTED" ]] || exit 59; fi; exit "${NPM_EXIT:-0}"',
+                       '[[ -f "$BUILD_STARTED" ]] || exit 59; fi; '
+                       'if [[ "${CE12_HANG_STAGE:-}" == npm ]]; then stage-progress npm; fi; '
+                       'exit "${NPM_EXIT:-0}"',
                 'go': 'printf "go %s\\n" "$*" >> "$TRACE"; touch "$BUILD_STARTED"; '
                       'if [[ "${CHECK_BUILD_OVERLAP:-0}" == 1 ]]; then '
                       'for attempt in $(seq 1 80); do [[ -f "$NPM_STARTED" ]] && break; sleep 0.02; done; '
-                      '[[ -f "$NPM_STARTED" ]] || exit 60; fi; exit "${BUILD_EXIT:-0}"',
+                      '[[ -f "$NPM_STARTED" ]] || exit 60; fi; '
+                      'sleep "${BUILD_DELAY_SECONDS:-0}"; exit "${BUILD_EXIT:-0}"',
                 'tee': 'if [[ "${TEE_EXIT:-0}" != 0 ]]; then cat > /dev/null; exit "$TEE_EXIT"; fi; '
                        'exec "$REAL_TEE" "$@"',
             }
+            child_identity_function = (
+                'record_child_identity() {\n'
+                '  read -r child_stat < /proc/self/stat\n'
+                '  printf "%s\\n" "$child_stat" > "$CHILD_STAT"\n'
+                '}\n')
             for name, body in commands.items():
                 target = bindir / name
-                target.write_text('#!/usr/bin/env bash\nset -euo pipefail\n' + body + '\n')
+                target.write_text('#!/usr/bin/env bash\nset -euo pipefail\n' + child_identity_function + body + '\n')
                 target.chmod(0o755)
             real_timeout = shutil.which('timeout')
             self.assertIsNotNone(real_timeout, 'the CI timeout executable must be available')
@@ -114,6 +157,7 @@ class PlanChangeBrowserPreparationTests(unittest.TestCase):
                    'TRACE': str(root / 'trace'), 'FONT': str(font),
                    'BROWSER_STARTED': str(root / 'browser-started'), 'FONT_STARTED': str(root / 'font-started'),
                    'SMOKE_SOURCE': str(root / 'smoke'), 'CHILD_PID': str(root / 'child-pid'),
+                   'CHILD_STAT': str(root / 'child-proc-stat'),
                    'REAL_TIMEOUT': real_timeout, 'REAL_TEE': shutil.which('tee'),
                    'RUNNER_TEMP': str(root / 'temp'), 'BUILD_STARTED': str(root / 'build-started'),
                    'NPM_STARTED': str(root / 'npm-started'), **overrides}
@@ -150,20 +194,13 @@ class PlanChangeBrowserPreparationTests(unittest.TestCase):
             try:
                 stdout, stderr = process.communicate(timeout=8)
                 result = subprocess.CompletedProcess(command, process.returncode, stdout, stderr)
-                child_alive = False
-                if (root / 'child-pid').exists():
-                    child = int((root / 'child-pid').read_text())
-                    stat = Path('/proc') / str(child) / 'stat'
-                    child_alive = stat.exists() and stat.read_text().split()[2] != 'Z'
+                child_alive = recorded_child_alive(root)
             finally:
                 if process.poll() is None:
                     os.killpg(process.pid, signal.SIGKILL)
-                    process.communicate()
-                if (root / 'child-pid').exists():
-                    try:
-                        os.kill(int((root / 'child-pid').read_text()), signal.SIGKILL)
-                    except ProcessLookupError:
-                        pass
+                terminate_recorded_child(root)
+                if process.poll() is None:
+                    process.communicate(timeout=2)
             elapsed = time.monotonic() - started
             trace = (root / 'trace').read_text() if (root / 'trace').exists() else ''
             smoke = (root / 'smoke').read_text() if (root / 'smoke').exists() else ''
@@ -173,6 +210,8 @@ class PlanChangeBrowserPreparationTests(unittest.TestCase):
             result.web_dir = str(web)
             deps_log = root / 'temp/ce12-browser-deps.log'
             result.deps_log = deps_log.read_text() if deps_log.exists() else ''
+            result.deps_timing_exists = (root / 'temp/ce12-browser-deps-timing.log').exists()
+            result.build_timing_exists = (root / 'temp/ce12-runtime-build-timing.log').exists()
             return result, trace, smoke, child_alive, elapsed
 
     def test_ready_noto_uses_locked_shell_and_real_launch_before_success(self):
@@ -300,6 +339,46 @@ class PlanChangeBrowserPreparationTests(unittest.TestCase):
         self.assertEqual(['repository.web.fast'], gate['delegates'])
 
 
+    def test_child_identity_detects_live_process_and_refuses_mismatched_starttime(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            identity = root / 'child-proc-stat'
+            command = ('read -r child_stat < /proc/self/stat; '
+                       'printf "%s\\n" "$child_stat" > "$CHILD_STAT"; '
+                       'printf "READY\\n"; exec sleep 30')
+            child = subprocess.Popen(
+                ['bash', '-euo', 'pipefail', '-c', command],
+                env={**os.environ, 'CHILD_STAT': str(identity)},
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, start_new_session=True)
+            try:
+                (root / 'child-pid').write_text(str(child.pid))
+                self.assertTrue(select.select([child.stdout], [], [], 2)[0], 'child must record its own identity')
+                self.assertEqual('READY\n', child.stdout.readline())
+                self.assertTrue(recorded_child_alive(root))
+                original = identity.read_text()
+                identity.unlink()
+                with self.assertRaises(FileNotFoundError):
+                    recorded_child_alive(root)
+                prefix, fields = original.rsplit(') ', 1)
+                changed = fields.split()
+                changed[19] = str(int(changed[19]) + 1)
+                identity.write_text(prefix + ') ' + ' '.join(changed) + '\n')
+                self.assertFalse(recorded_child_alive(root))
+                terminate_recorded_child(root)
+                with self.assertRaises(subprocess.TimeoutExpired):
+                    child.wait(timeout=0.05)
+                identity.write_text(original)
+                self.assertTrue(recorded_child_alive(root))
+                terminate_recorded_child(root)
+                child.wait(timeout=2)
+                self.assertFalse(recorded_child_alive(root))
+            finally:
+                if child.poll() is None:
+                    child.kill()
+                    child.wait(timeout=2)
+                child.stdout.close()
+                child.stderr.close()
+
     def test_explicit_nested_web_layout_keeps_workspace_and_locked_directory(self):
         result, trace, _, _, _ = self.probe(layout='nested')
         self.assertEqual(0, result.returncode, result.stderr)
@@ -315,48 +394,119 @@ class PlanChangeBrowserPreparationTests(unittest.TestCase):
                 self.assertNotIn('PREREQUISITES=PASS', result.stdout)
 
     def test_ce12_production_step_overlaps_go_and_npm_then_keeps_dependency_logs(self):
-        result, trace, _, _, _ = self.probe(layout='nested', workflow_step='ce12', CHECK_BUILD_OVERLAP='1')
+        result, trace, smoke, _, _ = self.probe(
+            layout='nested', workflow_step='ce12', missing_font=True, CHECK_BUILD_OVERLAP='1')
         self.assertEqual(0, result.returncode, result.stderr)
         self.assertIn('python3 -B biz/scripts/test_ci_plan_change_browser.py', trace)
         self.assertIn('go -C biz build -tags=qualification', trace)
         self.assertIn('go -C biz build -o', trace)
-        self.assertIn('npm ci cwd=' + result.web_dir, trace)
-        self.assertIn('cwd=' + result.web_dir + ' workspace=' + result.workspace, trace)
+        npm = 'npm ci cwd=' + result.web_dir
+        browser = ('npx playwright install --with-deps --only-shell chromium cwd=' +
+                   result.web_dir + ' workspace=' + result.workspace)
+        noto = 'sudo apt-get install -y fonts-noto-cjk'
+        launch = 'node --input-type=module cwd=' + result.web_dir
+        for command in [npm, browser, noto, launch]:
+            self.assertIn(command, trace)
+        self.assertLess(trace.index(npm), trace.index(browser))
+        self.assertLess(trace.index(browser), trace.index(noto))
+        self.assertLess(trace.index(noto), trace.index(launch))
+        self.assertEqual(1, len([line for line in trace.splitlines() if line.startswith('npx ')]))
+        self.assertEqual(
+            ['timeout --signal=TERM --kill-after=5s 90s bash -euo pipefail'],
+            [line for line in trace.splitlines() if line.startswith('timeout ')])
+        self.assertIn('chromium.launch({ headless: true, timeout: 20000 })', smoke)
+        self.assertIn('finally', smoke)
+        self.assertIn('await browser.close()', smoke)
         self.assertIn('npm-fixture-output', result.deps_log)
-        self.assertIn('HEADLESS_NOTO_BROWSER_PREREQUISITES=PASS', result.deps_log)
+        for stage in ['npm', 'os-browser', 'noto', 'font-check', 'launch']:
+            self.assertIn('CE12_BROWSER_PREP_STAGE=' + stage, result.deps_log)
+        self.assertIn('CE12_BROWSER_PREREQUISITES=PASS', result.deps_log)
         self.assertIn('CE12_PARALLEL_PREP_SECONDS=', result.stdout)
+        self.assertTrue(result.deps_timing_exists)
+        self.assertTrue(result.build_timing_exists)
 
-    def test_ce12_npm_failure_does_not_start_browser_helper(self):
-        result, trace, _, _, _ = self.probe(layout='nested', workflow_step='ce12', NPM_EXIT='19')
+    def test_ce12_npm_failure_does_not_start_browser_installation(self):
+        result, trace, _, _, _ = self.probe(
+            layout='nested', workflow_step='ce12', NPM_EXIT='19', BUILD_DELAY_SECONDS='0.05')
         self.assertEqual(1, result.returncode)
         self.assertIn('CE12 preparation failed: build=0 browser_deps=19', result.stderr)
         self.assertIn('npm-fixture-output', result.deps_log)
         self.assertNotIn('npx ', trace)
-        self.assertNotIn('HEADLESS_NOTO_BROWSER_PREP_STAGE=', result.stdout)
+        self.assertNotIn('CE12_BROWSER_PREP_STAGE=os-browser', result.deps_log)
         self.assertNotIn('CE12_PARALLEL_PREP_SECONDS=', result.stdout)
+        self.assertFalse(result.deps_timing_exists)
+        self.assertTrue(result.build_timing_exists)
 
-    def test_ce12_helper_failure_is_not_hidden_by_tee(self):
+    def test_ce12_canonical_install_failure_is_not_hidden_by_tee(self):
         result, trace, _, _, _ = self.probe(layout='nested', workflow_step='ce12', INSTALL_EXIT='17')
         self.assertEqual(1, result.returncode)
         self.assertIn('CE12 preparation failed: build=0 browser_deps=17', result.stderr)
-        self.assertIn('HEADLESS_NOTO_BROWSER_PREP_RESULT=browser exit=17', result.deps_log)
+        self.assertIn('CE12_BROWSER_PREP_STAGE=os-browser', result.deps_log)
+        self.assertNotIn('sudo ', trace)
         self.assertNotIn('node ', trace)
         self.assertNotIn('PREREQUISITES=PASS', result.stdout)
         self.assertNotIn('CE12_PARALLEL_PREP_SECONDS=', result.stdout)
+        self.assertFalse(result.deps_timing_exists)
+
+    def test_ce12_noto_readiness_and_launch_failures_remain_failures(self):
+        cases = [('APT_INSTALL_EXIT', '21', 21),
+                 ('NO_FONT_AFTER_INSTALL', '1', 1),
+                 ('SMOKE_EXIT', '23', 23)]
+        for variable, value, code in cases:
+            with self.subTest(variable=variable):
+                result, trace, _, _, _ = self.probe(
+                    layout='nested', workflow_step='ce12', missing_font=True, **{variable: value})
+                self.assertEqual(1, result.returncode)
+                self.assertIn('CE12 preparation failed: build=0 browser_deps=' + str(code), result.stderr)
+                self.assertIn('sudo apt-get install -y fonts-noto-cjk', trace)
+                if variable != 'SMOKE_EXIT':
+                    self.assertNotIn('node ', trace)
+                if variable == 'NO_FONT_AFTER_INSTALL':
+                    self.assertIn('CE12_NOTO_CJK_UNAVAILABLE', result.deps_log)
+                self.assertNotIn('PREREQUISITES=PASS', result.stdout)
+                self.assertNotIn('CE12_PARALLEL_PREP_SECONDS=', result.stdout)
+                self.assertFalse(result.deps_timing_exists)
 
     def test_ce12_go_failure_is_checked_after_browser_branch_finishes(self):
         result, _, _, _, _ = self.probe(layout='nested', workflow_step='ce12', BUILD_EXIT='23')
         self.assertEqual(1, result.returncode)
         self.assertIn('CE12 preparation failed: build=23 browser_deps=0', result.stderr)
-        self.assertIn('HEADLESS_NOTO_BROWSER_PREREQUISITES=PASS', result.deps_log)
+        self.assertIn('CE12_BROWSER_PREREQUISITES=PASS', result.deps_log)
+        self.assertTrue(result.deps_timing_exists)
         self.assertNotIn('CE12_PARALLEL_PREP_SECONDS=', result.stdout)
 
     def test_ce12_log_writer_failure_stays_failure(self):
-        result, trace, _, _, _ = self.probe(layout='nested', workflow_step='ce12', TEE_EXIT='29')
+        result, _, _, _, _ = self.probe(layout='nested', workflow_step='ce12', TEE_EXIT='29')
         self.assertEqual(1, result.returncode)
         self.assertIn('CE12 preparation failed: build=0 browser_deps=29', result.stderr)
-        self.assertNotIn('npx ', trace)
         self.assertNotIn('CE12_PARALLEL_PREP_SECONDS=', result.stdout)
+        self.assertFalse(result.deps_timing_exists)
+
+    def test_ce12_complete_phase_deadline_stops_progress_without_killing_go_or_tee(self):
+        for stage in ['npm', 'os-browser', 'noto', 'font-check', 'launch']:
+            with self.subTest(stage=stage):
+                result, trace, _, child_alive, elapsed = self.probe(
+                    layout='nested', workflow_step='ce12', missing_font=True,
+                    CE12_HANG_STAGE=stage, ACCELERATE_TIMEOUTS='1', BUILD_DELAY_SECONDS='0.3')
+                self.assertEqual(1, result.returncode, result.stderr)
+                self.assertIn('CE12 preparation failed: build=0 browser_deps=124', result.stderr)
+                self.assertIn(stage + '-download-progress', result.deps_log)
+                self.assertFalse(child_alive, 'the dependency deadline must terminate its descendants')
+                self.assertFalse(result.deps_timing_exists)
+                self.assertTrue(result.build_timing_exists, 'the deadline must not kill the parallel Go build')
+                self.assertIn('CE12_RUNTIME_BUILD_SECONDS=', result.stdout)
+                self.assertNotIn('PREREQUISITES=PASS', result.stdout)
+                self.assertNotIn('CE12_PARALLEL_PREP_SECONDS=', result.stdout)
+                self.assertLess(elapsed, 4)
+                self.assertEqual(
+                    ['timeout --signal=TERM --kill-after=5s 90s bash -euo pipefail'],
+                    [line for line in trace.splitlines() if line.startswith('timeout ')])
+                if stage == 'npm':
+                    self.assertNotIn('npx ', trace)
+                if stage in ['npm', 'os-browser']:
+                    self.assertNotIn('sudo ', trace)
+                if stage != 'launch':
+                    self.assertNotIn('node ', trace)
 
     def test_ce12_guard_failure_prevents_both_preparation_branches(self):
         result, trace, _, _, _ = self.probe(layout='nested', workflow_step='ce12', GUARD_EXIT='31')
@@ -368,7 +518,9 @@ class PlanChangeBrowserPreparationTests(unittest.TestCase):
     def test_ce12_preserves_trust_chain_and_existing_budgets(self):
         source = CE12_WORKFLOW.read_text()
         self.assertIn('    timeout-minutes: 4\n', source)
-        self.assertNotIn('--with-deps', source)
+        # The canonical CE12 topology requires full OS dependencies; the earlier
+        # CE12-only prohibition conflicted with that independently owned contract.
+        self.assertIn('npx playwright install --with-deps --only-shell chromium', source)
         self.assertNotIn('continue-on-error:', source)
         self.assertIn('go -C biz test -count=1 -tags=integration ./integration -run', source)
         self.assertIn("'^TestCE12BrowserSeed$'", source)

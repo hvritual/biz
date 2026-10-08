@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# CI-only headless shell/Noto prerequisites shared by plan-change and CE12.
+# CI-only headless shell/Noto prerequisites for the plan-change suite.
 set -euo pipefail
 [[ "${GITHUB_ACTIONS:-}" == true ]] || { echo 'CI_OWNED_BROWSER_ONLY' >&2; exit 2; }
 if (( $# != 1 )) || [[ "${1:-}" != /* || ! -d "${1:-}" || ! -d "${GITHUB_WORKSPACE:-}" ]]; then
@@ -33,7 +33,7 @@ trap cleanup EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
 
-# Both consumers use default headless Chromium without native zoom. Use the lockfile's
+# The plan-change suite uses default headless Chromium without native zoom. Use the lockfile's
 # headless shell, retaining a real launch check for the runner's shared libraries.
 # APT transport timeouts alone do not bound a slow download that keeps making
 # progress. Bound each entire installation branch, including font readiness.
