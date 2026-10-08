@@ -15,7 +15,7 @@ jobs:
     timeout-minutes: 40
     env:
       PYTHONDONTWRITEBYTECODE: '1'
-      YUNKA_SHA: 9ee6640f5e19777b4c04d9e4937a93e2035eacda
+      YUNKA_SHA: 6be63bfedf622a9c123bd24f7fd18b62882ee1e9
       YUNKA_TEST_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/biz_ce02?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true
     services:
       mysql:

@@ -29,7 +29,7 @@ jobs:
     timeout-minutes: 5
     env:
       BIZ_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-      YUNKA_SHA: 9ee6640f5e19777b4c04d9e4937a93e2035eacda
+      YUNKA_SHA: 6be63bfedf622a9c123bd24f7fd18b62882ee1e9
       YUNKA_TEST_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/biz_ce13_platform?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true
       CE13_PLATFORM_E2E_ENV_FILE: /tmp/ce13-platform-browser.json
       CE13_BIZ_BASE_URL: http://127.0.0.1:18080
@@ -124,18 +124,38 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          go -C biz test -count=1 ./internal/architecture -run '^TestCE13PlatformCommercialWebSessionContract$'
-          go -C biz test -count=1 ./internal/access/infrastructure/persistence ./internal/bizruntime
-          go -C biz test -count=1 -tags=integration ./integration -run '^TestCE340MySQL'
-          go -C biz vet ./internal/architecture ./internal/access/infrastructure/persistence ./internal/bizruntime
-          go -C biz build -o "$RUNNER_TEMP/ce13-session-biz" ./cmd/biz
-          go -C biz build -o "$RUNNER_TEMP/ce13-session-idp" ./cmd/biz-idp
-          go -C biz build -o "$RUNNER_TEMP/ce13-session-credential" ./cmd/biz-idp-credential
+          # These checks are read-only after deterministic generation. Run them
+          # alongside independent runtime builds; both groups MUST complete and
+          # succeed before identity seeding or browser acceptance can start.
+          (
+            set -euo pipefail
+            checks_failed=0
+            go -C biz test -count=1 ./internal/architecture -run '^TestCE13PlatformCommercialWebSessionContract$' || checks_failed=1
+            go -C biz test -count=1 ./internal/access/infrastructure/persistence ./internal/bizruntime || checks_failed=1
+            go -C biz vet ./internal/architecture ./internal/access/infrastructure/persistence ./internal/bizruntime || checks_failed=1
+            if (( checks_failed != 0 )); then
+              echo 'CE13_SCOPED_CHECKS_FAILED' >&2
+              exit 1
+            fi
+          ) &
+          scoped_pid=$!
+          builds_failed=0
+          go -C biz build -o "$RUNNER_TEMP/ce13-session-biz" ./cmd/biz || builds_failed=1
+          go -C biz build -o "$RUNNER_TEMP/ce13-session-idp" ./cmd/biz-idp || builds_failed=1
+          go -C biz build -o "$RUNNER_TEMP/ce13-session-credential" ./cmd/biz-idp-credential || builds_failed=1
+          scoped_failed=0
+          wait "$scoped_pid" || scoped_failed=1
+          if (( builds_failed != 0 || scoped_failed != 0 )); then
+            echo "CE13_SCOPED_VALIDATION_FAILED builds=$builds_failed checks=$scoped_failed" >&2
+            exit 1
+          fi
+          echo 'CE13_SCOPED_VALIDATION=PASS'
 
       - name: Seed platform, denied-platform and tenant-only browser identities
         shell: bash
         run: |
           set -euo pipefail
+          go -C biz test -count=1 -tags=integration ./integration -run '^TestCE340MySQL'
           go -C biz test -count=1 -tags=integration ./integration -run '^TestCE13PlatformWebSessionSeed$'
           test -s "$CE13_PLATFORM_E2E_ENV_FILE"
           chmod 600 "$CE13_PLATFORM_E2E_ENV_FILE"

@@ -69,6 +69,10 @@ func writeTenantAuditManagementOperationError(writer http.ResponseWriter, err er
 		http.Error(writer, "application conflict", http.StatusConflict)
 		return
 	}
+	if status.Code(err) == codes.NotFound {
+		http.Error(writer, "application not found", http.StatusNotFound)
+		return
+	}
 	if errors.Is(err, operation.ErrExecutorUnavailable) || errors.Is(err, operation.ErrSecurityUnavailable) || errors.Is(err, operation.ErrSecurityNilContext) || errors.Is(err, operation.ErrIdempotencyUnavailable) {
 		http.Error(writer, "operation execution unavailable", http.StatusInternalServerError)
 		return
