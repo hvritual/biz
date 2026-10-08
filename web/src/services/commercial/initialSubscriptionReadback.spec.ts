@@ -211,9 +211,12 @@ describe('initial subscription authoritative readback', () => {
     const quota = getModule(input).quotas[0]
     if (!quota) throw new Error('Missing quota')
     quota.unlimited = true
+    // This published unlimited target projects an unlimited effective quota.
+    // The observed finite limit must be rejected until the server result
+    // actually agrees with that authoritative projection.
+    getProjectedDecision(input, 'quota').limit = { unlimited: true, value: '0' }
     expect(initialSubscriptionReadbackMatches(input)).toBe(false)
     getDecision(input, 'quota').limit = { unlimited: true, value: '0' }
-    getProjectedDecision(input, 'quota').limit = { unlimited: true, value: '0' }
     expect(initialSubscriptionReadbackMatches(input)).toBe(true)
   })
 
