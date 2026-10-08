@@ -145,6 +145,46 @@ describe('first subscription in-flight context and confirmation recovery', () =>
     expect(flow.errorMessage.value).toContain('外部商业审批')
   })
 
+  it.each(['preview', 'confirm'])('rejects over-512-byte %s reason before any write or flow lock', async (stage) => {
+    const { flow } = setup()
+    const oversized = '授'.repeat(172) // UTF-8 bytes > 512; Go validates byte length.
+    if (stage === 'preview') {
+      flow.previewReason.value = oversized
+      await flow.createPreview()
+      expect(api.previewSubscriptionChange).not.toHaveBeenCalled()
+      expect(flow.confirmationSubmitted.value).toBe(false)
+    } else {
+      flow.confirmReason.value = oversized
+      await flow.confirmPreview()
+      expect(api.confirmSubscriptionChange).not.toHaveBeenCalled()
+      expect(flow.confirmationSubmitted.value).toBe(false)
+    }
+    expect(flow.errorMessage.value).toContain('512 字节')
+  })
+
+  it('recovers a definitive HTTP400 only when original receipt and tenant subscription are both absent', async () => {
+    const { flow } = setup()
+    vi.mocked(api.confirmSubscriptionChange).mockRejectedValue(new api.CommercialApiError('invalid reason', 400, 'http'))
+    vi.mocked(api.getSubscriptionChangeReceipt).mockRejectedValue(new api.CommercialApiError('not found', 404, 'http'))
+    vi.mocked(api.getTenantSubscription).mockRejectedValue(new api.CommercialApiError('not found', 404, 'http'))
+    await flow.confirmPreview()
+    expect(flow.confirmationSubmitted.value).toBe(false)
+    expect(flow.preview.value).toBeNull()
+    expect(flow.statusMessage.value).toContain('重新检查版本')
+    expect(api.getSubscriptionChangeReceipt).toHaveBeenCalledWith('tenant-a', 'change-first')
+    expect(api.getTenantSubscription).toHaveBeenCalledWith('tenant-a')
+  })
+
+  it('does not unlock an HTTP400 with an unknown original receipt or subscription', async () => {
+    const { flow } = setup()
+    vi.mocked(api.confirmSubscriptionChange).mockRejectedValue(new api.CommercialApiError('validation', 400, 'http'))
+    vi.mocked(api.getSubscriptionChangeReceipt).mockRejectedValue(new Error('read unavailable'))
+    await flow.confirmPreview()
+    expect(flow.confirmationSubmitted.value).toBe(true)
+    expect(flow.preview.value?.changeId).toBe('change-first')
+    expect(flow.errorMessage.value).toContain('暂不能重复开通')
+  })
+
   it('does not publish a confirmation received after switching tenants', async () => {
     const { flow, tenant, refreshed } = setup()
     const response = deferred<api.SubscriptionChangeReceiptDTO>()

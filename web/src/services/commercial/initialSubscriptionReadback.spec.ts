@@ -18,7 +18,7 @@ function fixture(): InitialSubscriptionReadback {
   const decision = (kind: string, key: string): EntitlementDecisionDTO => ({
     kind, key, moduleCode: 'device', fieldAction: '', allowed: true, reason: 'ALLOWED', masked: false, sources: [],
   })
-  return {
+  const input: InitialSubscriptionReadback = {
     tenantId: 'tenant-a', salesScope: 'office', target, subscription,
     preview: {
       changeId: 'chg-first', tenantId: 'tenant-a', actorId: 'admin', requestId: 'preview-first', action: 'INITIAL',
@@ -42,12 +42,30 @@ function fixture(): InitialSubscriptionReadback {
         { ...decision('quota', 'device.count'), limit: { unlimited: false, value: '100' } }],
     },
   }
+  // The backend's INITIAL projection retains overrides and safety restrictions.
+  // It is not raw plan terms and is not a durable entitlement snapshot.
+  if (input.preview) input.preview.projectedEntitlements = {
+    ...input.entitlements,
+    sourceVersion: '7',
+    entitlementVersion: '0',
+    decisions: input.entitlements.decisions.map((row) => ({
+      ...row,
+      limit: row.limit ? { ...row.limit } : undefined,
+    })),
+  }
+  return input
 }
 
 function getDecision(input: InitialSubscriptionReadback, kind: string) {
   const result = input.entitlements.decisions.find((item) => item.kind === kind)
   if (!result) throw new Error(`Missing fixture decision ${kind}`)
   return result
+}
+
+function getProjectedDecision(input: InitialSubscriptionReadback, kind: string) {
+  const decision = input.preview?.projectedEntitlements?.decisions.find((row) => row.kind === kind)
+  if (!decision) throw new Error(`Missing projected fixture decision ${kind}`)
+  return decision
 }
 
 function getModule(input: InitialSubscriptionReadback) {
@@ -145,6 +163,49 @@ describe('initial subscription authoritative readback', () => {
     expect(initialSubscriptionReadbackMatches(input)).toBe(true)
   })
 
+  it('accepts effective safety-denied capability and reduced quota when exact server projection agrees', () => {
+    const input = fixture()
+    getDecision(input, 'capability').allowed = false
+    getProjectedDecision(input, 'capability').allowed = false
+    getDecision(input, 'quota').limit = { unlimited: false, value: '40' }
+    getProjectedDecision(input, 'quota').limit = { unlimited: false, value: '40' }
+    expect(initialSubscriptionReadbackMatches(input)).toBe(true)
+    getDecision(input, 'quota').limit = { unlimited: false, value: '41' }
+    expect(initialSubscriptionReadbackMatches(input)).toBe(false)
+  })
+
+  it('accepts an authorized newer restriction as current truth without replaying an obsolete projection', () => {
+    const input = fixture()
+    input.entitlements.sourceVersion = '8'
+    input.entitlements.entitlementVersion = '12'
+    getDecision(input, 'capability').allowed = false
+    expect(initialSubscriptionReadbackMatches(input)).toBe(true)
+  })
+
+  it('accepts a supported fixed-day TRIAL but never an arbitrary lifecycle state', () => {
+    const input = fixture()
+    input.subscription.state = 'TRIAL'
+    if (input.receipt.after) input.receipt.after.state = 'TRIAL'
+    expect(initialSubscriptionReadbackMatches(input)).toBe(true)
+    input.target.terms.validityMode = 'unlimited'
+    expect(initialSubscriptionReadbackMatches(input)).toBe(false)
+  })
+
+  it('rejects a projection belonging to another tenant', () => {
+    const input = fixture()
+    if (input.preview?.projectedEntitlements) input.preview.projectedEntitlements.tenantId = 'tenant-b'
+    expect(initialSubscriptionReadbackMatches(input)).toBe(false)
+  })
+
+  it('reads a second-admin confirmed receipt with an actual restricted effective decision, never inferring a grant', () => {
+    const input = fixture()
+    input.preview = null
+    getDecision(input, 'capability').allowed = false
+    expect(initialSubscriptionReadbackMatches(input)).toBe(true)
+    input.entitlements.decisions = input.entitlements.decisions.filter((d) => d.kind !== 'capability')
+    expect(initialSubscriptionReadbackMatches(input)).toBe(false)
+  })
+
   it('does not substitute a finite quota for an unlimited target', () => {
     const input = fixture()
     const quota = getModule(input).quotas[0]
@@ -152,6 +213,7 @@ describe('initial subscription authoritative readback', () => {
     quota.unlimited = true
     expect(initialSubscriptionReadbackMatches(input)).toBe(false)
     getDecision(input, 'quota').limit = { unlimited: true, value: '0' }
+    getProjectedDecision(input, 'quota').limit = { unlimited: true, value: '0' }
     expect(initialSubscriptionReadbackMatches(input)).toBe(true)
   })
 
@@ -163,6 +225,7 @@ describe('initial subscription authoritative readback', () => {
       allowed: mode !== 'deny', masked: mode === 'masked', reason: '', sources: [],
     }
     input.entitlements.decisions.push(field)
+    input.preview?.projectedEntitlements?.decisions.push({ ...field })
     expect(initialSubscriptionReadbackMatches(input)).toBe(true)
     field.allowed = !field.allowed
     expect(initialSubscriptionReadbackMatches(input)).toBe(false)

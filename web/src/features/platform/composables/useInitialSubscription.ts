@@ -257,6 +257,10 @@ export function useInitialSubscription(tenantId: () => string, onRefresh: () => 
       errorMessage.value = '请填写首次开通原因。'
       return
     }
+    if (new TextEncoder().encode(previewReason.value.trim()).length > 512) {
+      errorMessage.value = '首次开通原因不能超过 512 字节，请缩短后重新生成方案。'
+      return
+    }
 
     pending.value = true
     errorMessage.value = ''
@@ -302,6 +306,10 @@ export function useInitialSubscription(tenantId: () => string, onRefresh: () => 
       errorMessage.value = '确认原因不能为空。'
       return
     }
+    if (new TextEncoder().encode(confirmReason.value.trim()).length > 512) {
+      errorMessage.value = '确认原因不能超过 512 字节，请修改后再提交。'
+      return
+    }
 
     pending.value = true
     errorMessage.value = ''
@@ -338,7 +346,9 @@ export function useInitialSubscription(tenantId: () => string, onRefresh: () => 
       }
     } catch (error) {
       if (!context.current()) return
-      if (error instanceof CommercialApiError && error.code === 'conflict') {
+      if (error instanceof CommercialApiError && (error.code === 'conflict' || error.status === 400)) {
+        // A definitive 400/409 alone never proves that an earlier command did
+        // not commit. Unlock only after authoritative receipt+subscription 404.
         await recoverConcurrentActivation(context)
       } else {
         if (!receipt.value && error instanceof CommercialApiError && ['unauthenticated', 'forbidden'].includes(error.code)) {
@@ -379,7 +389,7 @@ export function useInitialSubscription(tenantId: () => string, onRefresh: () => 
       finalSubscription.value = subscription
       verificationState.value = 'verified'
       errorMessage.value = ''
-      statusMessage.value = '首次开通已完成，并已从最终权益结果确认目标套餐能力。'
+      statusMessage.value = '首次订阅已完成；实际可用权益已从服务端回读，覆盖与安全限制仍按当前政策生效。'
       void forgetInitialSubscription(context.tenantId, confirmed.changeId).catch(() => {})
       onRefresh()
     } catch {
