@@ -206,6 +206,31 @@ describe('initial subscription authoritative readback', () => {
     expect(initialSubscriptionReadbackMatches(input)).toBe(false)
   })
 
+  it('requires a positive projected generation whenever the original actor preview is present', () => {
+    const input = fixture()
+    if (!input.preview) throw new Error('Missing preview')
+    input.preview.projectedEntitlements = undefined
+    expect(initialSubscriptionReadbackMatches(input)).toBe(false)
+    input.preview.projectedEntitlements = {
+      ...input.entitlements, sourceVersion: '0',
+      decisions: input.entitlements.decisions.map((item) => ({ ...item })),
+    }
+    expect(initialSubscriptionReadbackMatches(input)).toBe(false)
+    input.preview.projectedEntitlements.sourceVersion = '8'
+    expect(initialSubscriptionReadbackMatches(input)).toBe(false)
+    input.preview = null
+    expect(initialSubscriptionReadbackMatches(input)).toBe(true)
+  })
+
+  it('recovers an already-applied exact version after the catalog retires it', () => {
+    const input = fixture()
+    input.target.state = 'RETIRED'
+    input.preview = null
+    expect(initialSubscriptionReadbackMatches(input)).toBe(true)
+    input.receipt.after!.planVersion = '4'
+    expect(initialSubscriptionReadbackMatches(input)).toBe(false)
+  })
+
   it('does not substitute a finite quota for an unlimited target', () => {
     const input = fixture()
     const quota = getModule(input).quotas[0]

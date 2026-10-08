@@ -106,7 +106,7 @@ export function initialSubscriptionReadbackMatches(input: InitialSubscriptionRea
     || receipt.previewHash !== preview.previewHash)) return false
   if (receipt.tenantId !== tenantId || receipt.action !== 'INITIAL'
     || receipt.status !== 'APPLIED' || receipt.failureCode) return false
-  if (target.state !== 'PUBLISHED' || !target.planCode || uint64(target.version) === null
+  if ((target.state !== 'PUBLISHED' && target.state !== 'RETIRED') || !target.planCode || uint64(target.version) === null
     || uint64(target.version) === 0n) return false
   if (!receipt.after?.subscriptionId || subscription.subscriptionId !== receipt.after.subscriptionId
     || receipt.after.tenantId !== tenantId || subscription.tenantId !== tenantId
@@ -128,10 +128,15 @@ export function initialSubscriptionReadbackMatches(input: InitialSubscriptionRea
   // Compare the projected effective policy when the actual source generation
   // matches it; a newer generation must instead reflect current server truth.
   const projected = preview?.projectedEntitlements
+  // An actor-owned preview must contain a genuine positive-generation
+  // effective policy projection. Missing/zero projection is NOT permission to
+  // silently fall back to receipt-only cross-admin verification.
+  if (preview && !projected) return false
   if (projected && projected.tenantId !== tenantId) return false
   const expectedSource = projected ? uint64(projected.sourceVersion) : null
-  if (projected && expectedSource === null) return false
   const actualSource = uint64(entitlements.sourceVersion)
+  if (projected && (expectedSource === null || expectedSource <= 0n
+    || actualSource === null || expectedSource > actualSource)) return false
   const sameGeneration = projected && expectedSource === actualSource
   return observedEffectiveDecisions(entitlements, target, sameGeneration ? projected : undefined)
 }
