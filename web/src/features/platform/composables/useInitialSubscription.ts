@@ -389,7 +389,7 @@ export function useInitialSubscription(tenantId: () => string, onRefresh: () => 
       finalSubscription.value = subscription
       verificationState.value = 'verified'
       errorMessage.value = ''
-      statusMessage.value = '首次订阅已完成；实际可用权益已从服务端回读，覆盖与安全限制仍按当前政策生效。'
+      statusMessage.value = '首次订阅已完成，当前功能和额度已核实；专项覆盖和安全限制仍按当前设置生效。'
       void forgetInitialSubscription(context.tenantId, confirmed.changeId).catch(() => {})
       onRefresh()
     } catch {
