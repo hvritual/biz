@@ -442,8 +442,13 @@ test("TestCE340PlatformFirstSubscriptionThroughTrustedWebSession", async ({ brow
   let confirmationCalls = 0;
   let commandStatus = 0;
   let replyDropped = false;
+  let actualChangeId = "";
   await allowed.page.route("**/api/v1/platform/tenants/*/subscription/changes/*/confirm", async (route) => {
     confirmationCalls += 1;
+    const pathname = new URL(route.request().url()).pathname;
+    const change = pathname.match(/\/subscription\/changes\/([^/]+)\/confirm$/);
+    expect(change?.[1]).toBeTruthy();
+    actualChangeId = decodeURIComponent(String(change?.[1]));
     const actual = await route.fetch();
     commandStatus = actual.status();
     await route.abort("failed");
@@ -455,17 +460,33 @@ test("TestCE340PlatformFirstSubscriptionThroughTrustedWebSession", async ({ brow
   await expect.poll(() => replyDropped, { timeout: 15000 }).toBe(true);
   expect(commandStatus).toBe(200);
   expect(confirmationCalls).toBe(1);
-  await expect(allowed.page).toHaveURL(/initialChange=/);
+  expect(actualChangeId).toBeTruthy();
+  // The original server command was APPLIED, not a mocked client response.
+  // A route that already reconciled the receipt may remove initialChange;
+  // retaining it is mandatory only while recovery is still pending.
+  const appliedReceipt = await browserRequest(
+    allowed.page, data.web_base_url,
+    `/v1/platform/tenants/${encodeURIComponent(initialTenant)}/subscription/changes/${encodeURIComponent(actualChangeId)}`,
+  );
+  expect(appliedReceipt.status, appliedReceipt.text).toBe(200);
+  expect(appliedReceipt.json).toMatchObject({
+    tenantId: initialTenant,
+    changeId: actualChangeId,
+    action: "INITIAL",
+    status: "APPLIED",
+    after: { tenantId: initialTenant, planCode, planVersion: String(draft.version) },
+  });
   await expect(allowed.page.getByLabel("租户编号")).toHaveValue(initialTenant);
   await expect(allowed.page.getByText("选择或输入租户编号开始", { exact: true })).toHaveCount(0);
-  // The original pending result can advance to authoritative receipt/readback
-  // while the authorized page is remounted. Both remain valid; an empty tenant
-  // context or generic 'success' message is not.
+  const finalCard = allowed.page.locator(".subscription-card").getByText(/CE-340 首次开通套餐/);
+  if (!allowed.page.url().includes("initialChange=")) {
+    // Recovery link was cleared only after the real subscription became visible.
+    await expect(finalCard).toBeVisible();
+  }
   const pendingResult = initial.getByText("首次开通结果待确认", { exact: true });
   const receivedReceipt = initial.getByText("结果待确认", { exact: true });
   const verifiedResult = initial.getByText("首次开通已完成，最终权益已确认", { exact: true });
-  const existingSubscription = allowed.page.locator(".subscription-card").getByText(planCode);
-  await expect(pendingResult.or(receivedReceipt).or(verifiedResult).or(existingSubscription).first()).toBeVisible();
+  await expect(pendingResult.or(receivedReceipt).or(verifiedResult).or(finalCard).first()).toBeVisible();
   await allowed.page.screenshot({ path: testInfo.outputPath("ce340-lost-confirmation.png"), fullPage: true });
   await allowed.page.reload();
   await expect(allowed.page.locator(".subscription-card").getByText(/CE-340 首次开通套餐/)).toBeVisible();
