@@ -35,7 +35,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 -B scripts/test_ci_plan_change_browser.py
-          bash scripts/ci_plan_change_browser.sh
+          bash scripts/ci_plan_change_browser.sh "$GITHUB_WORKSPACE/web"
       - name: Run tenant plan change lifecycle E2E
         env:
           ENTERPRISE_PLAN_CHANGE_E2E: '1'

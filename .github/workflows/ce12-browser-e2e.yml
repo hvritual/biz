@@ -110,6 +110,7 @@ jobs:
         run: |
           set -euo pipefail
           started="$(date +%s)"
+          python3 -B biz/scripts/test_ci_plan_change_browser.py
 
           (
             set -euo pipefail
@@ -124,9 +125,8 @@ jobs:
             set -euo pipefail
             deps_started="$(date +%s)"
             cd biz/web
-            npm ci
-            npx playwright install --with-deps --only-shell chromium
-            sudo apt-get install -y fonts-noto-cjk
+            npm ci 2>&1 | tee "$RUNNER_TEMP/ce12-browser-deps.log"
+            bash ../scripts/ci_plan_change_browser.sh "$GITHUB_WORKSPACE/biz/web" 2>&1 | tee -a "$RUNNER_TEMP/ce12-browser-deps.log"
             echo "CE12_BROWSER_DEPS_SECONDS=$(( $(date +%s) - deps_started ))" >"$RUNNER_TEMP/ce12-browser-deps-timing.log"
           ) &
           deps_pid=$!
