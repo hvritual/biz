@@ -598,5 +598,196 @@ class SessionParallelQualificationTests(unittest.TestCase):
         self.assertEqual(len(commands), 6, commands)
         self.assertEqual(sum(" vet " in " " + x + " " for x in commands), 1)
 
+class SessionHealthPollingTests(unittest.TestCase):
+    """Run the real startup steps with controlled health responses and process lifetimes."""
+
+    steps = (
+        ("Start first-party OIDC IdP", "http://127.0.0.1:18081/healthz", "ce13-idp.pid"),
+        ("Start Biz BFF resource server", "http://127.0.0.1:18080/healthz", "ce13-biz.pid"),
+        ("Start Vue console proxy", "http://127.0.0.1:14183/", "ce13-vite.pid"),
+    )
+
+    @staticmethod
+    def run_step(step, mode):
+        name, health_url, pid_file = step
+        workflow = (ROOT / ".github/workflows/ce13-platform-web-session.yml").read_text()
+        match = re.search(
+            r"(?ms)^      - name: " + re.escape(name) +
+            r"\n        shell: bash\n        run: \|\n(?P<commands>.*?)(?=^      - name:|\Z)",
+            workflow,
+        )
+        if match is None:
+            raise AssertionError("Missing startup step: " + name)
+        commands = textwrap.dedent(match.group("commands")).strip()
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            bin_root = root / "fake-bin"
+            bin_root.mkdir()
+            (root / "ce13-session/web").mkdir(parents=True)
+            (root / "ticks").write_text("0\n")
+            (root / "health-count").write_text("0\n")
+            real_sleep = shutil.which("sleep")
+            if not real_sleep:
+                raise AssertionError("Real sleep executable unavailable")
+            launch = r'''#!/bin/bash
+set -euo pipefail
+read -r child_stat < /proc/self/stat
+printf '%s\n' "$BASHPID" > "$CE13_HEALTH_ROOT/child-pid"
+printf '%s\n' "$child_stat" > "$CE13_HEALTH_ROOT/child-proc-stat"
+printf 'launch %s %s\n' "$0" "$*" >> "$CE13_HEALTH_ROOT/trace"
+if [[ "$CE13_HEALTH_MODE" == early ]]; then "$CE13_REAL_SLEEP" 0.04; fi
+: > "$CE13_HEALTH_ROOT/ready"
+'''
+            curl = r'''#!/bin/bash
+set -euo pipefail
+printf 'curl %s\n' "$*" >> "$CE13_HEALTH_ROOT/trace"
+for ((attempt=0; attempt<200; attempt++)); do
+  [[ -s "$CE13_HEALTH_ROOT/child-proc-stat" ]] && break
+  "$CE13_REAL_SLEEP" 0.005
+done
+[[ -s "$CE13_HEALTH_ROOT/child-proc-stat" ]] || exit 97
+if [[ "$*" == '-fsS http://127.0.0.1:18081/idp/.well-known/openid-configuration' ]]; then
+  [[ "$CE13_HEALTH_MODE" != discovery_failure ]] || exit 22
+  printf '{"issuer":"http://127.0.0.1:18081/idp"}\n'
+  exit 0
+fi
+[[ "$*" == "-fsS $CE13_HEALTH_URL" ]] || exit 97
+read -r count < "$CE13_HEALTH_ROOT/health-count"
+count=$((count + 1))
+printf '%s\n' "$count" > "$CE13_HEALTH_ROOT/health-count"
+read -r ticks < "$CE13_HEALTH_ROOT/ticks"
+case "$CE13_HEALTH_MODE" in
+  never) exit 7 ;;
+  edge) (( ticks >= 600 )) || exit 7 ;;
+  early) (( count > 1 )) && [[ -f "$CE13_HEALTH_ROOT/ready" ]] || exit 7 ;;
+  final_failure) (( count == 1 )) || exit 22 ;;
+  immediate|discovery_failure) ;;
+  *) exit 97 ;;
+esac
+printf '{"ok":true}\n'
+'''
+            sleep = r'''#!/bin/bash
+set -euo pipefail
+printf 'sleep %s\n' "$*" >> "$CE13_HEALTH_ROOT/trace"
+read -r ticks < "$CE13_HEALTH_ROOT/ticks"
+case "$*" in
+  0.1) ticks=$((ticks + 1)) ;;
+  1) ticks=$((ticks + 10)) ;;
+  *) exit 97 ;;
+esac
+printf '%s\n' "$ticks" > "$CE13_HEALTH_ROOT/ticks"
+if [[ "$CE13_HEALTH_MODE" == early ]]; then
+  printf 'real-sleep-start %s\n' "$EPOCHREALTIME" >> "$CE13_HEALTH_ROOT/trace"
+  "$CE13_REAL_SLEEP" "$1"
+  printf 'real-sleep-end %s\n' "$EPOCHREALTIME" >> "$CE13_HEALTH_ROOT/trace"
+fi
+'''
+            for target, text in [
+                (root / "ce13-session-idp", launch), (root / "ce13-session-biz", launch),
+                (bin_root / "node", launch), (bin_root / "curl", curl), (bin_root / "sleep", sleep),
+            ]:
+                target.write_text(text)
+                target.chmod(0o755)
+            env = {**os.environ, "PATH": str(bin_root) + os.pathsep + os.environ["PATH"],
+                   "RUNNER_TEMP": str(root), "YUNKA_TEST_MYSQL_DSN": "unused-command-fixture",
+                   "CE13_HEALTH_ROOT": str(root), "CE13_HEALTH_MODE": mode,
+                   "CE13_HEALTH_URL": health_url, "CE13_REAL_SLEEP": real_sleep}
+            try:
+                result = subprocess.run(["bash", "-c", commands], env=env, cwd=ROOT,
+                                        capture_output=True, text=True, timeout=15)
+                trace = (root / "trace").read_text().splitlines()
+                for _ in range(50):
+                    if not recorded_child_alive(root):
+                        break
+                    time.sleep(0.002)
+                evidence = {
+                    "trace": trace,
+                    "sleeps": [line.removeprefix("sleep ") for line in trace if line.startswith("sleep ")],
+                    "curl_calls": [line.removeprefix("curl ") for line in trace if line.startswith("curl ")],
+                    "health_count": int((root / "health-count").read_text()),
+                    "ticks": int((root / "ticks").read_text()),
+                    "child_alive_before_cleanup": recorded_child_alive(root),
+                    "recorded_pid": int((root / "child-pid").read_text()),
+                    "startup_pid": int((root / pid_file).read_text()),
+                    "discovery": (root / "ce13-discovery.json").read_text()
+                                 if (root / "ce13-discovery.json").exists() else None,
+                }
+                return result, evidence
+            finally:
+                terminate_recorded_child(root)
+
+    def test_immediate_readiness_runs_final_health_and_discovery_without_sleep(self):
+        for step in self.steps:
+            with self.subTest(step=step[0]):
+                result, evidence = self.run_step(step, "immediate")
+                self.assertEqual(0, result.returncode, result.stderr)
+                self.assertEqual([], evidence["sleeps"])
+                expected = ["-fsS " + step[1]] * 2
+                if step == self.steps[0]:
+                    expected.append("-fsS http://127.0.0.1:18081/idp/.well-known/openid-configuration")
+                    self.assertIn('"issuer"', evidence["discovery"])
+                self.assertEqual(expected, evidence["curl_calls"])
+                self.assertEqual(evidence["startup_pid"], evidence["recorded_pid"])
+                self.assertFalse(evidence["child_alive_before_cleanup"])
+
+    def test_early_readiness_uses_real_tenth_second_sleep(self):
+        for step in self.steps:
+            with self.subTest(step=step[0]):
+                result, evidence = self.run_step(step, "early")
+                self.assertEqual(0, result.returncode, result.stderr)
+                self.assertEqual(["0.1"], evidence["sleeps"])
+                starts = [float(line.split()[1]) for line in evidence["trace"] if line.startswith("real-sleep-start ")]
+                ends = [float(line.split()[1]) for line in evidence["trace"] if line.startswith("real-sleep-end ")]
+                self.assertEqual(1, len(starts))
+                self.assertEqual(1, len(ends))
+                self.assertGreaterEqual(ends[0] - starts[0], 0.09)
+                self.assertEqual(3, evidence["health_count"])
+                self.assertEqual(["-fsS " + step[1]] * 3, evidence["curl_calls"][:3])
+                self.assertFalse(evidence["child_alive_before_cleanup"])
+
+    def test_never_ready_keeps_sixty_seconds_nominal_backoff_and_final_failure(self):
+        for step in self.steps:
+            with self.subTest(step=step[0]):
+                result, evidence = self.run_step(step, "never")
+                self.assertEqual(7, result.returncode, result.stderr)
+                self.assertEqual(["0.1"] * 10 + ["1"] * 59, evidence["sleeps"])
+                self.assertEqual(600, evidence["ticks"])
+                self.assertEqual(70, evidence["health_count"])
+                self.assertEqual(["-fsS " + step[1]] * 70, evidence["curl_calls"])
+                self.assertFalse(evidence["child_alive_before_cleanup"])
+
+    def test_final_check_can_become_ready_at_nominal_sixty_seconds(self):
+        for step in self.steps:
+            with self.subTest(step=step[0]):
+                result, evidence = self.run_step(step, "edge")
+                self.assertEqual(0, result.returncode, result.stderr)
+                self.assertEqual(["0.1"] * 10 + ["1"] * 59, evidence["sleeps"])
+                self.assertEqual(600, evidence["ticks"])
+                self.assertEqual(70, evidence["health_count"])
+                expected = ["-fsS " + step[1]] * 70
+                if step == self.steps[0]:
+                    expected.append("-fsS http://127.0.0.1:18081/idp/.well-known/openid-configuration")
+                self.assertEqual(expected, evidence["curl_calls"])
+                self.assertFalse(evidence["child_alive_before_cleanup"])
+
+    def test_final_health_failure_rejects_successful_poll(self):
+        for step in self.steps:
+            with self.subTest(step=step[0]):
+                result, evidence = self.run_step(step, "final_failure")
+                self.assertEqual(22, result.returncode, result.stderr)
+                self.assertEqual([], evidence["sleeps"])
+                self.assertEqual(["-fsS " + step[1]] * 2, evidence["curl_calls"])
+                self.assertFalse(evidence["child_alive_before_cleanup"])
+
+    def test_discovery_failure_rejects_successful_idp_health(self):
+        result, evidence = self.run_step(self.steps[0], "discovery_failure")
+        self.assertEqual(22, result.returncode, result.stderr)
+        self.assertEqual([], evidence["sleeps"])
+        self.assertEqual(["-fsS " + self.steps[0][1]] * 2 +
+                         ["-fsS http://127.0.0.1:18081/idp/.well-known/openid-configuration"],
+                         evidence["curl_calls"])
+        self.assertFalse(evidence["child_alive_before_cleanup"])
+
+
 if __name__ == "__main__":
     unittest.main()
