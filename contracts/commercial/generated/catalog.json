@@ -14,7 +14,7 @@
     "internal/commercial/application/planmanagement/internal/usecase/service.go": "363fbef037c5ec8049eca198626449d97c87a76a0bd2c77f7c9904a263d40702",
     "internal/commercial/application/planmanagement/internal/usecase/tenant_change.go": "13e38c0942b14e4a8fe35cfdb8965bdb6ea76b9c30de0f7a354f85941eb8b16f",
     "internal/commercial/application/provisioning/internal/usecase/service.go": "92437abf3396ad9a5e3942998cd73940935949f2d06e9d366488448752273341",
-    "internal/commercial/application/subscriptionchanges/internal/usecase/confirm.go": "48d8401d21438790558ba853b903c8887182051a618660766bf4fd39bf657683",
+    "internal/commercial/application/subscriptionchanges/internal/usecase/confirm.go": "77a5d1b8a65cf4b8248297a0573943d76eeb31f746259ef266b9e3267c5754a3",
     "internal/commercial/application/subscriptionchanges/internal/usecase/context.go": "c22c204e7f01b20b1ee5aee6620c91bc0aa0a50eff13cc396f8602690ed0784c",
     "internal/commercial/application/subscriptionchanges/internal/usecase/selfservice.go": "03f65f299498dc1f26b00d0583acbce3587d06a60c67e6960b02295739f66e81",
     "internal/commercial/application/subscriptionmanagement/internal/usecase/service.go": "d9981ade9db8999de1a02289e774bf097e7805cb3f29edd8e8d4a4069006ea76",

@@ -322,7 +322,8 @@ async function runFirstSubscriptionJourney(page: Page, options: InitialJourneyOp
     await page.keyboard.press('Enter')
   }
   const enterText = async (label: string, value: string) => {
-    const control = page.getByLabel(label, { exact: true })
+    // Field labels can include inline help text in their accessible name.
+    const control = page.getByLabel(label)
     if (!options.keyboard) { await control.fill(value); return }
     await tabToInitialControl(page, control)
     await page.keyboard.insertText(value)
