@@ -4,7 +4,7 @@ status: ready_for_review
 task_ref:
   issue: "#340"
   baseline_commit: aa15de7d8e0091dc210f63fe422ad54c649a80fa
-  candidate_commit: 30891ba85df6bdc93b1022e99a32c14373e22953
+  candidate_commit: d50babaea21ce2afb8ba57ca6fbebaa9d2f93c73
   name: 平台管理员租户首次订阅与模块开通
 classification:
   type: business_task
@@ -47,37 +47,37 @@ sources:
 - id: proto_contract
   kind: repository_contract
   path: contracts/proto/commercial/v1/subscription_change.proto
-  commit: 30891ba85df6bdc93b1022e99a32c14373e22953
+  commit: d50babaea21ce2afb8ba57ca6fbebaa9d2f93c73
   locator: PreviewSubscriptionChangeRequest / ConfirmSubscriptionChangeRequest
   claim: INITIAL 复用现有平台变更协议，首次预览显式携带 sales_scope，确认绑定 preview_hash。
 - id: subscription_model
   kind: implementation
   path: internal/commercial/domain/subscription/model.go
-  commit: 30891ba85df6bdc93b1022e99a32c14373e22953
+  commit: d50babaea21ce2afb8ba57ca6fbebaa9d2f93c73
   locator: OriginInitialActivation / StateProvisioning / Subscription.Validate
   claim: 首次开通具有独立来源事实，准备期间不冒充已激活权益。
 - id: change_authority
   kind: implementation
   path: internal/commercial/application/subscriptionchanges/internal/usecase
-  commit: 30891ba85df6bdc93b1022e99a32c14373e22953
+  commit: d50babaea21ce2afb8ba57ca6fbebaa9d2f93c73
   locator: preview / confirm / prepared
   claim: 首次开通复用目标资格、目录、快照、回执和 Provisioning 状态机。
 - id: provisioning_authority
   kind: implementation
   path: internal/commercial/domain/provisioning/model.go
-  commit: 30891ba85df6bdc93b1022e99a32c14373e22953
+  commit: d50babaea21ce2afb8ba57ca6fbebaa9d2f93c73
   locator: Task / Retry / Complete
   claim: 准备任务有独立状态、重试和最终完成事实；INITIAL 禁止用通用取消恢复不存在的旧套餐。
 - id: platform_service
   kind: implementation
   path: web/src/services/commercial/platformCommercial.ts
-  commit: 30891ba85df6bdc93b1022e99a32c14373e22953
+  commit: d50babaea21ce2afb8ba57ca6fbebaa9d2f93c73
   locator: listPlans / previewSubscriptionChange / confirmSubscriptionChange
   claim: 前端使用可信会话、CSRF、幂等键和真实平台商业接口。
 - id: current_page
   kind: implementation
   path: web/src/features/platform/pages/CommercialTenantEntitlementsView.vue
-  commit: 30891ba85df6bdc93b1022e99a32c14373e22953
+  commit: d50babaea21ce2afb8ba57ca6fbebaa9d2f93c73
   locator: CommercialTenantEntitlementsView / InitialSubscriptionWorkspace / useInitialSubscription
   claim: 当前产品候选已有可信租户上下文首次开通、原变更结果恢复、有效权益确认及已订阅变更入口；四视口与人工体验仍分别验收。
 page_pattern:
@@ -171,6 +171,7 @@ humanized_ux:
     - scope 不匹配或目标失效时返回目标重新发现。
     - 并发冲突先读取当前订阅，不重复确认。
     - 未知结果先查回执/任务/权益状态，不生成第二个 INITIAL。
+    - 已有订阅时，历史或错误的首次开通链接不得遮住正常套餐变更操作；只有与租户当前待处理任务、真实回执和订阅一致的 INITIAL 可以恢复。
     evidence_types: [browser_test, api_test]
     verification: not_verified
     evidence: []
@@ -184,6 +185,7 @@ acceptance:
   - 两个管理员并发首次确认只产生一份 Base Subscription，冲突方回读现有事实。
   - 成员 IAM 未授权时首次开通不自动授予成员操作权限。
   - 401、403、400 校验失败、409、ProvisioningFailed、Unknown、ReadbackFailed 有独立反馈和下一步；超过 512 UTF-8 字节的原因在提交前拒绝。
+  - 真实订阅已存在时，历史已应用或伪造的 initialChange 链接不会隐藏套餐变更工作区；合法当前 Pending INITIAL 可以继续恢复。
   - 合法 fixed_days TRIAL 与开通后套餐版本 RETIRED 可按确切历史回执和当前权益核验，不能将其误认为尚未开通。
   automated_checks:
   - make check
