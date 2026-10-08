@@ -2,7 +2,7 @@
 import { UiButton, UiInput, UiTextarea } from '@/ui/base'
 
 import AuthorityPicker from '@/features/platform/components/AuthorityPicker.vue'
-import { computed, onMounted, onScopeDispose, ref } from 'vue'
+import { computed, onMounted, onScopeDispose, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { subscribeSessionContextChange } from '@/services/runtime/sessionCoordinator'
 import { backendBusinessText, backendTermLabel } from '@/i18n/backend-terms'
@@ -274,9 +274,33 @@ const unsubscribe = subscribeSessionContextChange(() => {
   loadState.value = 'idle'
 })
 onScopeDispose(() => { disposed = true; generation++; unsubscribe() })
+
+// A trusted authorization recheck can temporarily detach the routed page.
+// The URL preserves the tenant and original INITIAL change; a remount or a
+// delayed route-query update must restore them instead of showing an empty
+// tenant selector. Do not replace the business facts with cached browser data.
+function resumeRouteTenant() {
+  const tenant = typeof route.query.tenant === 'string' ? route.query.tenant.trim() : ''
+  if (!tenant) return
+  if (activeTenantId.value !== tenant || loadState.value === 'idle') {
+    tenantIdInput.value = tenant
+    void loadWorkspace()
+    return
+  }
+  if (loadState.value === 'ready') {
+    const requestedChange = typeof route.query.initialChange === 'string'
+      ? route.query.initialChange.trim() : ''
+    if (initialChangeId.value !== requestedChange) initialChangeId.value = requestedChange
+  }
+}
+watch([() => route.query.tenant, () => route.query.initialChange], resumeRouteTenant, {
+  immediate: true,
+  flush: 'post',
+})
 onMounted(() => {
   void loadModules()
-  if (tenantIdInput.value) void loadWorkspace()
+  resumeRouteTenant()
+  if (tenantIdInput.value && loadState.value === 'idle') void loadWorkspace()
 })
 </script>
 

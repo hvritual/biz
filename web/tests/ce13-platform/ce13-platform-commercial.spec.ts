@@ -455,8 +455,17 @@ test("TestCE340PlatformFirstSubscriptionThroughTrustedWebSession", async ({ brow
   await expect.poll(() => replyDropped, { timeout: 15000 }).toBe(true);
   expect(commandStatus).toBe(200);
   expect(confirmationCalls).toBe(1);
-  await expect(initial.getByText("首次开通结果待确认", { exact: true })).toBeVisible();
   await expect(allowed.page).toHaveURL(/initialChange=/);
+  await expect(allowed.page.getByLabel("租户编号")).toHaveValue(initialTenant);
+  await expect(allowed.page.getByText("选择或输入租户编号开始", { exact: true })).toHaveCount(0);
+  // The original pending result can advance to authoritative receipt/readback
+  // while the authorized page is remounted. Both remain valid; an empty tenant
+  // context or generic 'success' message is not.
+  const pendingResult = initial.getByText("首次开通结果待确认", { exact: true });
+  const receivedReceipt = initial.getByText("结果待确认", { exact: true });
+  const verifiedResult = initial.getByText("首次开通已完成，最终权益已确认", { exact: true });
+  const existingSubscription = allowed.page.locator(".subscription-card").getByText(planCode);
+  await expect(pendingResult.or(receivedReceipt).or(verifiedResult).or(existingSubscription).first()).toBeVisible();
   await allowed.page.screenshot({ path: testInfo.outputPath("ce340-lost-confirmation.png"), fullPage: true });
   await allowed.page.reload();
   await expect(allowed.page.locator(".subscription-card").getByText(/CE-340 首次开通套餐/)).toBeVisible();
