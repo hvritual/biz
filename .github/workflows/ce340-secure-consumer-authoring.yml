@@ -10,8 +10,6 @@ jobs:
     timeout-minutes: 20
     permissions:
       contents: write
-    env:
-      GITHUB_HEAD_REF: ${{ github.ref_name }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
@@ -31,13 +29,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$GITHUB_HEAD_REF" = chore/ci-proof-ce340-secure-consumer-authoring
+          mkdir -p "$RUNNER_TEMP/ce340-consumer"
+          printf '%s\n' "$GITHUB_SHA" > "$RUNNER_TEMP/ce340-consumer/control-sha.txt"
+          test "$GITHUB_REF_NAME" = chore/ci-proof-ce340-secure-consumer-authoring
           test "$(git -C biz rev-parse HEAD)" = 40ae9c0116e449c2461fec55f3d01890828089ee
           test "$(git -C yunka.io rev-parse HEAD)" = 6be63bfedf622a9c123bd24f7fd18b62882ee1e9
           source yunka.io/tools/toolchain.env
           echo "go=$GO_VERSION" >> "$GITHUB_OUTPUT"
-          mkdir -p "$RUNNER_TEMP/ce340-consumer"
-          printf '%s\n' "$GITHUB_SHA" > "$RUNNER_TEMP/ce340-consumer/control-sha.txt"
           git -C biz rev-parse HEAD > "$RUNNER_TEMP/ce340-consumer/base-sha.txt"
           git -C yunka.io rev-parse HEAD > "$RUNNER_TEMP/ce340-consumer/framework-sha.txt"
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
@@ -84,7 +82,7 @@ jobs:
           PYCODE
           make generate
           make workspace-check yunka-source-check
-          python3 -B scripts/check_ci_source_safety.py --base-ref 40ae9c0116e449c2461fec55f3d01890828089ee
+          GITHUB_HEAD_REF="$GITHUB_REF_NAME" python3 -B scripts/check_ci_source_safety.py --base-ref 40ae9c0116e449c2461fec55f3d01890828089ee
           python3 -B -m unittest discover -s scripts -p 'test_ci_source_safety.py' -v
           python3 -B -m unittest discover -s scripts -p 'test_literal_patch.py' -v
           python3 -B - <<'PYCODE'
