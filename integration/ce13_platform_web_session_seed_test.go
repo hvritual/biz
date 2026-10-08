@@ -31,6 +31,7 @@ type ce13PlatformBrowserFixture struct {
 	TenantPassword     string `json:"tenant_password"`
 	TenantID           string `json:"tenant_id"`
 	InitialTenantID    string `json:"initial_tenant_id"`
+	RetryTenantID      string `json:"initial_retry_tenant_id"`
 	AllowedAPIKey      string `json:"allowed_api_key"`
 	AllowedSubject     string `json:"allowed_subject"`
 	DeniedSubject      string `json:"denied_subject"`
@@ -133,6 +134,7 @@ func TestCE13PlatformWebSessionSeed(t *testing.T) {
 	}
 	tenantID := seedCE13TenantSubscription(t, started.GRPCAddress(), allowedAPIKey)
 	initialTenantID := seedCE13NoSubscriptionTenant(t, db)
+	initialRetryTenantID := seedCE13NoSubscriptionTenant(t, db)
 	seedCE13WebUser(t, store, tenantID, tenantUserID, tenantEmail, tenantPassword)
 	if err := store.BootstrapPlatform(ctx, accesspersistence.PlatformBootstrap{
 		Subject: deniedSubject,
@@ -188,6 +190,7 @@ func TestCE13PlatformWebSessionSeed(t *testing.T) {
 		TenantPassword:     tenantPassword,
 		TenantID:           tenantID,
 		InitialTenantID:    initialTenantID,
+		RetryTenantID:      initialRetryTenantID,
 		AllowedAPIKey:      allowedAPIKey,
 		AllowedSubject:     allowedSubject,
 		DeniedSubject:      deniedSubject,

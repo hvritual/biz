@@ -13,6 +13,7 @@ interface Fixture {
   tenant_password: string;
   tenant_id: string;
   initial_tenant_id: string;
+  initial_retry_tenant_id: string;
   allowed_api_key: string;
   allowed_subject: string;
   denied_subject: string;
@@ -344,6 +345,10 @@ test("TestCE13PlatformCommercialLifecycleThroughTrustedWebSession", async ({ bro
 
 test("TestCE340PlatformFirstSubscriptionThroughTrustedWebSession", async ({ browser }, testInfo) => {
   const data = fixture();
+  // A confirmation may really commit before a test assertion fails; a retry
+  // must never reuse that already-mutated tenant or accept a false clean state.
+  const initialTenant = testInfo.retry === 0 ? data.initial_tenant_id : data.initial_retry_tenant_id;
+  expect(initialTenant).toBeTruthy();
   const allowed = await login(browser, data, data.allowed_email, data.allowed_password);
   const csrf = allowed.session.csrf_token;
   expect(csrf).toBeTruthy();
@@ -363,7 +368,7 @@ test("TestCE340PlatformFirstSubscriptionThroughTrustedWebSession", async ({ brow
   const before = await browserRequest(
     allowed.page,
     data.web_base_url,
-    `/v1/platform/tenants/${encodeURIComponent(data.initial_tenant_id)}/subscription`,
+    `/v1/platform/tenants/${encodeURIComponent(initialTenant)}/subscription`,
   );
   expect(before.status).toBe(404);
 
@@ -403,7 +408,7 @@ test("TestCE340PlatformFirstSubscriptionThroughTrustedWebSession", async ({ brow
   expect((published.json as { state: string }).state).toBe("PUBLISHED");
 
   await allowed.page.goto(`${data.web_base_url}/#/platform/commercial/tenant-entitlements`);
-  await allowed.page.getByLabel("租户编号").fill(data.initial_tenant_id);
+  await allowed.page.getByLabel("租户编号").fill(initialTenant);
   await allowed.page.getByRole("button", { name: "读取权益" }).click();
   const initial = allowed.page.getByTestId("platform-initial-subscription");
   await expect(initial.getByRole("heading", { name: "首次开通套餐" })).toBeVisible();
@@ -436,17 +441,22 @@ test("TestCE340PlatformFirstSubscriptionThroughTrustedWebSession", async ({ brow
   // subscription, receipt, entitlement or business-success response is used.
   let confirmationCalls = 0;
   let commandStatus = 0;
+  let replyDropped = false;
   await allowed.page.route("**/api/v1/platform/tenants/*/subscription/changes/*/confirm", async (route) => {
     confirmationCalls += 1;
     const actual = await route.fetch();
     commandStatus = actual.status();
     await route.abort("failed");
+    replyDropped = true;
   });
   await initial.getByRole("button", { name: "确认首次开通" }).click();
-  await expect(initial.getByText("首次开通结果待确认", { exact: true })).toBeVisible();
-  await expect(allowed.page).toHaveURL(/initialChange=/);
+  // The browser request can still be in flight after the click and route
+  // navigation complete. Wait for the actual upstream 200 and aborted reply.
+  await expect.poll(() => replyDropped, { timeout: 15000 }).toBe(true);
   expect(commandStatus).toBe(200);
   expect(confirmationCalls).toBe(1);
+  await expect(initial.getByText("首次开通结果待确认", { exact: true })).toBeVisible();
+  await expect(allowed.page).toHaveURL(/initialChange=/);
   await allowed.page.screenshot({ path: testInfo.outputPath("ce340-lost-confirmation.png"), fullPage: true });
   await allowed.page.reload();
   await expect(allowed.page.locator(".subscription-card").getByText(/CE-340 首次开通套餐/)).toBeVisible();
@@ -460,11 +470,11 @@ test("TestCE340PlatformFirstSubscriptionThroughTrustedWebSession", async ({ brow
   const finalSubscription = await browserRequest(
     allowed.page,
     data.web_base_url,
-    `/v1/platform/tenants/${encodeURIComponent(data.initial_tenant_id)}/subscription`,
+    `/v1/platform/tenants/${encodeURIComponent(initialTenant)}/subscription`,
   );
   expect(finalSubscription.status, finalSubscription.text).toBe(200);
   expect(finalSubscription.json).toMatchObject({
-    tenantId: data.initial_tenant_id,
+    tenantId: initialTenant,
     planCode,
     planVersion: String(draft.version),
     salesScope: "default",
@@ -473,11 +483,11 @@ test("TestCE340PlatformFirstSubscriptionThroughTrustedWebSession", async ({ brow
   const entitlements = await browserRequest(
     allowed.page,
     data.web_base_url,
-    `/v1/platform/tenants/${encodeURIComponent(data.initial_tenant_id)}/entitlements`,
+    `/v1/platform/tenants/${encodeURIComponent(initialTenant)}/entitlements`,
     {
       method: "POST",
       headers: { "X-CSRF-Token": String(csrf), "Idempotency-Key": requestID("entitlements") },
-      body: { tenantId: data.initial_tenant_id, capabilityCodes: ["device.lifecycle"] },
+      body: { tenantId: initialTenant, capabilityCodes: ["device.lifecycle"] },
     },
   );
   expect(entitlements.status, entitlements.text).toBe(200);
