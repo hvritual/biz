@@ -273,6 +273,109 @@ describe('first subscription in-flight context and confirmation recovery', () =>
 
 
 describe('first subscription reload recovery', () => {
+  async function restoreLostConfirmation() {
+    const state = setup()
+    state.flow.preview.value = null
+    state.flow.recoveryChangeId.value = 'change-first'
+    const saved = { tenantId: 'tenant-a', changeId: 'change-first', salesScope: 'office',
+      input: { requestId: 'original-request', previewHash: proposed.previewHash, reason: 'original reason' } }
+    const absent = new api.CommercialApiError('not found', 404, 'http')
+    vi.mocked(recallInitialSubscription).mockResolvedValue(saved)
+    vi.mocked(api.getSubscriptionChangeReceipt).mockRejectedValue(absent)
+    await state.flow.restoreSubmission()
+    expect(state.flow.retryConfirmationAllowed.value).toBe(true)
+    return { ...state, saved, absent }
+  }
+
+  it.each([400, 409])('unlocks original confirmation rejection HTTP%s only after receipt and subscription are both absent', async (status) => {
+    const { flow, saved, absent } = await restoreLostConfirmation()
+    vi.mocked(api.confirmSubscriptionChange).mockRejectedValue(new api.CommercialApiError('preview expired', status, status === 409 ? 'conflict' : 'http'))
+    vi.mocked(api.getTenantSubscription).mockRejectedValue(absent)
+    await flow.retryOriginalConfirmation()
+    expect(api.confirmSubscriptionChange).toHaveBeenCalledExactlyOnceWith('tenant-a', 'change-first', saved.input)
+    expect(api.getSubscriptionChangeReceipt).toHaveBeenCalledTimes(3) // restore, retry preflight, rejection recovery
+    expect(api.getTenantSubscription).toHaveBeenCalledWith('tenant-a')
+    expect(flow.confirmationSubmitted.value).toBe(false)
+    expect(flow.retryConfirmationAllowed.value).toBe(false)
+    expect(flow.preview.value).toBeNull()
+    expect(flow.selectedVersionKey.value).toBe('')
+    expect(flow.recoveryChangeId.value).toBe('')
+    expect(flow.statusMessage.value).toContain('重新检查版本')
+    expect(api.previewSubscriptionChange).not.toHaveBeenCalled()
+    await flow.retryOriginalConfirmation()
+    expect(api.confirmSubscriptionChange).toHaveBeenCalledTimes(1)
+  })
+
+  it.each([
+    [400, 'receipt'], [400, 'subscription'], [409, 'receipt'], [409, 'subscription'],
+  ] as const)('keeps original confirmation rejection HTTP%s locked when %s authority is unknown', async (status, unavailable) => {
+    const { flow, saved, absent } = await restoreLostConfirmation()
+    vi.mocked(api.confirmSubscriptionChange).mockRejectedValue(new api.CommercialApiError('preview rejected', status, status === 409 ? 'conflict' : 'http'))
+    if (unavailable === 'receipt') {
+      vi.mocked(api.getSubscriptionChangeReceipt).mockRejectedValueOnce(absent).mockRejectedValueOnce(new Error('receipt unavailable'))
+    } else {
+      vi.mocked(api.getTenantSubscription).mockRejectedValue(new Error('subscription unavailable'))
+    }
+    await flow.retryOriginalConfirmation()
+    expect(api.confirmSubscriptionChange).toHaveBeenCalledExactlyOnceWith('tenant-a', 'change-first', saved.input)
+    expect(flow.confirmationSubmitted.value).toBe(true)
+    expect(flow.preview.value?.changeId).toBe('change-first')
+    expect(flow.recoveryChangeId.value).toBe('change-first')
+    expect(flow.errorMessage.value).toContain('暂不能重复开通')
+    expect(api.previewSubscriptionChange).not.toHaveBeenCalled()
+    if (unavailable === 'receipt') expect(api.getTenantSubscription).not.toHaveBeenCalled()
+  })
+
+  it('reads an original confirmation that committed before retry without issuing a second write', async () => {
+    const { flow, refreshed } = await restoreLostConfirmation()
+    vi.mocked(api.getSubscriptionChangeReceipt).mockResolvedValue(applied)
+    await flow.retryOriginalConfirmation()
+    expect(api.confirmSubscriptionChange).not.toHaveBeenCalled()
+    expect(flow.verificationState.value).toBe('verified')
+    expect(refreshed).toHaveBeenCalledOnce()
+  })
+
+  it('keeps a failed original confirmation locked when another administrator already created the subscription', async () => {
+    const { flow, refreshed } = await restoreLostConfirmation()
+    vi.mocked(api.confirmSubscriptionChange).mockRejectedValue(new api.CommercialApiError('conflict', 409, 'conflict'))
+    vi.mocked(api.getTenantSubscription).mockResolvedValue({ tenantId: 'tenant-a', subscriptionId: 'other-subscription' } as api.TenantSubscriptionDTO)
+    await flow.retryOriginalConfirmation()
+    expect(flow.confirmationSubmitted.value).toBe(true)
+    expect(flow.preview.value?.changeId).toBe('change-first')
+    expect(refreshed).toHaveBeenCalledOnce()
+    expect(flow.statusMessage.value).toContain('其他管理员')
+    expect(api.previewSubscriptionChange).not.toHaveBeenCalled()
+  })
+
+  it('keeps an uncertain HTTP500 retry locked without inferring that the original write did not commit', async () => {
+    const { flow } = await restoreLostConfirmation()
+    vi.mocked(api.confirmSubscriptionChange).mockRejectedValue(new api.CommercialApiError('server unavailable', 500, 'http'))
+    await flow.retryOriginalConfirmation()
+    expect(flow.confirmationSubmitted.value).toBe(true)
+    expect(flow.preview.value?.changeId).toBe('change-first')
+    expect(api.getTenantSubscription).not.toHaveBeenCalled()
+    expect(api.getSubscriptionChangeReceipt).toHaveBeenCalledTimes(2)
+    expect(api.previewSubscriptionChange).not.toHaveBeenCalled()
+  })
+
+  it('discards original retry reconciliation when the tenant changes during authoritative reads', async () => {
+    const { flow, tenant, refreshed, absent } = await restoreLostConfirmation()
+    const subscription = deferred<api.TenantSubscriptionDTO>()
+    vi.mocked(api.confirmSubscriptionChange).mockRejectedValue(new api.CommercialApiError('preview expired', 409, 'conflict'))
+    vi.mocked(api.getTenantSubscription).mockReturnValue(subscription.promise)
+    const retry = flow.retryOriginalConfirmation()
+    await flushPromises()
+    expect(api.getTenantSubscription).toHaveBeenCalledWith('tenant-a')
+    tenant.value = 'tenant-b'
+    subscription.reject(absent)
+    await retry
+    expect(flow.preview.value).toBeNull()
+    expect(flow.recoveryChangeId.value).toBe('')
+    expect(flow.statusMessage.value).toBe('')
+    expect(flow.errorMessage.value).toBe('')
+    expect(refreshed).not.toHaveBeenCalled()
+  })
+
   it('restores an applied confirmed change from tenant receipt without reading an actor-private preview', async () => {
     const { flow, refreshed } = setup()
     flow.preview.value = null

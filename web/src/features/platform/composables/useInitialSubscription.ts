@@ -638,7 +638,15 @@ export function useInitialSubscription(tenantId: () => string, onRefresh: () => 
       receipt.value = confirmed
       await readResult(context)
     } catch (error) {
-      if (context.current()) errorMessage.value = describeError(error, '原确认结果仍待确认，请重新读取结果。')
+      if (!context.current()) return
+      if (error instanceof CommercialApiError && (error.code === 'conflict' || error.status === 400)) {
+        // The original preview can expire before its exact request is retried.
+        // Reuse the same receipt/subscription reconciliation as first confirm;
+        // neither the rejection nor a single missing read permits a new write.
+        await recoverConcurrentActivation(context)
+      } else {
+        errorMessage.value = describeError(error, '原确认结果仍待确认，请重新读取结果。')
+      }
     } finally {
       if (context.current()) pending.value = false
     }

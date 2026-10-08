@@ -37,6 +37,16 @@ func (s *service) confirm(ctx context.Context, actorID, tenantID, changeID, requ
 			return change.Receipt{}, err
 		}
 		if hint == nil {
+			// A used confirmation key still belongs to its original fingerprint
+			// when a caller supplies a different tenant/change lookup. Preserve
+			// that conflict (or exact replay) before reporting a missing preview.
+			replay, replayErr := repo.ReceiptForRequest(call, tenantID, actorID, requestID, fingerprint)
+			if replayErr != nil {
+				return change.Receipt{}, replayErr
+			}
+			if replay != nil {
+				return *replay, nil
+			}
 			return change.Receipt{}, change.ErrNotFound
 		}
 		var raw subscription.Subscription
