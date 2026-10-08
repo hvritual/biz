@@ -4,7 +4,7 @@ status: ready_for_review
 task_ref:
   issue: "#340"
   baseline_commit: aa15de7d8e0091dc210f63fe422ad54c649a80fa
-  candidate_commit: 1efb946231bd4dc81154584ab694b778649dcaf1
+  candidate_commit: fdddd8bd4c67171c8f6b1f5bcd257545e371aabd
   name: 平台管理员租户首次订阅与模块开通
 classification:
   type: business_task
@@ -47,55 +47,55 @@ sources:
 - id: proto_contract
   kind: repository_contract
   path: contracts/proto/commercial/v1/subscription_change.proto
-  commit: 1efb946231bd4dc81154584ab694b778649dcaf1
+  commit: fdddd8bd4c67171c8f6b1f5bcd257545e371aabd
   locator: PreviewSubscriptionChangeRequest / ConfirmSubscriptionChangeRequest
   claim: INITIAL 复用现有平台变更协议，首次预览显式携带 sales_scope，确认绑定 preview_hash。
 - id: subscription_model
   kind: implementation
   path: internal/commercial/domain/subscription/model.go
-  commit: 1efb946231bd4dc81154584ab694b778649dcaf1
+  commit: fdddd8bd4c67171c8f6b1f5bcd257545e371aabd
   locator: OriginInitialActivation / StateProvisioning / Subscription.Validate
   claim: 首次开通具有独立来源事实，准备期间不冒充已激活权益。
 - id: change_authority
   kind: implementation
   path: internal/commercial/application/subscriptionchanges/internal/usecase/confirm.go
-  commit: 1efb946231bd4dc81154584ab694b778649dcaf1
+  commit: fdddd8bd4c67171c8f6b1f5bcd257545e371aabd
   locator: ConfirmSubscriptionChange
   claim: 首次确认锁定租户与原预览，原子创建订阅和回执；准备期间不会提前生成目标权益。
 - id: preview_authority
   kind: implementation
   path: internal/commercial/application/subscriptionchanges/internal/usecase/preview.go
-  commit: 1efb946231bd4dc81154584ab694b778649dcaf1
+  commit: fdddd8bd4c67171c8f6b1f5bcd257545e371aabd
   locator: PreviewSubscriptionChange / preview
   claim: 首次预览使用真实租户、销售范围、精确版本资格和商业目录形成服务端预览事实。
 - id: prepared_change_authority
   kind: implementation
   path: internal/commercial/application/subscriptionchanges/internal/usecase/prepared.go
-  commit: 1efb946231bd4dc81154584ab694b778649dcaf1
+  commit: fdddd8bd4c67171c8f6b1f5bcd257545e371aabd
   locator: CompletePreparedSubscriptionChange / CancelPreparedSubscriptionChange
   claim: 准备完成后才原子应用订阅及权益，INITIAL 不能通过通用取消恢复不存在的旧订阅。
 - id: provisioning_authority
   kind: implementation
   path: internal/commercial/domain/provisioning/model.go
-  commit: 1efb946231bd4dc81154584ab694b778649dcaf1
+  commit: fdddd8bd4c67171c8f6b1f5bcd257545e371aabd
   locator: Task / Retry / Complete
   claim: 准备任务有独立状态、重试和最终完成事实；INITIAL 禁止用通用取消恢复不存在的旧套餐。
 - id: platform_service
   kind: implementation
   path: web/src/services/commercial/platformCommercial.ts
-  commit: 1efb946231bd4dc81154584ab694b778649dcaf1
+  commit: fdddd8bd4c67171c8f6b1f5bcd257545e371aabd
   locator: listPlans / previewSubscriptionChange / confirmSubscriptionChange
   claim: 前端使用可信会话、CSRF、幂等键和真实平台商业接口。
 - id: current_page
   kind: implementation
   path: web/src/features/platform/pages/CommercialTenantEntitlementsView.vue
-  commit: 1efb946231bd4dc81154584ab694b778649dcaf1
+  commit: fdddd8bd4c67171c8f6b1f5bcd257545e371aabd
   locator: CommercialTenantEntitlementsView / InitialSubscriptionWorkspace / useInitialSubscription
   claim: 当前产品候选已有可信租户上下文首次开通、原变更结果恢复、有效权益确认及已订阅变更入口；四视口与人工体验仍分别验收。
 - id: recovery_orchestration
   kind: implementation
   path: web/src/features/platform/composables/useInitialSubscription.ts
-  commit: 1efb946231bd4dc81154584ab694b778649dcaf1
+  commit: fdddd8bd4c67171c8f6b1f5bcd257545e371aabd
   locator: retryOriginalConfirmation / recoverConcurrentActivation / restoreSubmission
   claim: 原请求重试保持同一幂等键；明确拒绝后先对账原回执和当前订阅，仅双重 404 解锁重新预览；迟到结果不能跨租户上下文。
 page_pattern:
