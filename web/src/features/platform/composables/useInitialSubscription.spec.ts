@@ -9,7 +9,7 @@ import { recallInitialSubscription, rememberInitialSubscription, forgetInitialSu
 
 vi.mock('@/services/commercial/platformCommercial', async (original) => {
   const actual = await original<typeof import('@/services/commercial/platformCommercial')>()
-  return { ...actual, listPlans: vi.fn(), listPlanVersions: vi.fn(), checkPlanEligibility: vi.fn(),
+  return { ...actual, listPlans: vi.fn(), listPlanVersions: vi.fn(), getPlanVersion: vi.fn(), checkPlanEligibility: vi.fn(),
     previewSubscriptionChange: vi.fn(), confirmSubscriptionChange: vi.fn(), getTenantSubscription: vi.fn(),
     explainTenantEntitlements: vi.fn(), getSubscriptionChangeReceipt: vi.fn(), getSubscriptionChangePreview: vi.fn(), getProvisioningTask: vi.fn(),
     retryProvisioningTask: vi.fn(), commercialRequestId: vi.fn(() => 'request-first') }
@@ -59,6 +59,7 @@ beforeEach(() => {
   vi.mocked(recallInitialSubscription).mockResolvedValue(null)
   vi.mocked(forgetInitialSubscription).mockResolvedValue(undefined)
   vi.mocked(api.getSubscriptionChangePreview).mockResolvedValue(proposed)
+  vi.mocked(api.getPlanVersion).mockResolvedValue(target)
   vi.mocked(api.commercialRequestId).mockReturnValue('request-first')
   vi.mocked(api.getTenantSubscription).mockResolvedValue({ tenantId: 'tenant-a' } as api.TenantSubscriptionDTO)
   vi.mocked(api.explainTenantEntitlements).mockResolvedValue({ tenantId: 'tenant-a' } as api.EntitlementView)
@@ -94,6 +95,54 @@ describe('first subscription in-flight context and confirmation recovery', () =>
     expect(api.getSubscriptionChangeReceipt).toHaveBeenCalledWith('tenant-a', 'change-first')
     expect(refreshed).toHaveBeenCalledTimes(1)
     expect(api.confirmSubscriptionChange).toHaveBeenCalledTimes(1)
+  })
+
+  it('permits fresh preview only after both original receipt and tenant subscription are proven absent', async () => {
+    const { flow } = setup()
+    vi.mocked(api.confirmSubscriptionChange).mockRejectedValue(new api.CommercialApiError('stale preview', 409, 'conflict'))
+    vi.mocked(api.getSubscriptionChangeReceipt).mockRejectedValue(new api.CommercialApiError('not found', 404, 'http'))
+    vi.mocked(api.getTenantSubscription).mockRejectedValue(new api.CommercialApiError('not found', 404, 'http'))
+    await flow.confirmPreview()
+    expect(flow.confirmationSubmitted.value).toBe(false)
+    expect(flow.preview.value).toBeNull()
+    expect(flow.selectedVersionKey.value).toBe('')
+    expect(flow.recoveryChangeId.value).toBe('')
+    expect(flow.statusMessage.value).toContain('重新检查版本')
+    expect(api.getSubscriptionChangeReceipt).toHaveBeenCalledWith('tenant-a', 'change-first')
+    expect(api.getTenantSubscription).toHaveBeenCalledWith('tenant-a')
+  })
+
+  it('keeps the original request locked when a conflict cannot be authoritatively reconciled', async () => {
+    const { flow } = setup()
+    vi.mocked(api.confirmSubscriptionChange).mockRejectedValue(new api.CommercialApiError('conflict', 409, 'conflict'))
+    vi.mocked(api.getSubscriptionChangeReceipt).mockRejectedValue(new Error('receipt read unavailable'))
+    await flow.confirmPreview()
+    expect(flow.confirmationSubmitted.value).toBe(true)
+    expect(flow.preview.value?.changeId).toBe('change-first')
+    expect(flow.errorMessage.value).toContain('暂不能重复开通')
+    expect(api.getTenantSubscription).not.toHaveBeenCalled()
+  })
+
+  it('never previews or confirms a price-referenced version even when eligibility reports yes', async () => {
+    const { flow } = setup()
+    const priced = { ...target, terms: { modules: [], salesScope: ['office'], validityMode: 'fixed_days', validityDays: 365, priceRef: 'external-price' } } as api.PlanVersionDTO
+    vi.mocked(api.listPlanVersions).mockResolvedValue({ versions: [priced], nextAfterVersion: '' })
+    vi.mocked(api.checkPlanEligibility).mockResolvedValue({ eligible: true, reason: '' })
+    await flow.loadPublishedVersions()
+    expect(flow.candidates.value).toHaveLength(1)
+    expect(flow.candidates.value[0]?.eligible).toBe(false)
+    expect(flow.candidates.value[0]?.reason).toContain('外部商业审批')
+    expect(flow.selectedVersion.value).toBeNull()
+    await flow.createPreview()
+    expect(api.previewSubscriptionChange).not.toHaveBeenCalled()
+    flow.candidates.value = [{ version: priced, eligible: true, reason: '' }]
+    flow.selectedVersionKey.value = 'office-pro:3'
+    flow.preview.value = { ...proposed, target: priced }
+    flow.approved.value = true
+    flow.confirmReason.value = 'approve'
+    await flow.confirmPreview()
+    expect(api.confirmSubscriptionChange).not.toHaveBeenCalled()
+    expect(flow.errorMessage.value).toContain('外部商业审批')
   })
 
   it('does not publish a confirmation received after switching tenants', async () => {
@@ -184,26 +233,72 @@ describe('first subscription in-flight context and confirmation recovery', () =>
 
 
 describe('first subscription reload recovery', () => {
-  it('restores an applied original change using server preview, receipt and final entitlements', async () => {
+  it('restores an applied confirmed change from tenant receipt without reading an actor-private preview', async () => {
     const { flow, refreshed } = setup()
     flow.preview.value = null
     flow.recoveryChangeId.value = 'change-first'
-    vi.mocked(api.getSubscriptionChangeReceipt).mockResolvedValue({ ...applied, after: { salesScope: 'office' } as api.TenantSubscriptionDTO })
+    vi.mocked(api.getSubscriptionChangeReceipt).mockResolvedValue({ ...applied, after: {
+      tenantId: 'tenant-a', subscriptionId: 'sub-first', kind: 'BASE', state: 'ACTIVE',
+      planCode: 'office-pro', planVersion: '3', salesScope: 'office',
+    } as api.TenantSubscriptionDTO })
     await flow.restoreSubmission()
     expect(flow.verificationState.value).toBe('verified')
     expect(refreshed).toHaveBeenCalledOnce()
+    expect(api.getPlanVersion).toHaveBeenCalledWith('office-pro', '3')
+    expect(api.getSubscriptionChangePreview).not.toHaveBeenCalled()
     expect(api.confirmSubscriptionChange).not.toHaveBeenCalled()
+  })
+
+  it('allows another authorized administrator to recover and retry the same confirmed provisioning task', async () => {
+    const { flow } = setup()
+    flow.preview.value = null
+    flow.recoveryChangeId.value = 'change-first'
+    vi.mocked(api.getSubscriptionChangeReceipt).mockResolvedValue({
+      ...applied, status: 'PROVISIONING', provisioningTaskId: 'task-first',
+      after: { tenantId: 'tenant-a', subscriptionId: 'sub-first', kind: 'BASE', state: 'PROVISIONING',
+        planCode: 'office-pro', planVersion: '3', salesScope: 'office', pendingChangeId: 'change-first' } as api.TenantSubscriptionDTO,
+    })
+    vi.mocked(api.getProvisioningTask).mockResolvedValue({
+      taskId: 'task-first', tenantId: 'tenant-a', changeId: 'change-first', state: 'FAILED', revision: '7', retryAllowed: true,
+    } as api.ProvisioningTaskDTO)
+    vi.mocked(api.retryProvisioningTask).mockResolvedValue({
+      taskId: 'task-first', tenantId: 'tenant-a', state: 'RETRY_WAIT', revision: '8', retryAllowed: false,
+    } as api.ProvisioningTaskDTO)
+    await flow.restoreSubmission()
+    expect(api.getSubscriptionChangePreview).not.toHaveBeenCalled()
+    expect(api.getPlanVersion).toHaveBeenCalledWith('office-pro', '3')
+    expect(flow.task.value?.state).toBe('FAILED')
+    expect(flow.task.value?.retryAllowed).toBe(true)
+    expect(flow.confirmationSubmitted.value).toBe(true)
+    await flow.retryTask()
+    expect(api.retryProvisioningTask).toHaveBeenCalledWith('tenant-a', 'task-first', expect.objectContaining({ expectedRevision: '7' }))
+    expect(api.confirmSubscriptionChange).not.toHaveBeenCalled()
+  })
+
+  it('rejects a forged or cross-tenant confirmed receipt without fetching a private preview', async () => {
+    const { flow } = setup()
+    flow.preview.value = null
+    flow.recoveryChangeId.value = 'change-first'
+    vi.mocked(api.getSubscriptionChangeReceipt).mockResolvedValue({
+      ...applied, after: { tenantId: 'tenant-b', subscriptionId: 'sub-first', kind: 'BASE',
+        planCode: 'office-pro', planVersion: '3', salesScope: 'office' } as api.TenantSubscriptionDTO,
+    })
+    await flow.restoreSubmission()
+    expect(flow.verificationState.value).not.toBe('verified')
+    expect(api.getPlanVersion).not.toHaveBeenCalled()
+    expect(api.getSubscriptionChangePreview).not.toHaveBeenCalled()
   })
 
   it('does not restore a change belonging to another tenant', async () => {
     const { flow, refreshed } = setup()
     flow.preview.value = null
     flow.recoveryChangeId.value = 'change-first'
+    vi.mocked(api.getSubscriptionChangeReceipt).mockRejectedValue(new api.CommercialApiError('not found', 404, 'http'))
     vi.mocked(api.getSubscriptionChangePreview).mockResolvedValue({ ...proposed, tenantId: 'tenant-b' })
     await flow.restoreSubmission()
     expect(flow.verificationState.value).not.toBe('verified')
     expect(refreshed).not.toHaveBeenCalled()
-    expect(api.getSubscriptionChangeReceipt).not.toHaveBeenCalled()
+    expect(api.getSubscriptionChangeReceipt).toHaveBeenCalledOnce()
   })
 
   it('retries a lost confirmation with the saved request id, hash and reason, not a new request', async () => {
@@ -228,6 +323,7 @@ describe('first subscription reload recovery', () => {
     flow.preview.value = null
     flow.recoveryChangeId.value = 'change-first'
     const response = deferred<api.SubscriptionChangePreviewDTO>()
+    vi.mocked(api.getSubscriptionChangeReceipt).mockRejectedValue(new api.CommercialApiError('not found', 404, 'http'))
     vi.mocked(api.getSubscriptionChangePreview).mockReturnValue(response.promise)
     const pending = flow.restoreSubmission()
     tenant.value = 'tenant-b'

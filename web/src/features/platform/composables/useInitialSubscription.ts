@@ -15,6 +15,7 @@ import {
   getTenantSubscription,
   listPlans,
   listPlanVersions,
+  getPlanVersion,
   previewSubscriptionChange,
   retryProvisioningTask,
   type PlanCatalogEntryDTO,
@@ -36,6 +37,7 @@ type VerificationState = 'idle' | 'pending' | 'verified' | 'failed'
 type RecoveryOptions = {
   changeId?: () => string | undefined
   onSubmitted?: (changeId: string) => void | Promise<void>
+  onCleared?: () => void | Promise<void>
 }
 
 export function useInitialSubscription(tenantId: () => string, onRefresh: () => void, options: RecoveryOptions = {}) {
@@ -210,7 +212,14 @@ export function useInitialSubscription(tenantId: () => string, onRefresh: () => 
       const checked = await Promise.all(versions.map(async (version): Promise<InitialSubscriptionTargetCandidate> => {
         try {
           const result = await checkPlanEligibility(version.planCode, version.version, scope)
-          return { version, eligible: Boolean(result.eligible), reason: result.reason || '' }
+          const needsExternalApproval = Boolean(version.terms?.priceRef?.trim())
+          return {
+            version,
+            eligible: Boolean(result.eligible) && !needsExternalApproval,
+            reason: needsExternalApproval
+              ? '此版本具有价格引用，须经外部商业审批，不能在免支付首次开通流程中确认。'
+              : result.reason || '',
+          }
         } catch (error) {
           if (error instanceof CommercialApiError && ['unauthenticated', 'forbidden'].includes(error.code)) throw error
           return { version, eligible: false, reason: '当前版本资格暂无法确认' }
@@ -238,6 +247,10 @@ export function useInitialSubscription(tenantId: () => string, onRefresh: () => 
     const target = selectedVersion.value
     if (!target || !selectedCandidate.value?.eligible) {
       errorMessage.value = '请选择当前资格检查确认可适用的已发布版本。'
+      return
+    }
+    if (target.terms?.priceRef?.trim()) {
+      errorMessage.value = '此套餐版本需要外部商业审批，不能在当前免支付首次开通流程中预览。'
       return
     }
     if (!previewReason.value.trim()) {
@@ -277,6 +290,10 @@ export function useInitialSubscription(tenantId: () => string, onRefresh: () => 
     if (pending.value || confirmationSubmitted.value || disposed) return
     const context = captureContext()
     if (!preview.value || !selectedVersion.value) return
+    if (selectedVersion.value.terms?.priceRef?.trim()) {
+      errorMessage.value = '此套餐版本需要外部商业审批，不能在当前免支付首次开通流程中确认。'
+      return
+    }
     if (!approved.value) {
       errorMessage.value = '请先确认已核对首次开通影响。'
       return
@@ -300,9 +317,11 @@ export function useInitialSubscription(tenantId: () => string, onRefresh: () => 
     try {
       await rememberInitialSubscription(submission)
       if (!context.current()) return
-      await options.onSubmitted?.(changeId)
-      if (!context.current()) return
-      const confirmed = await confirmSubscriptionChange(context.tenant, changeId, submission.input)
+      // Start the server command before changing the route. A keyed RouterView
+      // can remount on the query change, but must not suppress a submitted request.
+      const confirmation = confirmSubscriptionChange(context.tenant, changeId, submission.input)
+      void options.onSubmitted?.(changeId)
+      const confirmed = await confirmation
       if (!context.current()) return
       receipt.value = confirmed
       if (receipt.value.status === 'APPLIED') {
@@ -336,7 +355,7 @@ export function useInitialSubscription(tenantId: () => string, onRefresh: () => 
     const confirmed = receipt.value
     const selected = selectedVersion.value
     const proposed = preview.value
-    if (!confirmed || !selected || !proposed) return
+    if (!confirmed || !selected) return
     const active = captureContext()
     const context = { tenantId: active.tenant, salesScope: salesScope.value.trim(), target: selected, preview: proposed, receipt: confirmed }
     const generation = ++readbackEpoch
@@ -371,7 +390,7 @@ export function useInitialSubscription(tenantId: () => string, onRefresh: () => 
   }
 
   async function readResult(context: ReturnType<typeof captureContext>) {
-    const changeId = preview.value?.changeId
+    const changeId = preview.value?.changeId || recoveryChangeId.value.trim()
     if (!changeId || !context.current()) return
     const latest = await getSubscriptionChangeReceipt(context.tenant, changeId)
     if (!context.current()) return
@@ -445,19 +464,53 @@ export function useInitialSubscription(tenantId: () => string, onRefresh: () => 
   }
 
   async function recoverConcurrentActivation(context: ReturnType<typeof captureContext>) {
+    const changeId = preview.value?.changeId
+    if (!changeId || !context.current()) return
     try {
-      const existing = await getTenantSubscription(context.tenant)
+      // A 409 can race with an already committed or provisioning change.
+      // An HTTP response lost after commit is NOT permission to re-preview.
+      let existingReceipt: SubscriptionChangeReceiptDTO | null = null
+      try {
+        existingReceipt = await getSubscriptionChangeReceipt(context.tenant, changeId)
+      } catch (error) {
+        if (!(error instanceof CommercialApiError && error.status === 404)) throw error
+      }
       if (!context.current()) return
-      if (existing?.subscriptionId && existing.tenantId === context.tenant) {
-        statusMessage.value = '该租户已被其他管理员完成或接管首次开通，正在切换到当前真实订阅。'
-        onRefresh()
+      if (existingReceipt) {
+        if (existingReceipt.tenantId !== context.tenant || existingReceipt.changeId !== changeId
+          || existingReceipt.action !== 'INITIAL') {
+          throw new Error('原变更回执归属不一致，不能重新开通。')
+        }
+        receipt.value = existingReceipt
+        await readResult(context)
         return
       }
+
+      try {
+        const existing = await getTenantSubscription(context.tenant)
+        if (!context.current()) return
+        if (existing?.subscriptionId && existing.tenantId === context.tenant) {
+          statusMessage.value = '该租户已被其他管理员完成或接管首次开通，正在切换到当前真实订阅。'
+          onRefresh()
+          return
+        }
+        throw new Error('当前租户订阅状态无法确认，不能重新预览。')
+      } catch (error) {
+        if (!(error instanceof CommercialApiError && error.status === 404)) throw error
+      }
+      if (!context.current()) return
+
+      // Both the original confirmed receipt AND the current subscription are
+      // authoritatively absent. Only this case permits a completely new preview.
+      clearFlow(false)
+      recoveryChangeId.value = ''
+      statusMessage.value = '原确认请求没有形成开通回执，租户当前也没有基础订阅。请重新检查版本并生成新方案。'
+      void options.onCleared?.()
     } catch {
-      // Preserve the conflict if the authoritative result cannot be read.
+      if (context.current()) {
+        errorMessage.value = '确认出现冲突，但无法完整核对原回执和当前订阅。请保留变更编号并读取原结果，暂不能重复开通。'
+      }
     }
-    if (!context.current()) return
-    errorMessage.value = '首次开通事实已发生变化。请重新读取租户状态后再继续，不会覆盖其他管理员的操作。'
   }
 
   async function restoreSubmission() {
@@ -471,49 +524,83 @@ export function useInitialSubscription(tenantId: () => string, onRefresh: () => 
     errorMessage.value = ''
     statusMessage.value = ''
     try {
+      let confirmed: SubscriptionChangeReceiptDTO | null = null
+      try {
+        confirmed = await getSubscriptionChangeReceipt(context.tenant, id)
+      } catch (error) {
+        if (!(error instanceof CommercialApiError && error.status === 404)) throw error
+      }
+      if (!context.current()) return
+
+      if (confirmed) {
+        // Tenant-owned confirmed receipts must be recoverable by another platform
+        // administrator. The original preview is intentionally actor-private.
+        const after = confirmed.after
+        if (confirmed.tenantId !== context.tenant || confirmed.changeId !== id
+          || confirmed.action !== 'INITIAL' || !/^[a-f0-9]{64}$/i.test(confirmed.previewHash)
+          || !after || after.tenantId !== context.tenant || after.kind !== 'BASE'
+          || !after.subscriptionId || !after.planCode || !after.salesScope || after.salesScope === '*'
+          || (typeof after.planVersion === 'number' && !Number.isSafeInteger(after.planVersion))
+          || !/^[1-9]\d*$/.test(String(after.planVersion))) {
+          throw new Error('已确认开通回执或订阅目标不完整，不能恢复为可信结果。')
+        }
+        const exact = await getPlanVersion(after.planCode, after.planVersion)
+        if (!context.current()) return
+        if (exact.planCode !== after.planCode || String(exact.version) !== String(after.planVersion)) {
+          throw new Error('原开通任务与套餐的精确版本不一致，不能恢复。')
+        }
+        // Selection watchers clear the draft. Install only verified tenant-owned
+        // receipt and exact server plan after those synchronous watcher resets.
+        salesScope.value = after.salesScope
+        planCode.value = exact.planCode
+        candidates.value = [{ version: exact, eligible: false, reason: '只读恢复原已确认任务，不用于重复开通' }]
+        selectedVersionKey.value = versionKey(exact)
+        preview.value = null // Do not fabricate an actor-private preview.
+        receipt.value = confirmed
+        frozenSubmission = null
+        recoveryChangeId.value = id
+        confirmationSubmitted.value = true
+        retryConfirmationAllowed.value = false
+        context = captureContext()
+        await options.onSubmitted?.(id)
+        if (!context.current()) return
+        await readResult(context)
+        return
+      }
+
+      // A not-yet-confirmed change may be retried only by the original actor
+      // carrying the exact original idempotency request and actor-owned preview.
       const [proposed, journal] = await Promise.all([
         getSubscriptionChangePreview(context.tenant, id),
         recallInitialSubscription(context.tenant, id),
       ])
       if (!context.current()) return
-      if (proposed.tenantId !== context.tenant || proposed.changeId !== id || proposed.action !== 'INITIAL' || !proposed.target) {
+      if (proposed.tenantId !== context.tenant || proposed.changeId !== id
+        || proposed.action !== 'INITIAL' || !proposed.target) {
         throw new Error('该变更不是当前租户的首次开通任务。')
       }
-      let confirmed: SubscriptionChangeReceiptDTO | null = null
-      try { confirmed = await getSubscriptionChangeReceipt(context.tenant, id) } catch (error) {
-        if (!(error instanceof CommercialApiError && error.status === 404)) throw error
-      }
-      if (!context.current()) return
-      if (confirmed && (confirmed.tenantId !== context.tenant || confirmed.changeId !== id
-        || confirmed.action !== 'INITIAL' || confirmed.previewHash !== proposed.previewHash)) {
-        throw new Error('原开通任务与处理结果不一致，不能继续。')
-      }
       const saved = journal?.input.previewHash === proposed.previewHash ? journal : null
-      const scope = confirmed?.after?.salesScope || saved?.salesScope || ''
-      if (!scope || scope === '*') throw new Error('原开通请求的适用范围尚无法确认，请保留变更编号交由原操作人核对。')
-      // These assignments invalidate old async work. Install the server snapshot
-      // only after synchronous selection watchers have cleared the old draft.
+      const scope = saved?.salesScope || ''
+      if (!scope || scope === '*') {
+        throw new Error('原确认请求的适用范围无法核验，请由原操作人使用原请求记录恢复。')
+      }
       salesScope.value = scope
       planCode.value = proposed.target.planCode
-      candidates.value = [{ version: proposed.target, eligible: false, reason: '仅恢复原任务，不用于新开通' }]
+      candidates.value = [{ version: proposed.target, eligible: false, reason: '仅恢复原请求，不用于新开通' }]
       selectedVersionKey.value = versionKey(proposed.target)
       preview.value = proposed
-      receipt.value = confirmed
+      receipt.value = null
       frozenSubmission = saved
       recoveryChangeId.value = id
       confirmationSubmitted.value = true
-      retryConfirmationAllowed.value = !confirmed && saved !== null
-      pending.value = true
+      retryConfirmationAllowed.value = saved !== null
       context = captureContext()
       await options.onSubmitted?.(id)
       if (!context.current()) return
-      if (confirmed) await readResult(context)
-      else {
-        verificationState.value = 'pending'
-        statusMessage.value = saved
-          ? '尚未取得原确认回执。可继续读取，或使用原请求编号和原内容重试确认。'
-          : '尚未取得原确认回执；当前设备没有原请求记录，请保留变更编号交由原操作人核对。'
-      }
+      verificationState.value = 'pending'
+      statusMessage.value = saved
+        ? '尚未取得原确认回执。可继续读取，或使用原请求编号和原内容重试确认。'
+        : '尚未取得原确认回执；当前设备没有原请求记录，请保留变更编号交由原操作人核对。'
     } catch (error) {
       if (context.current()) errorMessage.value = describeError(error, '原开通任务暂时无法恢复。')
     } finally {

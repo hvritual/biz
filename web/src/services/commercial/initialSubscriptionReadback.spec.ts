@@ -73,7 +73,7 @@ const refusalCases: [string, (input: InitialSubscriptionReadback) => void][] = [
   ['wrong subscription tenant', (i) => { i.subscription.tenantId = 'tenant-b' }],
   ['wrong entitlement tenant', (i) => { i.entitlements.tenantId = 'tenant-b' }],
   ['wrong receipt tenant', (i) => { i.receipt.tenantId = 'tenant-b' }],
-  ['wrong preview tenant', (i) => { i.preview.tenantId = 'tenant-b' }],
+  ['wrong preview tenant', (i) => { if (i.preview) i.preview.tenantId = 'tenant-b' }],
   ['wrong scope', (i) => { i.subscription.salesScope = 'rental' }],
   ['wildcard scope', (i) => { i.salesScope = '*' }],
   ['different subscription', (i) => { i.subscription.subscriptionId = 'other-subscription' }],
@@ -103,6 +103,17 @@ describe('initial subscription authoritative readback', () => {
   it.each(refusalCases)('does not confirm %s', (_name, mutate) => {
     const input = fixture()
     mutate(input)
+    expect(initialSubscriptionReadbackMatches(input)).toBe(false)
+  })
+
+  it('verifies a second-admin recovery from confirmed receipt without inventing an actor-private preview', () => {
+    const input = fixture()
+    input.preview = null
+    expect(initialSubscriptionReadbackMatches(input)).toBe(true)
+    input.receipt.previewHash = ''
+    expect(initialSubscriptionReadbackMatches(input)).toBe(false)
+    input.receipt.previewHash = 'c'.repeat(64)
+    input.receipt.after!.subscriptionId = 'other-subscription'
     expect(initialSubscriptionReadbackMatches(input)).toBe(false)
   })
 

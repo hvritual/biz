@@ -5,7 +5,7 @@ import { backendStateTone, backendTermLabel } from '@/i18n/backend-terms'
 import { useInitialSubscription } from '@/features/platform/composables/useInitialSubscription'
 
 const props = defineProps<{ tenantId: string; changeId?: string }>()
-const emit = defineEmits<{ refresh: []; submitted: [changeId: string] }>()
+const emit = defineEmits<{ refresh: []; submitted: [changeId: string]; cleared: [] }>()
 
 const {
   plans,
@@ -47,6 +47,7 @@ const {
 } = useInitialSubscription(() => props.tenantId, () => emit('refresh'), {
   changeId: () => props.changeId,
   onSubmitted: (id) => emit('submitted', id),
+  onCleared: () => emit('cleared'),
 })
 </script>
 
@@ -132,7 +133,7 @@ const {
           />
           <span>
             <strong>{{ candidate.version.name || backendTermLabel('plan', candidate.version.planCode) }} · v{{ candidate.version.version }}</strong>
-            <small>{{ candidate.eligible ? '当前范围可开通' : '当前范围不可开通' }}</small>
+            <small>{{ candidate.eligible ? '当前范围可开通' : (candidate.reason || '当前范围不可开通') }}</small>
           </span>
         </label>
       </div>
@@ -178,7 +179,7 @@ const {
           <span>首次开通原因</span>
           <UiTextarea id="initial-preview-reason" v-model="previewReason" class="input" rows="2" placeholder="说明为什么为该租户开通此套餐版本" />
         </label>
-        <UiButton class="btn primary" type="button" :disabled="pending" @click="createPreview">查看首次开通方案</UiButton>
+        <UiButton class="btn primary" type="button" :disabled="pending || !!selectedVersion.terms?.priceRef?.trim()" @click="createPreview">查看首次开通方案</UiButton>
       </div>
     </section>
 
@@ -204,7 +205,7 @@ const {
           <span>确认原因</span>
           <UiTextarea id="initial-confirm-reason" v-model="confirmReason" :disabled="pending || confirmationSubmitted" class="input" rows="2" placeholder="说明本次批准依据" />
         </label>
-        <UiButton class="btn primary" type="button" :disabled="pending || confirmationSubmitted" @click="confirmPreview">确认首次开通</UiButton>
+        <UiButton class="btn primary" type="button" :disabled="pending || confirmationSubmitted || !!selectedVersion?.terms?.priceRef?.trim()" @click="confirmPreview">确认首次开通</UiButton>
       </div>
     </section>
 

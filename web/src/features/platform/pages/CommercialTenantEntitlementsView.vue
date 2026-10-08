@@ -249,11 +249,15 @@ async function recordInitialSubmission(changeId: string) {
   await router.replace({ query: { ...route.query, tenant: activeTenantId.value, initialChange: changeId } })
 }
 
-async function initialFinished() {
-  const tenant = activeTenantId.value
+async function clearInitialChangeLink() {
+  if (!route.query.initialChange) return
   const query = { ...route.query }
   delete query.initialChange
   await router.replace({ query })
+}
+async function initialFinished() {
+  const tenant = activeTenantId.value
+  await clearInitialChangeLink()
   if (!disposed && activeTenantId.value === tenant) await loadWorkspace()
 }
 
@@ -334,7 +338,7 @@ onMounted(() => {
 
       <div data-ui-region="change-workspace">
         <SubscriptionChangeWorkspace v-if="subscription && !initialChangeId" :tenant-id="activeTenantId" :subscription="subscription" @refresh="loadWorkspace" />
-        <InitialSubscriptionWorkspace v-else :tenant-id="activeTenantId" :change-id="initialChangeId" @submitted="recordInitialSubmission" @refresh="initialFinished" />
+        <InitialSubscriptionWorkspace v-else :tenant-id="activeTenantId" :change-id="initialChangeId" @submitted="recordInitialSubmission" @cleared="clearInitialChangeLink" @refresh="initialFinished" />
       </div>
 
       <section class="resolver-meta card" data-ui-region="resolver-meta">

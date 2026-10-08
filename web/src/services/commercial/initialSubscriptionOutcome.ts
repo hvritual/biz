@@ -11,7 +11,7 @@ export interface InitialSubscriptionReadback {
   tenantId: string
   salesScope: string
   target: PlanVersionDTO
-  preview: SubscriptionChangePreviewDTO
+  preview?: SubscriptionChangePreviewDTO | null
   receipt: SubscriptionChangeReceiptDTO
   subscription: TenantSubscriptionDTO
   entitlements: EntitlementView
@@ -80,10 +80,12 @@ function targetDecisionsConfirmed(view: EntitlementView, target: PlanVersionDTO)
 /** Confirms a readback, never grants access or recomputes server entitlements. */
 export function initialSubscriptionReadbackMatches(input: InitialSubscriptionReadback): boolean {
   const { tenantId, salesScope, target, preview, receipt, subscription, entitlements } = input
-  if (!tenantId || !salesScope || salesScope === '*' || !preview.changeId || !preview.previewHash) return false
-  if (preview.tenantId !== tenantId || preview.action !== 'INITIAL'
-    || receipt.tenantId !== tenantId || receipt.changeId !== preview.changeId
-    || receipt.previewHash !== preview.previewHash || receipt.action !== 'INITIAL'
+  if (!tenantId || !salesScope || salesScope === '*' || !receipt.changeId
+    || !/^[a-f0-9]{64}$/i.test(receipt.previewHash)) return false
+  if (preview && (!preview.changeId || !preview.previewHash || preview.tenantId !== tenantId
+    || preview.action !== 'INITIAL' || receipt.changeId !== preview.changeId
+    || receipt.previewHash !== preview.previewHash)) return false
+  if (receipt.tenantId !== tenantId || receipt.action !== 'INITIAL'
     || receipt.status !== 'APPLIED' || receipt.failureCode) return false
   if (target.state !== 'PUBLISHED' || !target.planCode || uint64(target.version) === null
     || uint64(target.version) === 0n) return false
