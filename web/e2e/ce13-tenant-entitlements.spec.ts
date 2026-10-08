@@ -450,13 +450,18 @@ async function runFirstSubscriptionJourney(page: Page, options: InitialJourneyOp
   await activate('读取套餐目录')
   const planSelect = page.getByLabel('套餐', { exact: true })
   if (options.keyboard) {
+    const currentOption = page.getByRole('option', { name: '请选择套餐', exact: true })
+    const targetOption = page.getByRole('option').filter({ hasText: target.name })
     await tabToInitialControl(page, planSelect)
     await page.keyboard.press('Enter')
-    await expect(page.getByRole('option').filter({ hasText: target.name })).toBeVisible()
+    await expect(targetOption).toBeVisible()
+    await expect(currentOption).toBeFocused()
     await page.keyboard.press('Escape')
     await expect(planSelect).toBeFocused()
     await page.keyboard.press('Enter')
+    await expect(currentOption).toBeFocused()
     await page.keyboard.press('End')
+    await expect(targetOption).toBeFocused()
     await page.keyboard.press('Enter')
     await expect(planSelect).toBeFocused()
     await expect(planSelect).toContainText(target.name)
@@ -493,7 +498,7 @@ async function runFirstSubscriptionJourney(page: Page, options: InitialJourneyOp
 
   if (options.recoverResults) {
     await expect(page.getByText('首次开通结果待确认', { exact: true })).toBeVisible()
-    await expect(page.getByLabel('适用范围')).toBeDisabled()
+    await expect(page.getByRole('textbox', { name: /^适用范围(?:\s|$)/ })).toBeDisabled()
     await expect(page.getByRole('button', { name: '确认首次开通' })).toBeDisabled()
     await options.observe?.('unknown', page.getByText('首次开通结果待确认', { exact: true }))
     await activate('读取原变更结果')

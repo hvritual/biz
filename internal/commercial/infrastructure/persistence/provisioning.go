@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	p "github.com/hvritual/biz/internal/commercial/domain/provisioning"
+	"github.com/hvritual/biz/internal/commercial/domain/subscription"
 	"github.com/hvritual/biz/internal/commercial/infrastructure/consistency"
 	"github.com/hvritual/biz/internal/commercial/ports"
 	"gorm.io/gorm"
@@ -88,6 +89,9 @@ func (r *provisioningRepository) Get(ctx context.Context, tenant, id string) (*p
 }
 func (r *provisioningRepository) LockTask(ctx context.Context, tenant, id string) (*p.Task, error) {
 	if _, e := (&subscriptionChangeRepository{tx: r.tx}).LockTenant(ctx, tenant); e != nil {
+		if errors.Is(e, subscription.ErrNotFound) {
+			return nil, p.ErrNotFound
+		}
 		return nil, e
 	}
 	return r.get(ctx, tenant, id, true)
