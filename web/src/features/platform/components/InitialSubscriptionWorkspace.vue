@@ -4,8 +4,8 @@ import StatusBadge from '@/ui/common/StatusBadge.vue'
 import { backendStateTone, backendTermLabel } from '@/i18n/backend-terms'
 import { useInitialSubscription } from '@/features/platform/composables/useInitialSubscription'
 
-const props = defineProps<{ tenantId: string }>()
-const emit = defineEmits<{ refresh: [] }>()
+const props = defineProps<{ tenantId: string; changeId?: string }>()
+const emit = defineEmits<{ refresh: []; submitted: [changeId: string] }>()
 
 const {
   plans,
@@ -25,6 +25,10 @@ const {
   loadingTargets,
   pending,
   confirmationSubmitted,
+  recoveryChangeId,
+  retryConfirmationAllowed,
+  restoreSubmission,
+  retryOriginalConfirmation,
   errorMessage,
   statusMessage,
   selectedVersion,
@@ -40,7 +44,10 @@ const {
   confirmPreview,
   refreshResult,
   retryTask,
-} = useInitialSubscription(() => props.tenantId, () => emit('refresh'))
+} = useInitialSubscription(() => props.tenantId, () => emit('refresh'), {
+  changeId: () => props.changeId,
+  onSubmitted: (id) => emit('submitted', id),
+})
 </script>
 
 <template>
@@ -48,7 +55,7 @@ const {
     <header class="section-header">
       <div>
         <h2>首次开通套餐</h2>
-        <p>当前租户没有基础订阅。请选择精确已发布版本，确认后再以最终权益结果作为完成依据。</p>
+        <p>{{ changeId ? '正在恢复原首次开通任务；不会创建另一份订阅。' : '请选择精确已发布版本，确认后再以最终权益结果作为完成依据。' }}</p>
       </div>
       <StatusBadge
         v-if="receipt"
@@ -60,6 +67,15 @@ const {
     <div class="guard-note">
       <strong>租户套餐权益与成员权限是两层独立控制。</strong>
       <span>完成首次开通不会自动给成员分配角色或操作权限。</span>
+    </div>
+
+    <div class="preview-form" aria-label="恢复首次开通任务">
+      <label class="field" for="initial-recovery-id">
+        <span>已有开通变更编号</span>
+        <UiInput id="initial-recovery-id" v-model="recoveryChangeId" class="input" :disabled="pending" placeholder="填写原变更编号以读取处理结果" />
+        <small>刷新或重新登录后仍需核对原任务；本机记录不代表权益已生效。</small>
+      </label>
+      <UiButton class="btn" type="button" :disabled="pending || !recoveryChangeId.trim()" @click="restoreSubmission">读取原开通任务</UiButton>
     </div>
 
     <div class="target-grid">
@@ -181,12 +197,12 @@ const {
 
       <div class="confirm-box">
         <label class="check">
-          <UiInput v-model="approved" type="checkbox" />
+          <UiInput v-model="approved" type="checkbox" :disabled="pending || confirmationSubmitted" />
           <span>我已核对 exact 套餐版本、模块/能力/额度、适用范围和准备要求，并确认继续。</span>
         </label>
         <label class="field" for="initial-confirm-reason">
           <span>确认原因</span>
-          <UiTextarea id="initial-confirm-reason" v-model="confirmReason" class="input" rows="2" placeholder="说明本次批准依据" />
+          <UiTextarea id="initial-confirm-reason" v-model="confirmReason" :disabled="pending || confirmationSubmitted" class="input" rows="2" placeholder="说明本次批准依据" />
         </label>
         <UiButton class="btn primary" type="button" :disabled="pending || confirmationSubmitted" @click="confirmPreview">确认首次开通</UiButton>
       </div>
@@ -195,8 +211,9 @@ const {
     <section v-if="confirmationSubmitted && !receipt" class="result-panel verification-state" aria-live="polite">
       <strong>首次开通结果待确认</strong>
       <span>确认请求已发出，但尚未取得回执。请读取原变更结果，不要再次提交或更换目标。</span>
-      <span>变更编号 {{ preview?.changeId }}</span>
+      <span>变更编号 {{ preview?.changeId || recoveryChangeId }}</span>
       <UiButton class="btn" type="button" :disabled="pending" @click="refreshResult">读取原变更结果</UiButton>
+      <UiButton v-if="retryConfirmationAllowed" class="btn" type="button" :disabled="pending" @click="retryOriginalConfirmation">使用原请求重试确认</UiButton>
     </section>
 
     <section v-if="receipt" class="result-panel">
@@ -238,7 +255,7 @@ const {
 </template>
 
 <style scoped>
-.initial-card { overflow: hidden; }
+.initial-card { overflow: hidden; overflow-wrap: anywhere; }
 .section-header, .section-subhead, .target-detail > header { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
 .section-header { padding: 18px 20px; border-bottom: 1px solid var(--color-border); }
 .section-header h2, .section-subhead h3, .target-detail h3 { margin: 0; font-size: 16px; }
@@ -259,7 +276,7 @@ const {
 .version-option { display: flex; gap: 9px; align-items: flex-start; padding: 11px 12px; border: 1px solid var(--color-border); border-radius: 8px; cursor: pointer; }
 .version-option.selected { border-color: var(--color-primary); background: var(--color-primary-soft); }
 .version-option.blocked { opacity: .65; cursor: not-allowed; }
-.version-option span { display: grid; gap: 4px; }
+.version-option span { display: grid; gap: 4px; min-width: 0; overflow-wrap: anywhere; }
 .version-option small { color: var(--color-text-muted); }
 .target-detail > header { padding: 16px 20px; }
 .facts-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; background: var(--color-border); }

@@ -267,6 +267,7 @@ function initialEntitlement(applied: boolean) {
 }
 
 async function mockInitialTargetDiscovery(page: Page) {
+  await page.route('**/api/v1/platform/plans/office-pro/versions/3', (route) => fulfillJson(route, initialPlanVersion()))
   await page.route('**/api/v1/platform/plans?pageSize=100', (route) => fulfillJson(route, {
     plans: [{
       planCode: 'office-pro',

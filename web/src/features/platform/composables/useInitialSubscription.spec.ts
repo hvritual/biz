@@ -5,18 +5,22 @@ import { useInitialSubscription } from './useInitialSubscription'
 import { initialSubscriptionReadbackMatches } from '@/services/commercial/initialSubscriptionOutcome'
 import * as api from '@/services/commercial/platformCommercial'
 import { subscribeSessionContextChange } from '@/services/runtime/sessionCoordinator'
+import { recallInitialSubscription, rememberInitialSubscription, forgetInitialSubscription } from '@/services/commercial/initialSubscriptionJournal'
 
 vi.mock('@/services/commercial/platformCommercial', async (original) => {
   const actual = await original<typeof import('@/services/commercial/platformCommercial')>()
   return { ...actual, listPlans: vi.fn(), listPlanVersions: vi.fn(), checkPlanEligibility: vi.fn(),
     previewSubscriptionChange: vi.fn(), confirmSubscriptionChange: vi.fn(), getTenantSubscription: vi.fn(),
-    explainTenantEntitlements: vi.fn(), getSubscriptionChangeReceipt: vi.fn(), getProvisioningTask: vi.fn(),
+    explainTenantEntitlements: vi.fn(), getSubscriptionChangeReceipt: vi.fn(), getSubscriptionChangePreview: vi.fn(), getProvisioningTask: vi.fn(),
     retryProvisioningTask: vi.fn(), commercialRequestId: vi.fn(() => 'request-first') }
 })
 // This suite isolates orchestration. The actual readback policy has its own
 // positive/negative matrix in initialSubscriptionReadback.spec.ts.
 vi.mock('@/services/commercial/initialSubscriptionOutcome', () => ({ initialSubscriptionReadbackMatches: vi.fn() }))
 vi.mock('@/services/runtime/sessionCoordinator', () => ({ subscribeSessionContextChange: vi.fn(() => vi.fn()) }))
+vi.mock('@/services/commercial/initialSubscriptionJournal', () => ({
+  rememberInitialSubscription: vi.fn(), recallInitialSubscription: vi.fn(), forgetInitialSubscription: vi.fn(async () => {}),
+}))
 
 function deferred<T>() {
   let resolve!: (value: T) => void
@@ -51,6 +55,10 @@ beforeEach(() => {
   vi.resetAllMocks()
   vi.mocked(subscribeSessionContextChange).mockReturnValue(vi.fn())
   vi.mocked(initialSubscriptionReadbackMatches).mockReturnValue(true)
+  vi.mocked(rememberInitialSubscription).mockResolvedValue(true)
+  vi.mocked(recallInitialSubscription).mockResolvedValue(null)
+  vi.mocked(forgetInitialSubscription).mockResolvedValue(undefined)
+  vi.mocked(api.getSubscriptionChangePreview).mockResolvedValue(proposed)
   vi.mocked(api.commercialRequestId).mockReturnValue('request-first')
   vi.mocked(api.getTenantSubscription).mockResolvedValue({ tenantId: 'tenant-a' } as api.TenantSubscriptionDTO)
   vi.mocked(api.explainTenantEntitlements).mockResolvedValue({ tenantId: 'tenant-a' } as api.EntitlementView)
@@ -64,6 +72,7 @@ describe('first subscription in-flight context and confirmation recovery', () =>
     vi.mocked(api.confirmSubscriptionChange).mockReturnValue(response.promise)
     const first = flow.confirmPreview()
     await flow.confirmPreview()
+    await flushPromises()
     expect(api.confirmSubscriptionChange).toHaveBeenCalledTimes(1)
     response.resolve(applied)
     await first
@@ -170,5 +179,62 @@ describe('first subscription in-flight context and confirmation recovery', () =>
     expect(flow.task.value).toBeNull()
     expect(flow.receipt.value).toBeNull()
     expect(flow.statusMessage.value).toBe('')
+  })
+})
+
+
+describe('first subscription reload recovery', () => {
+  it('restores an applied original change using server preview, receipt and final entitlements', async () => {
+    const { flow, refreshed } = setup()
+    flow.preview.value = null
+    flow.recoveryChangeId.value = 'change-first'
+    vi.mocked(api.getSubscriptionChangeReceipt).mockResolvedValue({ ...applied, after: { salesScope: 'office' } as api.TenantSubscriptionDTO })
+    await flow.restoreSubmission()
+    expect(flow.verificationState.value).toBe('verified')
+    expect(refreshed).toHaveBeenCalledOnce()
+    expect(api.confirmSubscriptionChange).not.toHaveBeenCalled()
+  })
+
+  it('does not restore a change belonging to another tenant', async () => {
+    const { flow, refreshed } = setup()
+    flow.preview.value = null
+    flow.recoveryChangeId.value = 'change-first'
+    vi.mocked(api.getSubscriptionChangePreview).mockResolvedValue({ ...proposed, tenantId: 'tenant-b' })
+    await flow.restoreSubmission()
+    expect(flow.verificationState.value).not.toBe('verified')
+    expect(refreshed).not.toHaveBeenCalled()
+    expect(api.getSubscriptionChangeReceipt).not.toHaveBeenCalled()
+  })
+
+  it('retries a lost confirmation with the saved request id, hash and reason, not a new request', async () => {
+    const { flow } = setup()
+    flow.preview.value = null
+    flow.recoveryChangeId.value = 'change-first'
+    const saved = { tenantId: 'tenant-a', changeId: 'change-first', salesScope: 'office',
+      input: { requestId: 'original-request', previewHash: proposed.previewHash, reason: 'original reason' } }
+    vi.mocked(recallInitialSubscription).mockResolvedValue(saved)
+    const absent = new api.CommercialApiError('not found', 404, 'http')
+    vi.mocked(api.getSubscriptionChangeReceipt).mockRejectedValueOnce(absent).mockRejectedValueOnce(absent).mockResolvedValue(applied)
+    vi.mocked(api.confirmSubscriptionChange).mockResolvedValue(applied)
+    await flow.restoreSubmission()
+    expect(flow.retryConfirmationAllowed.value).toBe(true)
+    await flow.retryOriginalConfirmation()
+    expect(api.confirmSubscriptionChange).toHaveBeenCalledTimes(1)
+    expect(api.confirmSubscriptionChange).toHaveBeenCalledWith('tenant-a', 'change-first', saved.input)
+  })
+
+  it('ignores original-task restore after tenant change', async () => {
+    const { flow, tenant, refreshed } = setup()
+    flow.preview.value = null
+    flow.recoveryChangeId.value = 'change-first'
+    const response = deferred<api.SubscriptionChangePreviewDTO>()
+    vi.mocked(api.getSubscriptionChangePreview).mockReturnValue(response.promise)
+    const pending = flow.restoreSubmission()
+    tenant.value = 'tenant-b'
+    response.resolve(proposed)
+    await pending
+    expect(flow.preview.value).toBeNull()
+    expect(flow.receipt.value).toBeNull()
+    expect(refreshed).not.toHaveBeenCalled()
   })
 })

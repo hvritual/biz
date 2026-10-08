@@ -342,7 +342,7 @@ test("TestCE13PlatformCommercialLifecycleThroughTrustedWebSession", async ({ bro
   await allowed.context.close();
 });
 
-test("TestCE340PlatformFirstSubscriptionThroughTrustedWebSession", async ({ browser }) => {
+test("TestCE340PlatformFirstSubscriptionThroughTrustedWebSession", async ({ browser }, testInfo) => {
   const data = fixture();
   const allowed = await login(browser, data, data.allowed_email, data.allowed_password);
   const csrf = allowed.session.csrf_token;
@@ -420,9 +420,43 @@ test("TestCE340PlatformFirstSubscriptionThroughTrustedWebSession", async ({ brow
   await initial.getByRole("button", { name: "查看首次开通方案" }).click();
   await initial.getByText(/我已核对 exact 套餐版本/).click();
   await initial.getByLabel("确认原因").fill("CE-340 真实平台会话批准");
+  const browserErrors: string[] = [];
+  allowed.page.on("pageerror", (error) => browserErrors.push(error.message));
+  const viewports = [
+    { width: 1366, height: 768 }, { width: 1440, height: 900 },
+    { width: 1536, height: 1024 }, { width: 390, height: 844 },
+  ];
+  for (const viewport of viewports) {
+    await allowed.page.setViewportSize(viewport);
+    await expect(initial.getByRole("button", { name: "确认首次开通" })).toBeEnabled();
+    await allowed.page.screenshot({ path: testInfo.outputPath(`ce340-confirm-${viewport.width}.png`), fullPage: true });
+  }
+  await allowed.page.setViewportSize(viewports[0]);
+  // Execute the real command, then drop only its browser reply. No mocked
+  // subscription, receipt, entitlement or business-success response is used.
+  let confirmationCalls = 0;
+  let commandStatus = 0;
+  await allowed.page.route("**/api/v1/platform/tenants/*/subscription/changes/*/confirm", async (route) => {
+    confirmationCalls += 1;
+    const actual = await route.fetch();
+    commandStatus = actual.status();
+    await route.abort("failed");
+  });
   await initial.getByRole("button", { name: "确认首次开通" }).click();
-
+  await expect(initial.getByText("首次开通结果待确认", { exact: true })).toBeVisible();
+  await expect(allowed.page).toHaveURL(/initialChange=/);
+  expect(commandStatus).toBe(200);
+  expect(confirmationCalls).toBe(1);
+  await allowed.page.screenshot({ path: testInfo.outputPath("ce340-lost-confirmation.png"), fullPage: true });
+  await allowed.page.reload();
   await expect(allowed.page.locator(".subscription-card").getByText(/CE-340 首次开通套餐/)).toBeVisible();
+  expect(confirmationCalls).toBe(1);
+  expect(browserErrors).toEqual([]);
+  for (const viewport of viewports) {
+    await allowed.page.setViewportSize(viewport);
+    await expect(allowed.page.locator(".subscription-card")).toBeVisible();
+    await allowed.page.screenshot({ path: testInfo.outputPath(`ce340-restored-${viewport.width}.png`), fullPage: true });
+  }
   const finalSubscription = await browserRequest(
     allowed.page,
     data.web_base_url,

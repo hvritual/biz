@@ -1,4 +1,5 @@
 import { computed, onScopeDispose, ref, watch } from 'vue'
+import { rememberInitialSubscription, recallInitialSubscription, forgetInitialSubscription, type InitialSubscriptionSubmission } from '@/services/commercial/initialSubscriptionJournal'
 import { initialSubscriptionReadbackMatches } from '@/services/commercial/initialSubscriptionOutcome'
 import { subscribeSessionContextChange } from '@/services/runtime/sessionCoordinator'
 import { backendStateTone } from '@/i18n/backend-terms'
@@ -10,6 +11,7 @@ import {
   explainTenantEntitlements,
   getProvisioningTask,
   getSubscriptionChangeReceipt,
+  getSubscriptionChangePreview,
   getTenantSubscription,
   listPlans,
   listPlanVersions,
@@ -31,7 +33,12 @@ export type InitialSubscriptionTargetCandidate = {
 
 type VerificationState = 'idle' | 'pending' | 'verified' | 'failed'
 
-export function useInitialSubscription(tenantId: () => string, onRefresh: () => void) {
+type RecoveryOptions = {
+  changeId?: () => string | undefined
+  onSubmitted?: (changeId: string) => void | Promise<void>
+}
+
+export function useInitialSubscription(tenantId: () => string, onRefresh: () => void, options: RecoveryOptions = {}) {
   const plans = ref<PlanCatalogEntryDTO[]>([])
   const salesScope = ref('')
   const planCode = ref('')
@@ -51,6 +58,9 @@ export function useInitialSubscription(tenantId: () => string, onRefresh: () => 
   const errorMessage = ref('')
   const statusMessage = ref('')
   const confirmationSubmitted = ref(false)
+  const recoveryChangeId = ref('')
+  const retryConfirmationAllowed = ref(false)
+  let frozenSubmission: InitialSubscriptionSubmission | null = null
   let contextEpoch = 0
   let readbackEpoch = 0
   let disposed = false
@@ -100,6 +110,8 @@ export function useInitialSubscription(tenantId: () => string, onRefresh: () => 
     loadingPlans.value = false
     loadingTargets.value = false
     confirmationSubmitted.value = false
+    retryConfirmationAllowed.value = false
+    frozenSubmission = null
     preview.value = null
     receipt.value = null
     task.value = null
@@ -117,6 +129,7 @@ export function useInitialSubscription(tenantId: () => string, onRefresh: () => 
   }
 
   function reset() {
+    recoveryChangeId.value = ''
     salesScope.value = ''
     planCode.value = ''
     plans.value = []
@@ -277,12 +290,19 @@ export function useInitialSubscription(tenantId: () => string, onRefresh: () => 
     errorMessage.value = ''
     statusMessage.value = ''
     confirmationSubmitted.value = true
+    const changeId = preview.value.changeId
+    frozenSubmission = {
+      tenantId: context.tenant, changeId, salesScope: salesScope.value.trim(),
+      input: { requestId: commercialRequestId('platform-initial-confirm'), previewHash: preview.value.previewHash, reason: confirmReason.value.trim() },
+    }
+    recoveryChangeId.value = changeId
+    const submission = frozenSubmission
     try {
-      const confirmed = await confirmSubscriptionChange(context.tenant, preview.value.changeId, {
-        requestId: commercialRequestId('platform-initial-confirm'),
-        previewHash: preview.value.previewHash,
-        reason: confirmReason.value.trim(),
-      })
+      await rememberInitialSubscription(submission)
+      if (!context.current()) return
+      await options.onSubmitted?.(changeId)
+      if (!context.current()) return
+      const confirmed = await confirmSubscriptionChange(context.tenant, changeId, submission.input)
       if (!context.current()) return
       receipt.value = confirmed
       if (receipt.value.status === 'APPLIED') {
@@ -341,6 +361,7 @@ export function useInitialSubscription(tenantId: () => string, onRefresh: () => 
       verificationState.value = 'verified'
       errorMessage.value = ''
       statusMessage.value = '首次开通已完成，并已从最终权益结果确认目标套餐能力。'
+      void forgetInitialSubscription(context.tenantId, confirmed.changeId).catch(() => {})
       onRefresh()
     } catch {
       if (!current()) return
@@ -376,6 +397,7 @@ export function useInitialSubscription(tenantId: () => string, onRefresh: () => 
   }
 
   async function refreshResult() {
+    if (!preview.value && recoveryChangeId.value) { await restoreSubmission(); return }
     if (!preview.value || pending.value || disposed) return
     const context = captureContext()
     pending.value = true
@@ -385,7 +407,10 @@ export function useInitialSubscription(tenantId: () => string, onRefresh: () => 
     try {
       await readResult(context)
     } catch (error) {
-      if (context.current()) errorMessage.value = describeError(error, '结果读取失败。')
+      if (context.current()) {
+        retryConfirmationAllowed.value = error instanceof CommercialApiError && error.status === 404 && frozenSubmission !== null
+        errorMessage.value = describeError(error, '结果读取失败。')
+      }
     } finally {
       if (context.current()) pending.value = false
     }
@@ -435,6 +460,100 @@ export function useInitialSubscription(tenantId: () => string, onRefresh: () => 
     errorMessage.value = '首次开通事实已发生变化。请重新读取租户状态后再继续，不会覆盖其他管理员的操作。'
   }
 
+  async function restoreSubmission() {
+    if (pending.value || disposed) return
+    const id = recoveryChangeId.value.trim()
+    if (!id || id.length > 200) { errorMessage.value = '请填写有效的开通变更编号。'; return }
+    let context = captureContext()
+    pending.value = true
+    confirmationSubmitted.value = true
+    retryConfirmationAllowed.value = false
+    errorMessage.value = ''
+    statusMessage.value = ''
+    try {
+      const [proposed, journal] = await Promise.all([
+        getSubscriptionChangePreview(context.tenant, id),
+        recallInitialSubscription(context.tenant, id),
+      ])
+      if (!context.current()) return
+      if (proposed.tenantId !== context.tenant || proposed.changeId !== id || proposed.action !== 'INITIAL' || !proposed.target) {
+        throw new Error('该变更不是当前租户的首次开通任务。')
+      }
+      let confirmed: SubscriptionChangeReceiptDTO | null = null
+      try { confirmed = await getSubscriptionChangeReceipt(context.tenant, id) } catch (error) {
+        if (!(error instanceof CommercialApiError && error.status === 404)) throw error
+      }
+      if (!context.current()) return
+      if (confirmed && (confirmed.tenantId !== context.tenant || confirmed.changeId !== id
+        || confirmed.action !== 'INITIAL' || confirmed.previewHash !== proposed.previewHash)) {
+        throw new Error('原开通任务与处理结果不一致，不能继续。')
+      }
+      const saved = journal?.input.previewHash === proposed.previewHash ? journal : null
+      const scope = confirmed?.after?.salesScope || saved?.salesScope || ''
+      if (!scope || scope === '*') throw new Error('原开通请求的适用范围尚无法确认，请保留变更编号交由原操作人核对。')
+      // These assignments invalidate old async work. Install the server snapshot
+      // only after synchronous selection watchers have cleared the old draft.
+      salesScope.value = scope
+      planCode.value = proposed.target.planCode
+      candidates.value = [{ version: proposed.target, eligible: false, reason: '仅恢复原任务，不用于新开通' }]
+      selectedVersionKey.value = versionKey(proposed.target)
+      preview.value = proposed
+      receipt.value = confirmed
+      frozenSubmission = saved
+      recoveryChangeId.value = id
+      confirmationSubmitted.value = true
+      retryConfirmationAllowed.value = !confirmed && saved !== null
+      pending.value = true
+      context = captureContext()
+      await options.onSubmitted?.(id)
+      if (!context.current()) return
+      if (confirmed) await readResult(context)
+      else {
+        verificationState.value = 'pending'
+        statusMessage.value = saved
+          ? '尚未取得原确认回执。可继续读取，或使用原请求编号和原内容重试确认。'
+          : '尚未取得原确认回执；当前设备没有原请求记录，请保留变更编号交由原操作人核对。'
+      }
+    } catch (error) {
+      if (context.current()) errorMessage.value = describeError(error, '原开通任务暂时无法恢复。')
+    } finally {
+      if (context.current()) pending.value = false
+    }
+  }
+
+  async function retryOriginalConfirmation() {
+    if (pending.value || disposed || !retryConfirmationAllowed.value || !frozenSubmission || !preview.value) return
+    const context = captureContext()
+    const submission = frozenSubmission
+    if (submission.tenantId !== context.tenant || submission.changeId !== preview.value.changeId
+      || submission.input.previewHash !== preview.value.previewHash) return
+    pending.value = true
+    retryConfirmationAllowed.value = false
+    errorMessage.value = ''
+    try {
+      // Re-read first; a late original response may already have committed.
+      try { await readResult(context); return } catch (error) {
+        if (!(error instanceof CommercialApiError && error.status === 404)) throw error
+      }
+      if (!context.current()) return
+      const confirmed = await confirmSubscriptionChange(context.tenant, submission.changeId, submission.input)
+      if (!context.current()) return
+      receipt.value = confirmed
+      await readResult(context)
+    } catch (error) {
+      if (context.current()) errorMessage.value = describeError(error, '原确认结果仍待确认，请重新读取结果。')
+    } finally {
+      if (context.current()) pending.value = false
+    }
+  }
+
+  watch(() => options.changeId?.(), (id) => {
+    if (id && id !== preview.value?.changeId) {
+      recoveryChangeId.value = id
+      void restoreSubmission()
+    }
+  }, { immediate: true })
+
   function describeError(error: unknown, fallback: string) {
     if (error instanceof CommercialApiError && error.code === 'unauthenticated') {
       return '当前平台会话已失效，请重新登录后读取最新状态。'
@@ -463,6 +582,10 @@ export function useInitialSubscription(tenantId: () => string, onRefresh: () => 
     loadingTargets,
     pending,
     confirmationSubmitted,
+    recoveryChangeId,
+    retryConfirmationAllowed,
+    restoreSubmission,
+    retryOriginalConfirmation,
     errorMessage,
     statusMessage,
     selectedVersion,
