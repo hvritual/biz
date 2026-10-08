@@ -174,7 +174,7 @@ const {
         </div>
       </article>
 
-      <div v-if="!preview" class="preview-form">
+      <div v-if="!preview && !confirmationSubmitted" class="preview-form">
         <label class="field wide" for="initial-preview-reason">
           <span>首次开通原因</span>
           <UiTextarea id="initial-preview-reason" v-model="previewReason" class="input" rows="2" placeholder="说明为什么为该租户开通此套餐版本" />
@@ -239,7 +239,7 @@ const {
 
       <div v-else-if="verificationState === 'failed'" class="verification-state">
         <strong>订阅回执已存在，最终权益仍待确认</strong>
-        <span>不要再次提交首次开通。重新读取 Subscription、Change Receipt 和 Entitlement 后再判断结果。</span>
+        <span>不要再次提交首次开通。请重新核对当前订阅、原开通记录和实际可用的功能与额度后，再判断处理结果。</span>
         <UiButton class="btn" type="button" :disabled="pending" @click="refreshResult">重新读取结果</UiButton>
       </div>
 

@@ -3,8 +3,8 @@ artifact_kind: analysis
 status: ready_for_review
 task_ref:
   issue: "#340"
-  baseline_commit: 25859945399a7f5ad90c04c3a0a19abbea063fcf
-  candidate_commit: 9566b8b59849fc8e9d6d61df08f90cf2118372a5
+  baseline_commit: aa15de7d8e0091dc210f63fe422ad54c649a80fa
+  candidate_commit: 30891ba85df6bdc93b1022e99a32c14373e22953
   name: 平台管理员租户首次订阅与模块开通
 classification:
   type: business_task
@@ -47,47 +47,47 @@ sources:
 - id: proto_contract
   kind: repository_contract
   path: contracts/proto/commercial/v1/subscription_change.proto
-  commit: 9566b8b59849fc8e9d6d61df08f90cf2118372a5
+  commit: 30891ba85df6bdc93b1022e99a32c14373e22953
   locator: PreviewSubscriptionChangeRequest / ConfirmSubscriptionChangeRequest
   claim: INITIAL 复用现有平台变更协议，首次预览显式携带 sales_scope，确认绑定 preview_hash。
 - id: subscription_model
   kind: implementation
   path: internal/commercial/domain/subscription/model.go
-  commit: 9566b8b59849fc8e9d6d61df08f90cf2118372a5
+  commit: 30891ba85df6bdc93b1022e99a32c14373e22953
   locator: OriginInitialActivation / StateProvisioning / Subscription.Validate
   claim: 首次开通具有独立来源事实，准备期间不冒充已激活权益。
 - id: change_authority
   kind: implementation
   path: internal/commercial/application/subscriptionchanges/internal/usecase
-  commit: 9566b8b59849fc8e9d6d61df08f90cf2118372a5
+  commit: 30891ba85df6bdc93b1022e99a32c14373e22953
   locator: preview / confirm / prepared
   claim: 首次开通复用目标资格、目录、快照、回执和 Provisioning 状态机。
 - id: provisioning_authority
   kind: implementation
   path: internal/commercial/domain/provisioning/model.go
-  commit: 9566b8b59849fc8e9d6d61df08f90cf2118372a5
+  commit: 30891ba85df6bdc93b1022e99a32c14373e22953
   locator: Task / Retry / Complete
   claim: 准备任务有独立状态、重试和最终完成事实；INITIAL 禁止用通用取消恢复不存在的旧套餐。
 - id: platform_service
   kind: implementation
   path: web/src/services/commercial/platformCommercial.ts
-  commit: 9566b8b59849fc8e9d6d61df08f90cf2118372a5
+  commit: 30891ba85df6bdc93b1022e99a32c14373e22953
   locator: listPlans / previewSubscriptionChange / confirmSubscriptionChange
   claim: 前端使用可信会话、CSRF、幂等键和真实平台商业接口。
 - id: current_page
   kind: implementation
   path: web/src/features/platform/pages/CommercialTenantEntitlementsView.vue
-  commit: 25859945399a7f5ad90c04c3a0a19abbea063fcf
-  locator: CommercialTenantEntitlementsView
-  claim: 当前真实租户权益工作台已区分订阅读取、权益解释、专项权益和已有订阅变更。
+  commit: 30891ba85df6bdc93b1022e99a32c14373e22953
+  locator: CommercialTenantEntitlementsView / InitialSubscriptionWorkspace / useInitialSubscription
+  claim: 当前产品候选已有可信租户上下文首次开通、原变更结果恢复、有效权益确认及已订阅变更入口；四视口与人工体验仍分别验收。
 page_pattern:
   name: WorkbenchPage
   reason: 首次开通需要在同一租户上下文内协作展示订阅状态、目标版本、影响、处理状态和最终权益回读。
   contract_ref: web/ui-contracts.json:/platform/commercial/tenant-entitlements
   gaps:
-  - 当前无订阅状态只有空提示，缺少首次开通入口和完整任务恢复。
+  - 首次开通入口与原变更恢复已实现；尚缺 200% 浏览器缩放、长中英文及数字场景、独立人工体验批准。
 outcome:
-  definition: 管理员只有在 Subscription 已生效且 Entitlement 权威回读确认目标套餐权益后才看到完成；处理中、失败、未知和回读失败保持独立状态及恢复入口。
+  definition: 管理员只有在同一租户的已应用原开通回执、精确套餐版本、当前有效订阅与权益结果核对完成后才看到完成；权益应反映已有限制与专项覆盖后的实际结果，允许合法固定天数试用态及已应用后停售的历史版本。处理中、失败、未知和结果读取失败保持独立状态，不提前分配成员角色或虚构能力。
   result_contract_refs: [issue_340, change_authority, provisioning_authority]
   recovery_contract_refs: [issue_340, change_authority, provisioning_authority]
 humanized_ux:
@@ -123,7 +123,7 @@ humanized_ux:
     reason: 首次开通会改变租户能力上限，需要在确认前展示真实差异和准备要求。
     requirements:
     - 不用套餐名称或 latest 推断目标，始终显示 exact version。
-    - 费用只展示现有 pricing authority 事实，不由页面计算价格。
+    - 含价格引用的套餐阻断本次非支付首次开通；费用仅显示现有商业审批事实，不由页面计算价格。
     evidence_types: [source_review, browser_test]
     verification: not_verified
     evidence: []
@@ -140,9 +140,9 @@ humanized_ux:
     applicability: applies
     reason: 并发确认、Provisioning、网络未知和最终回读都可能留下真实业务事实。
     requirements:
-    - 409 后重新读取 Subscription；若其他管理员已完成则展示真实现状。
-    - Provisioning Failed/Unknown 恢复同一任务，不重复创建订阅。
-    - Entitlement readback 失败显示待确认并保留 receipt/change id。
+    - HTTP 400/409 后必须先核验原开通回执及当前租户订阅；两者均明确不存在才允许重新预览。
+    - 已确认的 Provisioning 任务通过租户级回执恢复，另一名合规平台管理员无需读取原操作人的私有预览。
+    - 发生丢响应、结果未知或最终权益核对失败时保留原任务线索，禁止自动重复首次开通。
     evidence_types: [api_test, browser_test]
     verification: not_verified
     evidence: []
@@ -159,8 +159,8 @@ humanized_ux:
     applicability: applies
     reason: INITIAL 会创建 Base Subscription 并可能异步产生最终权益。
     requirements:
-    - 预览明确目标 exact version、预计有效期、依赖、额度和准备项。
-    - 确认后的 APPLIED/PROVISIONING/FAILED/UNKNOWN 与最终权益回读分别展示。
+    - 预览明确目标 exact version、预计有效期、依赖、额度、外部商业审批条件及准备项。
+    - 确认后的 APPLIED/PROVISIONING/FAILED/UNKNOWN 与原任务结果分别展示；有效权益比对以含 Override/安全约束的服务端投影及当前版本事实为依据，不直接宣称所有原始套餐能力均已授权。
     evidence_types: [source_review, api_test, browser_test]
     verification: not_verified
     evidence: []
@@ -179,11 +179,12 @@ acceptance:
   - 无订阅租户看到明确首次开通入口，有订阅租户继续看到套餐变更任务。
   - 只展示真实 PUBLISHED 且服务端 eligibility 允许的 exact PlanVersion 候选。
   - 预览显示模块、能力、额度、有效期、sales scope、依赖和 Provisioning 要求。
-  - 直接开通后只有 Entitlement readback 与目标权益一致才显示完成。
-  - 需要 Provisioning 时订阅显示处理中，目标 Plan 权益不会提前出现。
+  - 直接开通后仅在原变更回执、当前订阅及有效权益投影/当前权威决策核对完成后显示成功；有效安全拒绝或额度限制不能误判为开通失败，也不得误报授权成功。
+  - 需要 Provisioning 时订阅显示处理中，目标套餐权益不会提前出现；同租户的其他获授权管理员可以按原任务恢复，不重复创建订阅。
   - 两个管理员并发首次确认只产生一份 Base Subscription，冲突方回读现有事实。
   - 成员 IAM 未授权时首次开通不自动授予成员操作权限。
-  - 401、403、409、ProvisioningFailed、Unknown、ReadbackFailed 有独立反馈和下一步。
+  - 401、403、400 校验失败、409、ProvisioningFailed、Unknown、ReadbackFailed 有独立反馈和下一步；超过 512 UTF-8 字节的原因在提交前拒绝。
+  - 合法 fixed_days TRIAL 与开通后套餐版本 RETIRED 可按确切历史回执和当前权益核验，不能将其误认为尚未开通。
   automated_checks:
   - make check
   - go test ./...
@@ -192,7 +193,7 @@ acceptance:
   human_checks:
   - 1366x768、1440x900、1536x1024、390x844 检查目标信息、处理中、失败恢复与回读待确认状态。
   - 200% 浏览器缩放及长套餐名、长能力名、长 change id 的可读性检查。
-  - 独立产品/UX 评审确认“订阅开通不等于成员授权”和最终 readback 语义。
+  - 独立产品/UX 评审确认“租户套餐权益不等于成员权限”“已确认任务恢复不再展示创建按钮”和当前实际功能/额度提示；仍未执行人工批准。
   metrics: []
 open_questions:
 - question: 收费首次开通的 Quote/Payment authority 仍由 #124/#125/#132 提供，本 Issue 不自行定义价格或扣款结果。
