@@ -7,6 +7,7 @@ import select
 import shutil
 import signal
 import subprocess
+import sys
 import tempfile
 import textwrap
 import time
@@ -15,6 +16,14 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 WORKFLOW = ROOT / '.github/workflows/ec-ri-06-plan-change-web.yml'
 CE12_WORKFLOW = ROOT / '.github/workflows/ce12-browser-e2e.yml'
+APT_SOURCE = ('# Hosted Ubuntu source fixture; preserve all fields except known URI tokens.\n'
+              'Types: deb\nURIs: mirror+file:/etc/apt/apt-mirrors.txt\n'
+              'Suites: noble noble-updates noble-backports\n'
+              'Components: main restricted universe multiverse\nArchitectures: amd64\n'
+              'Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg\n\n'
+              'Types: deb\nURIs: https://security.ubuntu.com/ubuntu/\n'
+              'Suites: noble-security\nComponents: main restricted universe multiverse\n'
+              'Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg\n')
 
 
 def preparation_step():
@@ -64,7 +73,8 @@ def terminate_recorded_child(root):
 
 
 class PlanChangeBrowserPreparationTests(unittest.TestCase):
-    def probe(self, missing_font=False, workflow_step=False, layout="root", invalid_web=None, **overrides):
+    def probe(self, missing_font=False, workflow_step=False, layout="root", invalid_web=None,
+              apt_source=APT_SOURCE, **overrides):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             web = root / ('biz/web' if layout == 'nested' else 'web')
@@ -77,6 +87,10 @@ class PlanChangeBrowserPreparationTests(unittest.TestCase):
             browser_cli.write_text('#!/usr/bin/env bash\nexit 99\n')
             browser_cli.chmod(0o755)
             (root / 'temp').mkdir()
+            source_fixture = root / 'ubuntu.sources'
+            source_fixture.write_text(apt_source)
+            capture = root / 'apt-capture'
+            capture.mkdir()
             if layout == 'nested':
                 (root / 'biz/scripts').symlink_to(ROOT / 'scripts', target_is_directory=True)
             bindir = root / 'bin'
@@ -85,6 +99,15 @@ class PlanChangeBrowserPreparationTests(unittest.TestCase):
             if not missing_font:
                 font.touch()
             commands = {
+                'mktemp': 'printf "mktemp %s\\n" "$*" >> "$TRACE"; '
+                          '[[ "$#" == 2 && "$1" == -d && "$2" == /tmp/headless-noto-apt.XXXXXX ]] || exit 86; '
+                          'exec "$REAL_MKTEMP" -d "$RUNNER_TEMP/headless-noto-apt.XXXXXX"',
+                # Only this public runner-source read is redirected; source conversion runs for real.
+                'cat': 'if [[ "$#" == 1 && "$1" == /etc/apt/sources.list.d/ubuntu.sources ]]; then '
+                       'printf "read-ubuntu-source\\n" >> "$TRACE"; '
+                       '[[ "${APT_SOURCE_MISSING:-0}" == 0 ]] || exit 27; '
+                       'if [[ "${APT_HANG_STAGE:-}" == source ]]; then stage-progress source >&2; fi; '
+                       'exec "$REAL_CAT" "$APT_SOURCE_FIXTURE"; fi; exec "$REAL_CAT" "$@"',
                 'stage-progress': '(record_child_identity; while :; do '
                                   'if [[ "$1" == font-check ]]; then echo "$1-download-progress" >&2; '
                                   'else echo "$1-download-progress"; fi; sleep 0.02; done) & '
@@ -101,8 +124,32 @@ class PlanChangeBrowserPreparationTests(unittest.TestCase):
                 'fc-match': 'if [[ "${CE12_HANG_STAGE:-}" == font-check ]]; then stage-progress font-check; fi; '
                             'if [[ -f "$FONT" ]]; then echo "Noto Sans CJK SC"; else echo "DejaVu Sans"; fi',
                 'sudo': 'printf "sudo %s\\n" "$*" >> "$TRACE"; '
+                        'if [[ "${1:-}" == rm ]]; then shift; '
+                        '[[ "${CLEANUP_EXIT:-0}" == 0 ]] || exit "$CLEANUP_EXIT"; '
+                        'exec "$REAL_RM" "$@"; fi; '
+                        'if [[ "${1:-}" == -u ]]; then '
+                        '[[ "$2" == _apt && "$3" == test && "$4" == -r ]] || exit 85; '
+                        '[[ "${APT_PERMISSION_EXIT:-0}" == 0 ]] || exit "$APT_PERMISSION_EXIT"; '
+                        'shift 2; "$@"; exit; fi; '
+                        '[[ "${1:-}" == apt-get ]] || exit 83; '
+                        'phase=install; [[ "$*" != *"update"* ]] || phase=update; '
+                        'printf "%s\\0" "$@" > "$APT_CAPTURE/$phase.args"; '
+                        'source_list=""; lists=""; archives=""; parts=""; '
+                        'for option in "$@"; do case "$option" in '
+                        'Dir::Etc::SourceList=*) source_list="${option#*=}" ;; '
+                        'Dir::Etc::SourceParts=*) parts="${option#*=}" ;; '
+                        'Dir::State::Lists=*) lists="${option#*=}" ;; '
+                        'Dir::Cache::Archives=*) archives="${option#*=}" ;; esac; done; '
+                        'if [[ -n "$source_list" ]]; then '
+                        '"$REAL_CAT" "$source_list" > "$APT_CAPTURE/$phase.sources"; '
+                        '[[ -d "$parts" && -z "$(ls -A "$parts")" ]] || exit 84; '
+                        'stat -c "%a" "${source_list%/*}" "$parts" "$lists" "$archives" '
+                        '> "$APT_CAPTURE/$phase.modes"; '
+                        'mkdir -p "$lists/partial" "$archives/partial"; '
+                        'touch "$lists/partial/index-fixture" "$archives/partial/package-fixture"; fi; '
                         'if [[ "$*" == *"update"* ]]; then '
                         'touch "$FONT_STARTED"; '
+                        'if [[ "${APT_HANG_STAGE:-}" == index ]]; then stage-progress index; fi; '
                         'if [[ "${CHECK_OVERLAP:-0}" == 1 ]]; then '
                         'for attempt in $(seq 1 80); do [[ -f "$BROWSER_STARTED" ]] && break; sleep 0.02; done; '
                         '[[ -f "$BROWSER_STARTED" ]] || exit 58; fi; '
@@ -125,7 +172,8 @@ class PlanChangeBrowserPreparationTests(unittest.TestCase):
                            'if [[ "${ACCELERATE_TIMEOUTS:-0}" == 1 ]]; then '
                            'exec "$REAL_TIMEOUT" --signal=TERM --kill-after=0.1s 0.5s "$@"; fi; '
                            'exec "$REAL_TIMEOUT" --signal=TERM --kill-after=5s "$duration" "$@"',
-                'python3': 'printf "python3 %s\\n" "$*" >> "$TRACE"; exit "${GUARD_EXIT:-0}"',
+                'python3': 'if [[ "${1:-}" == - ]]; then exec "$REAL_PYTHON" "$@"; fi; '
+                           'printf "python3 %s\\n" "$*" >> "$TRACE"; exit "${GUARD_EXIT:-0}"',
                 'npm': 'printf "npm %s cwd=%s\\n" "$*" "$PWD" >> "$TRACE"; echo "npm-fixture-output"; '
                        'touch "$NPM_STARTED"; '
                        'if [[ "${CHECK_BUILD_OVERLAP:-0}" == 1 ]]; then '
@@ -159,6 +207,10 @@ class PlanChangeBrowserPreparationTests(unittest.TestCase):
                    'SMOKE_SOURCE': str(root / 'smoke'), 'CHILD_PID': str(root / 'child-pid'),
                    'CHILD_STAT': str(root / 'child-proc-stat'),
                    'REAL_TIMEOUT': real_timeout, 'REAL_TEE': shutil.which('tee'),
+                   'REAL_CAT': shutil.which('cat'), 'REAL_RM': shutil.which('rm'),
+                   'REAL_MKTEMP': shutil.which('mktemp'),
+                   'REAL_PYTHON': sys.executable, 'APT_SOURCE_FIXTURE': str(source_fixture),
+                   'APT_CAPTURE': str(capture),
                    'RUNNER_TEMP': str(root / 'temp'), 'BUILD_STARTED': str(root / 'build-started'),
                    'NPM_STARTED': str(root / 'npm-started'), **overrides}
             arguments = [str(web)]
@@ -192,6 +244,14 @@ class PlanChangeBrowserPreparationTests(unittest.TestCase):
             process = subprocess.Popen(command, cwd=cwd, env=env, stdout=subprocess.PIPE,
                                        stderr=subprocess.PIPE, text=True, start_new_session=True)
             try:
+                if overrides.get('PROBE_SIGNAL'):
+                    deadline = time.monotonic() + 2
+                    while not (root / 'child-pid').exists() and time.monotonic() < deadline:
+                        if process.poll() is not None:
+                            break
+                        time.sleep(0.01)
+                    self.assertTrue((root / 'child-pid').exists(), 'interrupt must reach a running font child')
+                    os.kill(process.pid, getattr(signal, 'SIG' + overrides['PROBE_SIGNAL']))
                 stdout, stderr = process.communicate(timeout=8)
                 result = subprocess.CompletedProcess(command, process.returncode, stdout, stderr)
                 child_alive = recorded_child_alive(root)
@@ -204,6 +264,8 @@ class PlanChangeBrowserPreparationTests(unittest.TestCase):
             elapsed = time.monotonic() - started
             trace = (root / 'trace').read_text() if (root / 'trace').exists() else ''
             smoke = (root / 'smoke').read_text() if (root / 'smoke').exists() else ''
+            if 'read-ubuntu-source' in trace:
+                self.assertIn('mktemp -d /tmp/headless-noto-apt.XXXXXX', trace)
             if invalid_web != 'missing_lock':
                 self.assertEqual('fixture lock; preparation must not change dependencies\n', lock.read_text())
             result.workspace = str(root)
@@ -212,6 +274,21 @@ class PlanChangeBrowserPreparationTests(unittest.TestCase):
             result.deps_log = deps_log.read_text() if deps_log.exists() else ''
             result.deps_timing_exists = (root / 'temp/ce12-browser-deps-timing.log').exists()
             result.build_timing_exists = (root / 'temp/ce12-runtime-build-timing.log').exists()
+            result.apt_calls = {}
+            for phase in ['update', 'install']:
+                arguments_file = capture / (phase + '.args')
+                if arguments_file.exists():
+                    arguments = arguments_file.read_bytes().decode().rstrip('\0').split('\0')
+                    result.apt_calls[phase] = {
+                        'arguments': arguments,
+                        'options': dict(item.split('=', 1) for item in arguments if '=' in item),
+                        'source': (capture / (phase + '.sources')).read_text()
+                        if (capture / (phase + '.sources')).exists() else None,
+                        'modes': (capture / (phase + '.modes')).read_text().splitlines()
+                        if (capture / (phase + '.modes')).exists() else [],
+                    }
+            self.assertEqual(apt_source, source_fixture.read_text(), 'the runner source must remain unchanged')
+            result.apt_temp_remaining = list((root / 'temp').glob('headless-noto-apt.*'))
             return result, trace, smoke, child_alive, elapsed
 
     def test_ready_noto_uses_locked_shell_and_real_launch_before_success(self):
@@ -538,6 +615,115 @@ class PlanChangeBrowserPreparationTests(unittest.TestCase):
         self.assertIn('CE12_ENTERPRISE189_FULL_FLOW=PASS', source)
         gate = json.loads((ROOT / 'scripts/ci_proof_contract.json').read_text())['gates'][CE12_WORKFLOW.name]
         self.assertEqual((150, 180), (gate['target_seconds'], gate['hard_seconds']))
+
+
+    def test_noto_source_conversion_preserves_trust_and_uses_one_private_https_configuration(self):
+        for uri in ['mirror+file:/etc/apt/apt-mirrors.txt',
+                    'http://azure.archive.ubuntu.com/ubuntu/',
+                    'http://azure.archive.ubuntu.com/ubuntu',
+                    'https://archive.ubuntu.com/ubuntu/']:
+            with self.subTest(uri=uri):
+                source = APT_SOURCE.replace('mirror+file:/etc/apt/apt-mirrors.txt', uri)
+                result, trace, _, _, _ = self.probe(missing_font=True, apt_source=source)
+                self.assertEqual(0, result.returncode, result.stderr)
+                self.assertEqual({'update', 'install'}, set(result.apt_calls))
+                expected = source.replace(uri, 'https://archive.ubuntu.com/ubuntu/')
+                update, install = result.apt_calls['update'], result.apt_calls['install']
+                self.assertEqual(expected, update['source'])
+                self.assertEqual(expected, install['source'])
+                self.assertEqual(update['options'], install['options'])
+                options = update['options']
+                self.assertEqual('', options['Dir::Cache::pkgcache'])
+                self.assertEqual('', options['Dir::Cache::srcpkgcache'])
+                for name in ['Dir::Etc::SourceList', 'Dir::Etc::SourceParts',
+                             'Dir::State::Lists', 'Dir::Cache::Archives']:
+                    self.assertTrue(options[name].startswith(result.workspace + '/temp/headless-noto-apt.'))
+                self.assertTrue(options['Dir::Etc::SourceList'].endswith('/ubuntu.sources'))
+                self.assertEqual(['755'] * 4, update['modes'], '_apt must traverse private public-data directories')
+                self.assertEqual(['755'] * 4, install['modes'])
+                for forbidden in ['RootDir', 'Dir::State::status', 'Dir::Etc::Trusted',
+                                  'APT::Sandbox::User', 'Acquire::https::Verify-Peer',
+                                  'Acquire::https::Verify-Host', 'Acquire::AllowInsecureRepositories']:
+                    self.assertNotIn(forbidden, options)
+                self.assertNotIn('--allow-unauthenticated', trace)
+                self.assertEqual([], result.apt_temp_remaining)
+
+    def test_noto_unknown_or_missing_source_is_rejected_before_apt(self):
+        cases = [({'APT_SOURCE_MISSING': '1'}, APT_SOURCE),
+                 ({}, APT_SOURCE.replace('mirror+file:/etc/apt/apt-mirrors.txt', 'https://unknown.invalid/ubuntu/')),
+                 ({}, APT_SOURCE.replace('Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg\n', '')),
+                 ({}, APT_SOURCE.replace('Suites: noble noble-updates noble-backports\n', '')),
+                 ({}, APT_SOURCE.replace('URIs: mirror+file:/etc/apt/apt-mirrors.txt',
+                                         'URIs: mirror+file:/etc/apt/apt-mirrors.txt\n https://unknown.invalid/ubuntu/')),
+                 ({}, APT_SOURCE.replace('URIs: mirror+file:/etc/apt/apt-mirrors.txt',
+                                         'URIs: mirror+file:/etc/apt/apt-mirrors.txt\n'
+                                         '# interrupted continuation\n https://unknown.invalid/ubuntu/')),
+                 ({}, APT_SOURCE.replace('URIs: mirror+file:/etc/apt/apt-mirrors.txt',
+                                         'URIs: mirror+file:/etc/apt/apt-mirrors.txt\n'
+                                         'URIs: https://unknown.invalid/ubuntu/'))]
+        for overrides, source in cases:
+            with self.subTest(overrides=overrides, source=source):
+                result, trace, _, _, _ = self.probe(missing_font=True, apt_source=source, **overrides)
+                self.assertNotEqual(0, result.returncode)
+                self.assertEqual({}, result.apt_calls)
+                self.assertNotIn('node ', trace)
+                self.assertNotIn('PREREQUISITES=PASS', result.stdout)
+                self.assertEqual([], result.apt_temp_remaining)
+
+    def test_ready_noto_does_not_read_or_prepare_apt_sources(self):
+        result, trace, _, _, _ = self.probe(APT_SOURCE_MISSING='1', CLEANUP_EXIT='29')
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertNotIn('read-ubuntu-source', trace)
+        self.assertNotIn('sudo ', trace)
+        self.assertEqual({}, result.apt_calls)
+        self.assertEqual([], result.apt_temp_remaining)
+
+    def test_noto_unreadable_to_apt_sandbox_is_rejected_before_index_or_install(self):
+        result, trace, _, _, _ = self.probe(missing_font=True, APT_PERMISSION_EXIT='33')
+        self.assertEqual(33, result.returncode, result.stderr)
+        self.assertIn('sudo -u _apt test -r ', trace)
+        self.assertEqual({}, result.apt_calls)
+        self.assertEqual([], result.apt_temp_remaining)
+        self.assertNotIn('node ', trace)
+        self.assertNotIn('PREREQUISITES=PASS', result.stdout)
+
+    def test_noto_cleanup_failure_cannot_pass_or_replace_an_apt_error(self):
+        for apt_code, expected in [('0', 29), ('21', 21)]:
+            with self.subTest(apt_code=apt_code):
+                result, trace, _, _, _ = self.probe(
+                    missing_font=True, APT_INSTALL_EXIT=apt_code, CLEANUP_EXIT='29')
+                self.assertEqual(expected, result.returncode, result.stderr)
+                self.assertIn('HEADLESS_NOTO_APT_CLEANUP_FAILED exit=29', result.stderr)
+                self.assertNotIn('node ', trace)
+                self.assertNotIn('PREREQUISITES=PASS', result.stdout)
+
+    def test_noto_source_index_and_install_share_deadline_and_remove_private_data(self):
+        for stage in ['source', 'index', 'install']:
+            with self.subTest(stage=stage):
+                overrides = {'HANG_STAGE': 'font'} if stage == 'install' else {'APT_HANG_STAGE': stage}
+                result, trace, _, child_alive, elapsed = self.probe(
+                    missing_font=True, ACCELERATE_TIMEOUTS='1', **overrides)
+                self.assertEqual(124, result.returncode, result.stderr)
+                self.assertIn('HEADLESS_NOTO_BROWSER_PREP_RESULT=font exit=124', result.stdout)
+                self.assertIn(('font' if stage == 'install' else stage) + '-download-progress',
+                              result.stdout + result.stderr)
+                self.assertFalse(child_alive)
+                self.assertEqual([], result.apt_temp_remaining)
+                self.assertNotIn('node ', trace)
+                self.assertNotIn('PREREQUISITES=PASS', result.stdout)
+                self.assertLess(elapsed, 4)
+
+    def test_noto_term_and_int_preserve_failure_and_clean_private_data_and_children(self):
+        for name, expected in [('TERM', 143), ('INT', 130)]:
+            with self.subTest(name=name):
+                result, trace, _, child_alive, elapsed = self.probe(
+                    missing_font=True, HANG_STAGE='font', PROBE_SIGNAL=name)
+                self.assertEqual(expected, result.returncode, result.stderr)
+                self.assertFalse(child_alive)
+                self.assertEqual([], result.apt_temp_remaining)
+                self.assertNotIn('node ', trace)
+                self.assertNotIn('PREREQUISITES=PASS', result.stdout)
+                self.assertLess(elapsed, 4)
 
 
 if __name__ == '__main__':
