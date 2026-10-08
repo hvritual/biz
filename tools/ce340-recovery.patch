@@ -1,0 +1,536 @@
+diff --git a/web/e2e/ce13-tenant-entitlements.spec.ts b/web/e2e/ce13-tenant-entitlements.spec.ts
+index 70d8bf7..11df1b8 100644
+--- a/web/e2e/ce13-tenant-entitlements.spec.ts
++++ b/web/e2e/ce13-tenant-entitlements.spec.ts
+@@ -269,0 +270 @@ async function mockInitialTargetDiscovery(page: Page) {
++  await page.route('**/api/v1/platform/plans/office-pro/versions/3', (route) => fulfillJson(route, initialPlanVersion()))
+diff --git a/web/src/features/platform/components/InitialSubscriptionWorkspace.vue b/web/src/features/platform/components/InitialSubscriptionWorkspace.vue
+index 9786fac..011c05d 100644
+--- a/web/src/features/platform/components/InitialSubscriptionWorkspace.vue
++++ b/web/src/features/platform/components/InitialSubscriptionWorkspace.vue
+@@ -7,2 +7,2 @@ import { useInitialSubscription } from '@/features/platform/composables/useIniti
+-const props = defineProps<{ tenantId: string }>()
+-const emit = defineEmits<{ refresh: [] }>()
++const props = defineProps<{ tenantId: string; changeId?: string }>()
++const emit = defineEmits<{ refresh: []; submitted: [changeId: string] }>()
+@@ -27,0 +28,4 @@ const {
++  recoveryChangeId,
++  retryConfirmationAllowed,
++  restoreSubmission,
++  retryOriginalConfirmation,
+@@ -43 +47,4 @@ const {
+-} = useInitialSubscription(() => props.tenantId, () => emit('refresh'))
++} = useInitialSubscription(() => props.tenantId, () => emit('refresh'), {
++  changeId: () => props.changeId,
++  onSubmitted: (id) => emit('submitted', id),
++})
+@@ -51 +58 @@ const {
+-        <p>当前租户没有基础订阅。请选择精确已发布版本，确认后再以最终权益结果作为完成依据。</p>
++        <p>{{ changeId ? '正在恢复原首次开通任务；不会创建另一份订阅。' : '请选择精确已发布版本，确认后再以最终权益结果作为完成依据。' }}</p>
+@@ -64,0 +72,9 @@ const {
++    <div class="preview-form" aria-label="恢复首次开通任务">
++      <label class="field" for="initial-recovery-id">
++        <span>已有开通变更编号</span>
++        <UiInput id="initial-recovery-id" v-model="recoveryChangeId" class="input" :disabled="pending" placeholder="填写原变更编号以读取处理结果" />
++        <small>刷新或重新登录后仍从服务端读取原任务；浏览器记录不代表权益已生效。</small>
++      </label>
++      <UiButton class="btn" type="button" :disabled="pending || !recoveryChangeId.trim()" @click="restoreSubmission">读取原开通任务</UiButton>
++    </div>
++
+@@ -184 +200 @@ const {
+-          <UiInput v-model="approved" type="checkbox" />
++          <UiInput v-model="approved" type="checkbox" :disabled="pending || confirmationSubmitted" />
+@@ -189 +205 @@ const {
+-          <UiTextarea id="initial-confirm-reason" v-model="confirmReason" class="input" rows="2" placeholder="说明本次批准依据" />
++          <UiTextarea id="initial-confirm-reason" v-model="confirmReason" :disabled="pending || confirmationSubmitted" class="input" rows="2" placeholder="说明本次批准依据" />
+@@ -198 +214 @@ const {
+-      <span>变更编号 {{ preview?.changeId }}</span>
++      <span>变更编号 {{ preview?.changeId || recoveryChangeId }}</span>
+@@ -199,0 +216 @@ const {
++      <UiButton v-if="retryConfirmationAllowed" class="btn" type="button" :disabled="pending" @click="retryOriginalConfirmation">使用原请求重试确认</UiButton>
+@@ -241 +258 @@ const {
+-.initial-card { overflow: hidden; }
++.initial-card { overflow: hidden; overflow-wrap: anywhere; }
+@@ -262 +279 @@ const {
+-.version-option span { display: grid; gap: 4px; }
++.version-option span { display: grid; gap: 4px; min-width: 0; overflow-wrap: anywhere; }
+diff --git a/web/src/features/platform/composables/useInitialSubscription.spec.ts b/web/src/features/platform/composables/useInitialSubscription.spec.ts
+index d07d13c..26026d6 100644
+--- a/web/src/features/platform/composables/useInitialSubscription.spec.ts
++++ b/web/src/features/platform/composables/useInitialSubscription.spec.ts
+@@ -7,0 +8 @@ import { subscribeSessionContextChange } from '@/services/runtime/sessionCoordin
++import { recallInitialSubscription, rememberInitialSubscription, forgetInitialSubscription } from '@/services/commercial/initialSubscriptionJournal'
+@@ -13 +14 @@ vi.mock('@/services/commercial/platformCommercial', async (original) => {
+-    explainTenantEntitlements: vi.fn(), getSubscriptionChangeReceipt: vi.fn(), getProvisioningTask: vi.fn(),
++    explainTenantEntitlements: vi.fn(), getSubscriptionChangeReceipt: vi.fn(), getSubscriptionChangePreview: vi.fn(), getProvisioningTask: vi.fn(),
+@@ -19,0 +21,3 @@ vi.mock('@/services/runtime/sessionCoordinator', () => ({ subscribeSessionContex
++vi.mock('@/services/commercial/initialSubscriptionJournal', () => ({
++  rememberInitialSubscription: vi.fn(), recallInitialSubscription: vi.fn(), forgetInitialSubscription: vi.fn(async () => {}),
++}))
+@@ -53,0 +58,4 @@ beforeEach(() => {
++  vi.mocked(rememberInitialSubscription).mockResolvedValue(true)
++  vi.mocked(recallInitialSubscription).mockResolvedValue(null)
++  vi.mocked(forgetInitialSubscription).mockResolvedValue(undefined)
++  vi.mocked(api.getSubscriptionChangePreview).mockResolvedValue(proposed)
+@@ -66,0 +75 @@ describe('first subscription in-flight context and confirmation recovery', () =>
++    await flushPromises()
+@@ -174,0 +184,57 @@ describe('first subscription in-flight context and confirmation recovery', () =>
++
++
++describe('first subscription reload recovery', () => {
++  it('restores an applied original change using server preview, receipt and final entitlements', async () => {
++    const { flow, refreshed } = setup()
++    flow.preview.value = null
++    flow.recoveryChangeId.value = 'change-first'
++    vi.mocked(api.getSubscriptionChangeReceipt).mockResolvedValue({ ...applied, after: { salesScope: 'office' } as api.TenantSubscriptionDTO })
++    await flow.restoreSubmission()
++    expect(flow.verificationState.value).toBe('verified')
++    expect(refreshed).toHaveBeenCalledOnce()
++    expect(api.confirmSubscriptionChange).not.toHaveBeenCalled()
++  })
++
++  it('does not restore a change belonging to another tenant', async () => {
++    const { flow, refreshed } = setup()
++    flow.preview.value = null
++    flow.recoveryChangeId.value = 'change-first'
++    vi.mocked(api.getSubscriptionChangePreview).mockResolvedValue({ ...proposed, tenantId: 'tenant-b' })
++    await flow.restoreSubmission()
++    expect(flow.verificationState.value).not.toBe('verified')
++    expect(refreshed).not.toHaveBeenCalled()
++    expect(api.getSubscriptionChangeReceipt).not.toHaveBeenCalled()
++  })
++
++  it('retries a lost confirmation with the saved request id, hash and reason, not a new request', async () => {
++    const { flow } = setup()
++    flow.preview.value = null
++    flow.recoveryChangeId.value = 'change-first'
++    const saved = { tenantId: 'tenant-a', changeId: 'change-first', salesScope: 'office',
++      input: { requestId: 'original-request', previewHash: proposed.previewHash, reason: 'original reason' } }
++    vi.mocked(recallInitialSubscription).mockResolvedValue(saved)
++    const absent = new api.CommercialApiError('not found', 404, 'http')
++    vi.mocked(api.getSubscriptionChangeReceipt).mockRejectedValueOnce(absent).mockRejectedValueOnce(absent).mockResolvedValue(applied)
++    vi.mocked(api.confirmSubscriptionChange).mockResolvedValue(applied)
++    await flow.restoreSubmission()
++    expect(flow.retryConfirmationAllowed.value).toBe(true)
++    await flow.retryOriginalConfirmation()
++    expect(api.confirmSubscriptionChange).toHaveBeenCalledTimes(1)
++    expect(api.confirmSubscriptionChange).toHaveBeenCalledWith('tenant-a', 'change-first', saved.input)
++  })
++
++  it('ignores original-task restore after tenant change', async () => {
++    const { flow, tenant, refreshed } = setup()
++    flow.preview.value = null
++    flow.recoveryChangeId.value = 'change-first'
++    const response = deferred<api.SubscriptionChangePreviewDTO>()
++    vi.mocked(api.getSubscriptionChangePreview).mockReturnValue(response.promise)
++    const pending = flow.restoreSubmission()
++    tenant.value = 'tenant-b'
++    response.resolve(proposed)
++    await pending
++    expect(flow.preview.value).toBeNull()
++    expect(flow.receipt.value).toBeNull()
++    expect(refreshed).not.toHaveBeenCalled()
++  })
++})
+diff --git a/web/src/features/platform/composables/useInitialSubscription.ts b/web/src/features/platform/composables/useInitialSubscription.ts
+index 85ca975..5f9539b 100644
+--- a/web/src/features/platform/composables/useInitialSubscription.ts
++++ b/web/src/features/platform/composables/useInitialSubscription.ts
+@@ -1,0 +2 @@ import { computed, onScopeDispose, ref, watch } from 'vue'
++import { rememberInitialSubscription, recallInitialSubscription, forgetInitialSubscription, type InitialSubscriptionSubmission } from '@/services/commercial/initialSubscriptionJournal'
+@@ -12,0 +14 @@ import {
++  getSubscriptionChangePreview,
+@@ -34 +36,6 @@ type VerificationState = 'idle' | 'pending' | 'verified' | 'failed'
+-export function useInitialSubscription(tenantId: () => string, onRefresh: () => void) {
++type RecoveryOptions = {
++  changeId?: () => string | undefined
++  onSubmitted?: (changeId: string) => void | Promise<void>
++}
++
++export function useInitialSubscription(tenantId: () => string, onRefresh: () => void, options: RecoveryOptions = {}) {
+@@ -53,0 +61,3 @@ export function useInitialSubscription(tenantId: () => string, onRefresh: () =>
++  const recoveryChangeId = ref('')
++  const retryConfirmationAllowed = ref(false)
++  let frozenSubmission: InitialSubscriptionSubmission | null = null
+@@ -102,0 +113,2 @@ export function useInitialSubscription(tenantId: () => string, onRefresh: () =>
++    retryConfirmationAllowed.value = false
++    frozenSubmission = null
+@@ -119,0 +132 @@ export function useInitialSubscription(tenantId: () => string, onRefresh: () =>
++    recoveryChangeId.value = ''
+@@ -279,0 +293,7 @@ export function useInitialSubscription(tenantId: () => string, onRefresh: () =>
++    const changeId = preview.value.changeId
++    frozenSubmission = {
++      tenantId: context.tenant, changeId, salesScope: salesScope.value.trim(),
++      input: { requestId: commercialRequestId('platform-initial-confirm'), previewHash: preview.value.previewHash, reason: confirmReason.value.trim() },
++    }
++    recoveryChangeId.value = changeId
++    const submission = frozenSubmission
+@@ -281,5 +301,5 @@ export function useInitialSubscription(tenantId: () => string, onRefresh: () =>
+-      const confirmed = await confirmSubscriptionChange(context.tenant, preview.value.changeId, {
+-        requestId: commercialRequestId('platform-initial-confirm'),
+-        previewHash: preview.value.previewHash,
+-        reason: confirmReason.value.trim(),
+-      })
++      await rememberInitialSubscription(submission)
++      if (!context.current()) return
++      await options.onSubmitted?.(changeId)
++      if (!context.current()) return
++      const confirmed = await confirmSubscriptionChange(context.tenant, changeId, submission.input)
+@@ -343,0 +364 @@ export function useInitialSubscription(tenantId: () => string, onRefresh: () =>
++      void forgetInitialSubscription(context.tenantId, confirmed.changeId).catch(() => {})
+@@ -378,0 +400 @@ export function useInitialSubscription(tenantId: () => string, onRefresh: () =>
++    if (!preview.value && recoveryChangeId.value) { await restoreSubmission(); return }
+@@ -388 +410,4 @@ export function useInitialSubscription(tenantId: () => string, onRefresh: () =>
+-      if (context.current()) errorMessage.value = describeError(error, '结果读取失败。')
++      if (context.current()) {
++        retryConfirmationAllowed.value = error instanceof CommercialApiError && error.status === 404 && frozenSubmission !== null
++        errorMessage.value = describeError(error, '结果读取失败。')
++      }
+@@ -437,0 +463,94 @@ export function useInitialSubscription(tenantId: () => string, onRefresh: () =>
++  async function restoreSubmission() {
++    if (pending.value || disposed) return
++    const id = recoveryChangeId.value.trim()
++    if (!id || id.length > 200) { errorMessage.value = '请填写有效的开通变更编号。'; return }
++    let context = captureContext()
++    pending.value = true
++    confirmationSubmitted.value = true
++    retryConfirmationAllowed.value = false
++    errorMessage.value = ''
++    statusMessage.value = ''
++    try {
++      const [proposed, journal] = await Promise.all([
++        getSubscriptionChangePreview(context.tenant, id),
++        recallInitialSubscription(context.tenant, id),
++      ])
++      if (!context.current()) return
++      if (proposed.tenantId !== context.tenant || proposed.changeId !== id || proposed.action !== 'INITIAL' || !proposed.target) {
++        throw new Error('该变更不是当前租户的首次开通任务。')
++      }
++      let confirmed: SubscriptionChangeReceiptDTO | null = null
++      try { confirmed = await getSubscriptionChangeReceipt(context.tenant, id) } catch (error) {
++        if (!(error instanceof CommercialApiError && error.status === 404)) throw error
++      }
++      if (!context.current()) return
++      if (confirmed && (confirmed.tenantId !== context.tenant || confirmed.changeId !== id
++        || confirmed.action !== 'INITIAL' || confirmed.previewHash !== proposed.previewHash)) {
++        throw new Error('原开通任务与处理结果不一致，不能继续。')
++      }
++      const saved = journal?.input.previewHash === proposed.previewHash ? journal : null
++      const scope = confirmed?.after?.salesScope || saved?.salesScope || ''
++      if (!scope || scope === '*') throw new Error('原开通请求的适用范围尚无法确认，请保留变更编号交由原操作人核对。')
++      // These assignments invalidate old async work. Install the server snapshot
++      // only after synchronous selection watchers have cleared the old draft.
++      salesScope.value = scope
++      planCode.value = proposed.target.planCode
++      candidates.value = [{ version: proposed.target, eligible: false, reason: '仅恢复原任务，不用于新开通' }]
++      selectedVersionKey.value = versionKey(proposed.target)
++      preview.value = proposed
++      receipt.value = confirmed
++      frozenSubmission = saved
++      recoveryChangeId.value = id
++      confirmationSubmitted.value = true
++      retryConfirmationAllowed.value = !confirmed && saved !== null
++      pending.value = true
++      context = captureContext()
++      await options.onSubmitted?.(id)
++      if (!context.current()) return
++      if (confirmed) await readResult(context)
++      else {
++        verificationState.value = 'pending'
++        statusMessage.value = saved
++          ? '尚未取得原确认回执。可继续读取，或使用原请求编号和原内容重试确认。'
++          : '尚未取得原确认回执；当前设备没有原请求记录，请保留变更编号交由原操作人核对。'
++      }
++    } catch (error) {
++      if (context.current()) errorMessage.value = describeError(error, '原开通任务暂时无法恢复。')
++    } finally {
++      if (context.current()) pending.value = false
++    }
++  }
++
++  async function retryOriginalConfirmation() {
++    if (pending.value || disposed || !retryConfirmationAllowed.value || !frozenSubmission || !preview.value) return
++    const context = captureContext()
++    const submission = frozenSubmission
++    if (submission.tenantId !== context.tenant || submission.changeId !== preview.value.changeId
++      || submission.input.previewHash !== preview.value.previewHash) return
++    pending.value = true
++    retryConfirmationAllowed.value = false
++    errorMessage.value = ''
++    try {
++      // Re-read first; a late original response may already have committed.
++      try { await readResult(context); return } catch (error) {
++        if (!(error instanceof CommercialApiError && error.status === 404)) throw error
++      }
++      if (!context.current()) return
++      const confirmed = await confirmSubscriptionChange(context.tenant, submission.changeId, submission.input)
++      if (!context.current()) return
++      receipt.value = confirmed
++      await readResult(context)
++    } catch (error) {
++      if (context.current()) errorMessage.value = describeError(error, '原确认结果仍待确认，请重新读取结果。')
++    } finally {
++      if (context.current()) pending.value = false
++    }
++  }
++
++  watch(() => options.changeId?.(), (id) => {
++    if (id && id !== preview.value?.changeId) {
++      recoveryChangeId.value = id
++      void restoreSubmission()
++    }
++  }, { immediate: true })
++
+@@ -465,0 +585,4 @@ export function useInitialSubscription(tenantId: () => string, onRefresh: () =>
++    recoveryChangeId,
++    retryConfirmationAllowed,
++    restoreSubmission,
++    retryOriginalConfirmation,
+diff --git a/web/src/features/platform/pages/CommercialTenantEntitlementsView.vue b/web/src/features/platform/pages/CommercialTenantEntitlementsView.vue
+index c14795d..e747641 100644
+--- a/web/src/features/platform/pages/CommercialTenantEntitlementsView.vue
++++ b/web/src/features/platform/pages/CommercialTenantEntitlementsView.vue
+@@ -5 +5,3 @@ import AuthorityPicker from '@/features/platform/components/AuthorityPicker.vue'
+-import { computed, onMounted, ref } from 'vue'
++import { computed, onMounted, onScopeDispose, ref } from 'vue'
++import { useRoute, useRouter } from 'vue-router'
++import { subscribeSessionContextChange } from '@/services/runtime/sessionCoordinator'
+@@ -20,0 +23,3 @@ import {
++  getSubscriptionChangeReceipt,
++  getPlanVersion,
++  type PlanVersionDTO,
+@@ -33 +38,7 @@ type LoadState = 'idle' | 'loading' | 'ready' | 'blocked' | 'error'
+-const tenantIdInput = ref('')
++const route = useRoute()
++const router = useRouter()
++let generation = 0
++let disposed = false
++const initialChangeId = ref('')
++const subscriptionPlan = ref<PlanVersionDTO | null>(null)
++const tenantIdInput = ref(typeof route.query.tenant === 'string' ? route.query.tenant : '')
+@@ -92,0 +104 @@ async function loadWorkspace() {
++  const token = ++generation
+@@ -93,0 +106,8 @@ async function loadWorkspace() {
++  const current = () => !disposed && token === generation && activeTenantId.value === tenantId
++  initialChangeId.value = ''
++  subscriptionPlan.value = null
++  subscription.value = null
++  entitlement.value = null
++  overrides.value = []
++  overrideDialogOpen.value = false
++  revokeTarget.value = null
+@@ -111,0 +132,20 @@ async function loadWorkspace() {
++    if (!current()) return
++    let restoreId = route.query.tenant === tenantId && typeof route.query.initialChange === 'string'
++      ? route.query.initialChange : ''
++    if (!restoreId && subscriptionResult?.pendingChangeId) {
++      const pendingReceipt = await getSubscriptionChangeReceipt(tenantId, subscriptionResult.pendingChangeId)
++      if (!current()) return
++      if (pendingReceipt.tenantId !== tenantId || pendingReceipt.changeId !== subscriptionResult.pendingChangeId) {
++        throw new Error('待处理变更与当前租户不一致。')
++      }
++      if (pendingReceipt.action === 'INITIAL') restoreId = pendingReceipt.changeId
++    }
++    if (subscriptionResult) {
++      try {
++        const exact = await getPlanVersion(subscriptionResult.planCode, subscriptionResult.planVersion)
++        if (!current()) return
++        if (exact.planCode === subscriptionResult.planCode && String(exact.version) === String(subscriptionResult.planVersion)) subscriptionPlan.value = exact
++      } catch { /* An unavailable display name must not fabricate a plan or hide the subscription. */ }
++    }
++    if (!current()) return
++    initialChangeId.value = restoreId
+@@ -117,0 +158 @@ async function loadWorkspace() {
++    if (!current()) return
+@@ -206 +247,30 @@ async function handleActionError(error: unknown, fallback: string, rereadOnConfl
+-onMounted(loadModules)
++async function recordInitialSubmission(changeId: string) {
++  if (!activeTenantId.value) return
++  await router.replace({ query: { ...route.query, tenant: activeTenantId.value, initialChange: changeId } })
++}
++
++async function initialFinished() {
++  const tenant = activeTenantId.value
++  const query = { ...route.query }
++  delete query.initialChange
++  await router.replace({ query })
++  if (!disposed && activeTenantId.value === tenant) await loadWorkspace()
++}
++
++const unsubscribe = subscribeSessionContextChange(() => {
++  generation++
++  activeTenantId.value = ''
++  subscription.value = null
++  subscriptionPlan.value = null
++  entitlement.value = null
++  initialChangeId.value = ''
++  overrides.value = []
++  overrideDialogOpen.value = false
++  revokeTarget.value = null
++  loadState.value = 'idle'
++})
++onScopeDispose(() => { disposed = true; generation++; unsubscribe() })
++onMounted(() => {
++  void loadModules()
++  if (tenantIdInput.value) void loadWorkspace()
++})
+@@ -255 +325 @@ onMounted(loadModules)
+-          <div><span>套餐</span><strong>{{ backendTermLabel('plan', subscription.planCode) }} v{{ subscription.planVersion }}</strong></div>
++          <div><span>套餐</span><strong>{{ subscriptionPlan?.name || backendTermLabel('plan', subscription.planCode) }} v{{ subscription.planVersion }}</strong></div>
+@@ -266,2 +336,2 @@ onMounted(loadModules)
+-        <SubscriptionChangeWorkspace v-if="subscription" :tenant-id="activeTenantId" :subscription="subscription" @refresh="loadWorkspace" />
+-        <InitialSubscriptionWorkspace v-else :tenant-id="activeTenantId" @refresh="loadWorkspace" />
++        <SubscriptionChangeWorkspace v-if="subscription && !initialChangeId" :tenant-id="activeTenantId" :subscription="subscription" @refresh="loadWorkspace" />
++        <InitialSubscriptionWorkspace v-else :tenant-id="activeTenantId" :change-id="initialChangeId" @submitted="recordInitialSubmission" @refresh="initialFinished" />
+diff --git a/web/src/services/commercial/initialSubscriptionJournal.spec.ts b/web/src/services/commercial/initialSubscriptionJournal.spec.ts
+new file mode 100644
+index 0000000..f01a08c
+--- /dev/null
++++ b/web/src/services/commercial/initialSubscriptionJournal.spec.ts
+@@ -0,0 +1,41 @@
++import { beforeEach, describe, expect, it, vi } from 'vitest'
++import { readSession } from '@/services/runtime/api'
++import { rememberInitialSubscription, recallInitialSubscription, forgetInitialSubscription } from './initialSubscriptionJournal'
++
++vi.mock('@/services/runtime/api', () => ({ readSession: vi.fn() }))
++const record = { tenantId: 'tenant-a', changeId: 'change-a', salesScope: 'office',
++  input: { requestId: 'request-a', previewHash: 'b'.repeat(64), reason: 'approved original request' } }
++beforeEach(() => {
++  sessionStorage.clear()
++  vi.mocked(readSession).mockResolvedValue({ authenticated: true, actor_kind: 'platform', platform_subject: 'admin-a' })
++})
++describe('tab-local first subscription request journal', () => {
++  it('retains only the original request, never a success or entitlement', async () => {
++    expect(await rememberInitialSubscription(record)).toBe(true)
++    expect(await recallInitialSubscription('tenant-a', 'change-a')).toEqual(record)
++    expect(await recallInitialSubscription('tenant-b', 'change-a')).toBeNull()
++    expect(await recallInitialSubscription('tenant-a', 'other')).toBeNull()
++    await forgetInitialSubscription('tenant-a', 'change-a')
++    expect(await recallInitialSubscription('tenant-a', 'change-a')).toBeNull()
++  })
++  it('does not expose an original actor request in another account context', async () => {
++    await rememberInitialSubscription(record)
++    vi.mocked(readSession).mockResolvedValue({ authenticated: true, actor_kind: 'platform', platform_subject: 'admin-b' })
++    expect(await recallInitialSubscription('tenant-a', 'change-a')).toBeNull()
++  })
++  it('does not load or write without a trusted platform identity', async () => {
++    vi.mocked(readSession).mockResolvedValue({ authenticated: false })
++    expect(await rememberInitialSubscription(record)).toBe(false)
++    expect(await recallInitialSubscription('tenant-a', 'change-a')).toBeNull()
++  })
++  it('does not accept corrupt, oversized or cross-tenant local records', async () => {
++    await rememberInitialSubscription(record)
++    const key = sessionStorage.key(0)!
++    sessionStorage.setItem(key, '{broken')
++    expect(await recallInitialSubscription('tenant-a', 'change-a')).toBeNull()
++    sessionStorage.setItem(key, JSON.stringify({ ...record, tenantId: 'tenant-b' }))
++    expect(await recallInitialSubscription('tenant-a', 'change-a')).toBeNull()
++    sessionStorage.setItem(key, ' '.repeat(12001))
++    expect(await recallInitialSubscription('tenant-a', 'change-a')).toBeNull()
++  })
++})
+diff --git a/web/src/services/commercial/initialSubscriptionJournal.ts b/web/src/services/commercial/initialSubscriptionJournal.ts
+new file mode 100644
+index 0000000..323f0af
+--- /dev/null
++++ b/web/src/services/commercial/initialSubscriptionJournal.ts
+@@ -0,0 +1,53 @@
++import { readSession } from '@/services/runtime/api'
++import type { ConfirmSubscriptionChangeInput } from './platformCommercial'
++
++export interface InitialSubscriptionSubmission {
++  tenantId: string
++  changeId: string
++  salesScope: string
++  input: ConfirmSubscriptionChangeInput
++}
++
++// A tab-local request journal, not a subscription, entitlement or approval.
++// Restoring it always requires fresh server preview/receipt reads; the server
++// independently authenticates and admits every retry of the frozen request.
++async function key(tenantId: string, changeId: string) {
++  const session = await readSession()
++  if (!session.authenticated || session.actor_kind !== 'platform' || !session.platform_subject) return null
++  return `coffeelink:initial-request:${encodeURIComponent(session.platform_subject)}:${encodeURIComponent(tenantId)}:${encodeURIComponent(changeId)}`
++}
++
++function valid(value: unknown, tenantId: string, changeId: string): value is InitialSubscriptionSubmission {
++  if (!value || typeof value !== 'object') return false
++  const record = value as Partial<InitialSubscriptionSubmission>
++  return record.tenantId === tenantId && record.changeId === changeId
++    && typeof record.salesScope === 'string' && record.salesScope.length > 0 && record.salesScope.length <= 200
++    && record.salesScope !== '*' && !!record.input
++    && typeof record.input.requestId === 'string' && record.input.requestId.length > 0 && record.input.requestId.length <= 200
++    && typeof record.input.previewHash === 'string' && /^[a-f0-9]{64}$/i.test(record.input.previewHash)
++    && typeof record.input.reason === 'string' && record.input.reason.trim().length > 0 && record.input.reason.length <= 4096
++}
++
++export async function rememberInitialSubscription(record: InitialSubscriptionSubmission): Promise<boolean> {
++  const storageKey = await key(record.tenantId, record.changeId)
++  if (!storageKey || !valid(record, record.tenantId, record.changeId)) return false
++  try { sessionStorage.setItem(storageKey, JSON.stringify(record)); return true } catch { return false }
++}
++
++export async function recallInitialSubscription(tenantId: string, changeId: string): Promise<InitialSubscriptionSubmission | null> {
++  const storageKey = await key(tenantId, changeId)
++  if (!storageKey) return null
++  try {
++    const raw = sessionStorage.getItem(storageKey)
++    if (!raw || raw.length > 12000) return null
++    const record: unknown = JSON.parse(raw)
++    return valid(record, tenantId, changeId) ? record : null
++  } catch { return null }
++}
++
++export async function forgetInitialSubscription(tenantId: string, changeId: string): Promise<void> {
++  const storageKey = await key(tenantId, changeId)
++  if (storageKey) {
++    try { sessionStorage.removeItem(storageKey) } catch { /* Storage is not authority. */ }
++  }
++}
+diff --git a/web/tests/ce13-platform/ce13-platform-commercial.spec.ts b/web/tests/ce13-platform/ce13-platform-commercial.spec.ts
+index 29b7462..accb428 100644
+--- a/web/tests/ce13-platform/ce13-platform-commercial.spec.ts
++++ b/web/tests/ce13-platform/ce13-platform-commercial.spec.ts
+@@ -345 +345 @@ test("TestCE13PlatformCommercialLifecycleThroughTrustedWebSession", async ({ bro
+-test("TestCE340PlatformFirstSubscriptionThroughTrustedWebSession", async ({ browser }) => {
++test("TestCE340PlatformFirstSubscriptionThroughTrustedWebSession", async ({ browser }, testInfo) => {
+@@ -422,0 +423,22 @@ test("TestCE340PlatformFirstSubscriptionThroughTrustedWebSession", async ({ brow
++  const browserErrors: string[] = [];
++  allowed.page.on("pageerror", (error) => browserErrors.push(error.message));
++  const viewports = [
++    { width: 1366, height: 768 }, { width: 1440, height: 900 },
++    { width: 1536, height: 1024 }, { width: 390, height: 844 },
++  ];
++  for (const viewport of viewports) {
++    await allowed.page.setViewportSize(viewport);
++    await expect(initial.getByRole("button", { name: "确认首次开通" })).toBeEnabled();
++    await allowed.page.screenshot({ path: testInfo.outputPath(`ce340-confirm-${viewport.width}.png`), fullPage: true });
++  }
++  await allowed.page.setViewportSize(viewports[0]);
++  // Execute the real command, then drop only its browser reply. No mocked
++  // subscription, receipt, entitlement or business-success response is used.
++  let confirmationCalls = 0;
++  let commandStatus = 0;
++  await allowed.page.route("**/api/v1/platform/tenants/*/subscription/changes/*/confirm", async (route) => {
++    confirmationCalls += 1;
++    const actual = await route.fetch();
++    commandStatus = actual.status();
++    await route.abort("failed");
++  });
+@@ -424 +446,6 @@ test("TestCE340PlatformFirstSubscriptionThroughTrustedWebSession", async ({ brow
+-
++  await expect(initial.getByText("首次开通结果待确认", { exact: true })).toBeVisible();
++  await expect(allowed.page).toHaveURL(/initialChange=/);
++  expect(commandStatus).toBe(200);
++  expect(confirmationCalls).toBe(1);
++  await allowed.page.screenshot({ path: testInfo.outputPath("ce340-lost-confirmation.png"), fullPage: true });
++  await allowed.page.reload();
+@@ -425,0 +453,7 @@ test("TestCE340PlatformFirstSubscriptionThroughTrustedWebSession", async ({ brow
++  expect(confirmationCalls).toBe(1);
++  expect(browserErrors).toEqual([]);
++  for (const viewport of viewports) {
++    await allowed.page.setViewportSize(viewport);
++    await expect(allowed.page.locator(".subscription-card")).toBeVisible();
++    await allowed.page.screenshot({ path: testInfo.outputPath(`ce340-restored-${viewport.width}.png`), fullPage: true });
++  }
