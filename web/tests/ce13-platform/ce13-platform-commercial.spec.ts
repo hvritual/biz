@@ -527,6 +527,22 @@ test("TestCE340PlatformFirstSubscriptionThroughTrustedWebSession", async ({ brow
     expect.objectContaining({ kind: "quota", key: "tenant.devices" }),
   ]));
 
+  // Once INITIAL has applied, a historical or forged recovery bookmark is
+  // not permission to hide the normal subscription-management controls.
+  // Verify both against the real subscription and tenant ID (not mock data).
+  for (const stale of [actualChangeId, "not-a-current-initial-change"]) {
+    await allowed.page.goto(
+      `${data.web_base_url}/#/platform/commercial/tenant-entitlements?tenant=${encodeURIComponent(initialTenant)}&initialChange=${encodeURIComponent(stale)}`,
+    );
+    await expect(allowed.page.getByLabel("租户编号")).toHaveValue(initialTenant);
+    await expect(allowed.page.getByTestId("ce13-subscription-change")).toBeVisible();
+    await expect(allowed.page.getByTestId("platform-initial-subscription")).toHaveCount(0);
+    await expect(allowed.page).not.toHaveURL(/initialChange=/);
+    await expect(allowed.page.locator(".subscription-card").getByText(/CE-340 首次开通套餐/)).toBeVisible();
+  }
+  expect(confirmationCalls).toBe(1);
+  expect(browserErrors).toEqual([]);
+
   await allowed.context.close();
 });
 

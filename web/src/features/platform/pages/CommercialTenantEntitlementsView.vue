@@ -130,15 +130,35 @@ async function loadWorkspace() {
       explainTenantEntitlements(tenantId, capabilityCodes()),
     ])
     if (!current()) return
-    let restoreId = route.query.tenant === tenantId && typeof route.query.initialChange === 'string'
-      ? route.query.initialChange : ''
-    if (!restoreId && subscriptionResult?.pendingChangeId) {
+    const requestedChange = route.query.tenant === tenantId && typeof route.query.initialChange === 'string'
+      ? route.query.initialChange.trim() : ''
+    // An unconfirmed request may be restored on a tenant without a subscription.
+    // Once a subscription exists, an arbitrary URL cannot replace its real
+    // management controls. Only the CURRENT tenant-owned pending INITIAL
+    // receipt identifies an active first-activation recovery.
+    let restoreId = subscriptionResult ? '' : requestedChange
+    if (subscriptionResult?.pendingChangeId) {
       const pendingReceipt = await getSubscriptionChangeReceipt(tenantId, subscriptionResult.pendingChangeId)
       if (!current()) return
       if (pendingReceipt.tenantId !== tenantId || pendingReceipt.changeId !== subscriptionResult.pendingChangeId) {
         throw new Error('待处理变更与当前租户不一致。')
       }
-      if (pendingReceipt.action === 'INITIAL') restoreId = pendingReceipt.changeId
+      if (pendingReceipt.action === 'INITIAL' && pendingReceipt.status === 'PROVISIONING'
+        && pendingReceipt.after?.subscriptionId === subscriptionResult.subscriptionId
+        && pendingReceipt.provisioningTaskId) {
+        restoreId = pendingReceipt.changeId
+      }
+    }
+    // Reject stale, mistyped, historical or cross-tenant links while preserving
+    // a legitimate pending first activation. The route is a navigation hint,
+    // never an entitlement/receipt authority.
+    if (subscriptionResult && requestedChange !== restoreId) {
+      const query = { ...route.query }
+      if (restoreId) query.initialChange = restoreId
+      else delete query.initialChange
+      void router.replace({ query }).catch(() => {
+        if (current()) actionError.value = '开通链接更新失败，请重新读取当前租户状态。'
+      })
     }
     if (subscriptionResult) {
       try {
@@ -290,7 +310,15 @@ function resumeRouteTenant() {
   if (loadState.value === 'ready') {
     const requestedChange = typeof route.query.initialChange === 'string'
       ? route.query.initialChange.trim() : ''
-    if (initialChangeId.value !== requestedChange) initialChangeId.value = requestedChange
+    if (initialChangeId.value !== requestedChange) {
+      if (subscription.value) {
+        // Recheck the current pending change against tenant authority first.
+        // Do not show the INITIAL recovery component for a URL string alone.
+        void loadWorkspace()
+      } else {
+        initialChangeId.value = requestedChange
+      }
+    }
   }
 }
 watch([() => route.query.tenant, () => route.query.initialChange], resumeRouteTenant, {
