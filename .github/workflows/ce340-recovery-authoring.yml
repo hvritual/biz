@@ -13,7 +13,7 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
-          ref: ${{ github.sha }}
+          ref: fd6b34b2f167ba2b30aa0ac18cb33f2d8ba54ac5
           path: control
           persist-credentials: false
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
@@ -22,7 +22,7 @@ jobs:
           path: source
           fetch-depth: 0
           persist-credentials: false
-      - name: Apply exact reviewed eight-file proposal, no CI changes
+      - name: Apply exact eight-file proposal, no CI changes
         shell: bash
         run: |
           set -euo pipefail
@@ -31,8 +31,11 @@ jobs:
           test "$(git -C source rev-parse HEAD)" = e31cf717521ebbeaf14aac6f5b84d695637ce3dc
           git -C source apply --check --unidiff-zero ../control/tools/ce340-recovery.patch
           git -C source apply --index --unidiff-zero ../control/tools/ce340-recovery.patch
-          git -C source diff --cached --check
           test "$(git -C source write-tree)" = da8dae0aa1fcee76223c1fb4e432263afdbed25c
+          echo 'e5b335e5dfcdc6d1cbac6cd50dc3a1640e7769396a2447e3685ff763a6622386  control/tools/ce340-recovery-fixes.patch' | sha256sum -c -
+          git -C source apply --index --unidiff-zero ../control/tools/ce340-recovery-fixes.patch
+          test "$(git -C source write-tree)" = 6bb97865a91e5875377439dcb8f58b0aff20ffd3
+          git -C source diff --cached --check
           test -z "$(git -C source diff --cached --name-only -- .github server go.mod go.sum contracts)"
           git -C source config user.name 'github-actions[bot]'
           git -C source config user.email '41898282+github-actions[bot]@users.noreply.github.com'
@@ -40,7 +43,7 @@ jobs:
           git -C source rev-parse HEAD > "$RUNNER_TEMP/ce340-recovery/candidate-sha.txt"
           git -C source rev-parse 'HEAD^{tree}' > "$RUNNER_TEMP/ce340-recovery/tree.txt"
           git -C source archive --format=tar --output="$RUNNER_TEMP/ce340-recovery/source.tar" HEAD
-          cp control/tools/ce340-recovery.patch "$RUNNER_TEMP/ce340-recovery/changes.patch"
+          git -C source diff --binary e31cf717521ebbeaf14aac6f5b84d695637ce3dc HEAD > "$RUNNER_TEMP/ce340-recovery/changes.patch"
           (cd source && python3 -B scripts/check_ci_source_safety.py --base-ref e31cf717521ebbeaf14aac6f5b84d695637ce3dc)
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
