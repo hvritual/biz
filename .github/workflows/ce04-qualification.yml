@@ -27,7 +27,7 @@ jobs:
     env:
       PYTHONDONTWRITEBYTECODE: '1'
       CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-      YUNKA_SHA: 06076ce2fc170c89c7356ee070d74ebf1de340cf
+      YUNKA_SHA: 6be63bfedf622a9c123bd24f7fd18b62882ee1e9
       BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
       YUNKA_TEST_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/biz_ce04?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true
     steps:
