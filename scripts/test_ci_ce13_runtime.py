@@ -4,6 +4,8 @@ import unittest
 from pathlib import Path
 import subprocess
 import os
+import textwrap
+import re
 
 import check_ci_ce13 as checks
 
@@ -156,12 +158,16 @@ class BrowserPreparationTests(unittest.TestCase):
                 font.write_text("ready")
             commands = {
                 "npm": 'printf "npm %s cwd=%s\\n" "$*" "$PWD" >> "$TRACE"; '
+                       'if [[ "${CHECK_PREP_OVERLAP:-0}" == 1 ]]; then '
+                       'for attempt in $(seq 1 80); do [[ -f "$FONT_PIPELINE_STARTED" ]] && break; sleep 0.02; done; '
+                       '[[ -f "$FONT_PIPELINE_STARTED" ]] || exit 57; fi; '
                        'mkdir -p node_modules; exit "${NPM_EXIT:-0}"',
                 "npx": 'printf "npx %s cwd=%s\\n" "$*" "$PWD" >> "$TRACE"; '
                        '[[ "$*" != *--with-deps* ]] || exit 88; exit "${INSTALL_EXIT:-0}"',
                 "fc-match": 'if [[ -f "$FONT" ]]; then echo "Noto Sans CJK SC"; '
                             'else echo "DejaVu Sans"; fi',
                 "sudo": 'printf "sudo %s\\n" "$*" >> "$TRACE"; '
+                        'if [[ "$*" == *"update"* ]]; then touch "$FONT_PIPELINE_STARTED"; fi; '
                         '[[ "${APT_EXIT:-0}" == 0 ]] || exit "$APT_EXIT"; '
                         'if [[ "$*" == *"install "* && "${NO_FONT_AFTER_INSTALL:-0}" != 1 ]]; '
                         'then touch "$FONT"; fi',
@@ -175,7 +181,8 @@ class BrowserPreparationTests(unittest.TestCase):
             env = {**os.environ, "PATH": str(bindir) + os.pathsep + os.environ["PATH"],
                    "GITHUB_ACTIONS": "true", "GITHUB_RUN_ID": "123", "RUNNER_TEMP": str(root / "temp"),
                    "GITHUB_WORKSPACE": str(root / "checkout"), "TRACE": str(root / "trace"),
-                   "FONT": str(font), "SMOKE_SOURCE": str(root / "smoke"), **overrides}
+                   "FONT": str(font), "SMOKE_SOURCE": str(root / "smoke"),
+                   "FONT_PIPELINE_STARTED": str(root / "font-pipeline-started"), **overrides}
             command = ["bash", str(ROOT / "scripts/ci_ce13_browser.sh")]
             result = subprocess.run([*command, "prepare", lane], env=env,
                                     capture_output=True, text=True, timeout=10)
@@ -219,6 +226,32 @@ class BrowserPreparationTests(unittest.TestCase):
         self.assertTrue(ready)
         self.assertEqual(exit_code, "0")
 
+    def test_cold_font_bootstrap_starts_while_npm_runs(self):
+        result, trace, _, ready, exit_code = self.probe(missing_font=True, CHECK_PREP_OVERLAP="1")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("npm ci", trace)
+        self.assertIn("apt-get update", trace)
+        self.assertIn("apt-get install", trace)
+        self.assertTrue(ready)
+        self.assertEqual(exit_code, "0")
+
+    def test_npm_failure_drains_font_before_returning(self):
+        result, trace, _, ready, exit_code = self.probe(missing_font=True, NPM_EXIT="17")
+        self.assertEqual(result.returncode, 17, result.stderr)
+        self.assertIn("apt-get install", trace)
+        self.assertNotIn("npx", trace)
+        self.assertNotIn("node ", trace)
+        self.assertFalse(ready)
+        self.assertEqual(exit_code, "17")
+
+    def test_browser_failure_drains_font_before_returning(self):
+        result, trace, _, ready, exit_code = self.probe(missing_font=True, INSTALL_EXIT="19")
+        self.assertEqual(result.returncode, 19, result.stderr)
+        self.assertIn("apt-get install", trace)
+        self.assertNotIn("node ", trace)
+        self.assertFalse(ready)
+        self.assertEqual(exit_code, "19")
+
     def test_npm_failure_does_not_publish_readiness(self):
         result, trace, _, ready, exit_code = self.probe(NPM_EXIT="17")
         self.assertEqual(result.returncode, 17)
@@ -259,6 +292,83 @@ class BrowserPreparationTests(unittest.TestCase):
         self.assertEqual(trace, "")
         self.assertFalse(ready)
 
+
+
+
+class SessionParallelQualificationTests(unittest.TestCase):
+    """Exercise the actual workflow shell, not a duplicate command model."""
+
+    @staticmethod
+    def run_script(fail_match=""):
+        workflow = (ROOT / ".github/workflows/ce13-platform-web-session.yml").read_text()
+        match = re.search(
+            r"(?ms)^      - name: Verify CE-13 authentication allowlist and scoped regressions\n"
+            r"        shell: bash\n        run: \|\n(?P<commands>.*?)"
+            r"^      - name: Seed platform, denied-platform and tenant-only browser identities",
+            workflow,
+        )
+        if match is None:
+            raise AssertionError("Missing scoped validation step")
+        commands = textwrap.dedent(match.group("commands")).strip()
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            bin_root = root / "fake-bin"
+            bin_root.mkdir()
+            go = bin_root / "go"
+            go.write_text(
+                '#!/bin/bash\n'
+                'printf "%s\\n" "$*" >> "$CE13_COMMANDS"\n'
+                'if [[ -n "$CE13_FAIL_MATCH" && "$*" == *"$CE13_FAIL_MATCH"* ]]; then exit 17; fi\n'
+            )
+            go.chmod(0o755)
+            env = {**os.environ, "PATH": str(bin_root) + os.pathsep + os.environ["PATH"],
+                   "RUNNER_TEMP": str(root), "CE13_COMMANDS": str(root / "commands.log"),
+                   "CE13_FAIL_MATCH": fail_match}
+            result = subprocess.run(["bash", "-c", commands], env=env,
+                                    cwd=ROOT, capture_output=True, text=True)
+            lines = (root / "commands.log").read_text().splitlines()
+            return result, lines
+
+    def test_parallel_success_still_runs_all_tests_vet_and_three_builds(self):
+        result, commands = self.run_script()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("CE13_SCOPED_VALIDATION=PASS", result.stdout)
+        self.assertEqual(len(commands), 6, commands)
+        self.assertEqual(sum(" build " in " " + x + " " for x in commands), 3)
+        self.assertEqual(sum(" test " in " " + x + " " for x in commands), 2)
+        self.assertEqual(sum(" vet " in " " + x + " " for x in commands), 1)
+
+    def test_parallel_unit_test_failure_is_not_hidden_by_successful_builds(self):
+        result, commands = self.run_script("-run ^TestCE13Platform")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("CE13_SCOPED_VALIDATION_FAILED", result.stderr)
+        self.assertNotIn("CE13_SCOPED_VALIDATION=PASS", result.stdout)
+        self.assertEqual(len(commands), 6, commands)
+        self.assertEqual(sum(" build " in " " + x + " " for x in commands), 3)
+        self.assertEqual(sum(" test " in " " + x + " " for x in commands), 2)
+        self.assertEqual(sum(" vet " in " " + x + " " for x in commands), 1)
+
+    def test_parallel_binary_failure_is_not_hidden_by_successful_tests(self):
+        result, commands = self.run_script("ce13-session-idp")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("CE13_SCOPED_VALIDATION_FAILED", result.stderr)
+        self.assertNotIn("CE13_SCOPED_VALIDATION=PASS", result.stdout)
+        self.assertEqual(len(commands), 6, commands)
+        self.assertEqual(sum(" test " in " " + x + " " for x in commands), 2)
+
+    def test_parallel_vet_failure_runs_all_six_before_rejecting(self):
+        result, commands = self.run_script(" vet ")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("CE13_SCOPED_VALIDATION_FAILED", result.stderr)
+        self.assertEqual(len(commands), 6, commands)
+        self.assertEqual(sum(" vet " in " " + x + " " for x in commands), 1)
+
+    def test_parallel_second_test_failure_preserves_first_and_vet_evidence(self):
+        result, commands = self.run_script("access/infrastructure/persistence")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("CE13_SCOPED_VALIDATION_FAILED", result.stderr)
+        self.assertEqual(len(commands), 6, commands)
+        self.assertEqual(sum(" vet " in " " + x + " " for x in commands), 1)
 
 if __name__ == "__main__":
     unittest.main()
