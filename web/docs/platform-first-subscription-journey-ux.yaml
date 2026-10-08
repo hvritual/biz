@@ -4,7 +4,7 @@ status: ready_for_review
 task_ref:
   issue: "#340"
   baseline_commit: aa15de7d8e0091dc210f63fe422ad54c649a80fa
-  candidate_commit: d50babaea21ce2afb8ba57ca6fbebaa9d2f93c73
+  candidate_commit: 1efb946231bd4dc81154584ab694b778649dcaf1
   name: 平台管理员租户首次订阅与模块开通
 classification:
   type: business_task
@@ -24,10 +24,10 @@ context:
     source_refs: [issue_340, proto_contract, subscription_model]
   workflow:
     summary: 读取租户权益 → 发现可用 Published PlanVersion → 服务端资格检查 → 预览 → 确认 → 必要准备 → Subscription/Entitlement 权威回读。
-    source_refs: [issue_340, change_authority]
+    source_refs: [issue_340, preview_authority, change_authority]
   state:
     summary: 无订阅 → INITIAL 预览 → APPLIED 或 PROVISIONING；只有最终权益回读成功后页面才宣告已开通。
-    source_refs: [issue_340, change_authority, provisioning_authority]
+    source_refs: [issue_340, change_authority, prepared_change_authority, provisioning_authority]
   action:
     summary: 复用平台 Subscription Change Authority；INITIAL 显式携带 sales_scope，确认只绑定 preview_hash，不在浏览器生成权益事实。
     source_refs: [proto_contract, platform_service]
@@ -47,49 +47,67 @@ sources:
 - id: proto_contract
   kind: repository_contract
   path: contracts/proto/commercial/v1/subscription_change.proto
-  commit: d50babaea21ce2afb8ba57ca6fbebaa9d2f93c73
+  commit: 1efb946231bd4dc81154584ab694b778649dcaf1
   locator: PreviewSubscriptionChangeRequest / ConfirmSubscriptionChangeRequest
   claim: INITIAL 复用现有平台变更协议，首次预览显式携带 sales_scope，确认绑定 preview_hash。
 - id: subscription_model
   kind: implementation
   path: internal/commercial/domain/subscription/model.go
-  commit: d50babaea21ce2afb8ba57ca6fbebaa9d2f93c73
+  commit: 1efb946231bd4dc81154584ab694b778649dcaf1
   locator: OriginInitialActivation / StateProvisioning / Subscription.Validate
   claim: 首次开通具有独立来源事实，准备期间不冒充已激活权益。
 - id: change_authority
   kind: implementation
-  path: internal/commercial/application/subscriptionchanges/internal/usecase
-  commit: d50babaea21ce2afb8ba57ca6fbebaa9d2f93c73
-  locator: preview / confirm / prepared
-  claim: 首次开通复用目标资格、目录、快照、回执和 Provisioning 状态机。
+  path: internal/commercial/application/subscriptionchanges/internal/usecase/confirm.go
+  commit: 1efb946231bd4dc81154584ab694b778649dcaf1
+  locator: ConfirmSubscriptionChange
+  claim: 首次确认锁定租户与原预览，原子创建订阅和回执；准备期间不会提前生成目标权益。
+- id: preview_authority
+  kind: implementation
+  path: internal/commercial/application/subscriptionchanges/internal/usecase/preview.go
+  commit: 1efb946231bd4dc81154584ab694b778649dcaf1
+  locator: PreviewSubscriptionChange / preview
+  claim: 首次预览使用真实租户、销售范围、精确版本资格和商业目录形成服务端预览事实。
+- id: prepared_change_authority
+  kind: implementation
+  path: internal/commercial/application/subscriptionchanges/internal/usecase/prepared.go
+  commit: 1efb946231bd4dc81154584ab694b778649dcaf1
+  locator: CompletePreparedSubscriptionChange / CancelPreparedSubscriptionChange
+  claim: 准备完成后才原子应用订阅及权益，INITIAL 不能通过通用取消恢复不存在的旧订阅。
 - id: provisioning_authority
   kind: implementation
   path: internal/commercial/domain/provisioning/model.go
-  commit: d50babaea21ce2afb8ba57ca6fbebaa9d2f93c73
+  commit: 1efb946231bd4dc81154584ab694b778649dcaf1
   locator: Task / Retry / Complete
   claim: 准备任务有独立状态、重试和最终完成事实；INITIAL 禁止用通用取消恢复不存在的旧套餐。
 - id: platform_service
   kind: implementation
   path: web/src/services/commercial/platformCommercial.ts
-  commit: d50babaea21ce2afb8ba57ca6fbebaa9d2f93c73
+  commit: 1efb946231bd4dc81154584ab694b778649dcaf1
   locator: listPlans / previewSubscriptionChange / confirmSubscriptionChange
   claim: 前端使用可信会话、CSRF、幂等键和真实平台商业接口。
 - id: current_page
   kind: implementation
   path: web/src/features/platform/pages/CommercialTenantEntitlementsView.vue
-  commit: d50babaea21ce2afb8ba57ca6fbebaa9d2f93c73
+  commit: 1efb946231bd4dc81154584ab694b778649dcaf1
   locator: CommercialTenantEntitlementsView / InitialSubscriptionWorkspace / useInitialSubscription
   claim: 当前产品候选已有可信租户上下文首次开通、原变更结果恢复、有效权益确认及已订阅变更入口；四视口与人工体验仍分别验收。
+- id: recovery_orchestration
+  kind: implementation
+  path: web/src/features/platform/composables/useInitialSubscription.ts
+  commit: 1efb946231bd4dc81154584ab694b778649dcaf1
+  locator: retryOriginalConfirmation / recoverConcurrentActivation / restoreSubmission
+  claim: 原请求重试保持同一幂等键；明确拒绝后先对账原回执和当前订阅，仅双重 404 解锁重新预览；迟到结果不能跨租户上下文。
 page_pattern:
   name: WorkbenchPage
   reason: 首次开通需要在同一租户上下文内协作展示订阅状态、目标版本、影响、处理状态和最终权益回读。
   contract_ref: web/ui-contracts.json:/platform/commercial/tenant-entitlements
   gaps:
-  - 首次开通入口与原变更恢复已实现；尚缺 200% 浏览器缩放、长中英文及数字场景、独立人工体验批准。
+  - 四视口键盘、长中英文与大整数、未知结果和原准备任务恢复用例已补充，待新候选实际执行；200% 浏览器缩放与独立人工体验批准仍未完成。
 outcome:
   definition: 管理员只有在同一租户的已应用原开通回执、精确套餐版本、当前有效订阅与权益结果核对完成后才看到完成；权益应反映已有限制与专项覆盖后的实际结果，允许合法固定天数试用态及已应用后停售的历史版本。处理中、失败、未知和结果读取失败保持独立状态，不提前分配成员角色或虚构能力。
-  result_contract_refs: [issue_340, change_authority, provisioning_authority]
-  recovery_contract_refs: [issue_340, change_authority, provisioning_authority]
+  result_contract_refs: [issue_340, change_authority, prepared_change_authority, provisioning_authority]
+  recovery_contract_refs: [issue_340, change_authority, provisioning_authority, recovery_orchestration]
 humanized_ux:
   time_to_information:
     applicability: applies
@@ -140,7 +158,7 @@ humanized_ux:
     applicability: applies
     reason: 并发确认、Provisioning、网络未知和最终回读都可能留下真实业务事实。
     requirements:
-    - HTTP 400/409 后必须先核验原开通回执及当前租户订阅；两者均明确不存在才允许重新预览。
+    - 首次确认或使用原请求重试收到 HTTP 400/409 后，必须先核验原开通回执及当前租户订阅；两者均明确不存在才允许重新预览，任一读取未知则保留原请求。
     - 已确认的 Provisioning 任务通过租户级回执恢复，另一名合规平台管理员无需读取原操作人的私有预览。
     - 发生丢响应、结果未知或最终权益核对失败时保留原任务线索，禁止自动重复首次开通。
     evidence_types: [api_test, browser_test]
