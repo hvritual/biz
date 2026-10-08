@@ -4,6 +4,8 @@ import unittest
 from pathlib import Path
 import subprocess
 import os
+import textwrap
+import re
 
 import check_ci_ce13 as checks
 
@@ -259,6 +261,65 @@ class BrowserPreparationTests(unittest.TestCase):
         self.assertEqual(trace, "")
         self.assertFalse(ready)
 
+
+
+
+class SessionParallelQualificationTests(unittest.TestCase):
+    """Exercise the actual workflow shell, not a duplicate command model."""
+
+    @staticmethod
+    def run_script(fail_match=""):
+        workflow = (ROOT / ".github/workflows/ce13-platform-web-session.yml").read_text()
+        match = re.search(
+            r"(?ms)^      - name: Verify CE-13 authentication allowlist and scoped regressions\n"
+            r"        shell: bash\n        run: \|\n(?P<commands>.*?)"
+            r"^      - name: Seed platform, denied-platform and tenant-only browser identities",
+            workflow,
+        )
+        if match is None:
+            raise AssertionError("Missing scoped validation step")
+        commands = textwrap.dedent(match.group("commands")).strip()
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            bin_root = root / "fake-bin"
+            bin_root.mkdir()
+            go = bin_root / "go"
+            go.write_text(
+                '#!/bin/bash\n'
+                'printf "%s\\n" "$*" >> "$CE13_COMMANDS"\n'
+                'if [[ -n "$CE13_FAIL_MATCH" && "$*" == *"$CE13_FAIL_MATCH"* ]]; then exit 17; fi\n'
+            )
+            go.chmod(0o755)
+            env = {**os.environ, "PATH": str(bin_root) + os.pathsep + os.environ["PATH"],
+                   "RUNNER_TEMP": str(root), "CE13_COMMANDS": str(root / "commands.log"),
+                   "CE13_FAIL_MATCH": fail_match}
+            result = subprocess.run(["bash", "-c", commands], env=env,
+                                    cwd=ROOT, capture_output=True, text=True)
+            lines = (root / "commands.log").read_text().splitlines()
+            return result, lines
+
+    def test_parallel_success_still_runs_all_tests_vet_and_three_builds(self):
+        result, commands = self.run_script()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("CE13_SCOPED_VALIDATION=PASS", result.stdout)
+        self.assertEqual(len(commands), 6, commands)
+        self.assertEqual(sum(" build " in " " + x + " " for x in commands), 3)
+        self.assertEqual(sum(" test " in " " + x + " " for x in commands), 2)
+        self.assertEqual(sum(" vet " in " " + x + " " for x in commands), 1)
+
+    def test_parallel_unit_test_failure_is_not_hidden_by_successful_builds(self):
+        result, commands = self.run_script("-run ^TestCE13Platform")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("CE13_SCOPED_VALIDATION_FAILED", result.stderr)
+        self.assertNotIn("CE13_SCOPED_VALIDATION=PASS", result.stdout)
+        self.assertEqual(sum(" build " in " " + x + " " for x in commands), 3)
+
+    def test_parallel_binary_failure_is_not_hidden_by_successful_tests(self):
+        result, commands = self.run_script("ce13-session-idp")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("CE13_SCOPED_VALIDATION_FAILED", result.stderr)
+        self.assertNotIn("CE13_SCOPED_VALIDATION=PASS", result.stdout)
+        self.assertEqual(sum(" test " in " " + x + " " for x in commands), 2)
 
 if __name__ == "__main__":
     unittest.main()

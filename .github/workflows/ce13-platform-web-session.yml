@@ -124,12 +124,27 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          go -C biz test -count=1 ./internal/architecture -run '^TestCE13PlatformCommercialWebSessionContract$'
-          go -C biz test -count=1 ./internal/access/infrastructure/persistence ./internal/bizruntime
-          go -C biz vet ./internal/architecture ./internal/access/infrastructure/persistence ./internal/bizruntime
-          go -C biz build -o "$RUNNER_TEMP/ce13-session-biz" ./cmd/biz
-          go -C biz build -o "$RUNNER_TEMP/ce13-session-idp" ./cmd/biz-idp
-          go -C biz build -o "$RUNNER_TEMP/ce13-session-credential" ./cmd/biz-idp-credential
+          # These checks are read-only after deterministic generation. Run them
+          # alongside independent runtime builds; both groups MUST complete and
+          # succeed before identity seeding or browser acceptance can start.
+          (
+            set -euo pipefail
+            go -C biz test -count=1 ./internal/architecture -run '^TestCE13PlatformCommercialWebSessionContract$'
+            go -C biz test -count=1 ./internal/access/infrastructure/persistence ./internal/bizruntime
+            go -C biz vet ./internal/architecture ./internal/access/infrastructure/persistence ./internal/bizruntime
+          ) &
+          scoped_pid=$!
+          builds_failed=0
+          go -C biz build -o "$RUNNER_TEMP/ce13-session-biz" ./cmd/biz || builds_failed=1
+          go -C biz build -o "$RUNNER_TEMP/ce13-session-idp" ./cmd/biz-idp || builds_failed=1
+          go -C biz build -o "$RUNNER_TEMP/ce13-session-credential" ./cmd/biz-idp-credential || builds_failed=1
+          scoped_failed=0
+          wait "$scoped_pid" || scoped_failed=1
+          if (( builds_failed != 0 || scoped_failed != 0 )); then
+            echo "CE13_SCOPED_VALIDATION_FAILED builds=$builds_failed checks=$scoped_failed" >&2
+            exit 1
+          fi
+          echo 'CE13_SCOPED_VALIDATION=PASS'
 
       - name: Seed platform, denied-platform and tenant-only browser identities
         shell: bash
