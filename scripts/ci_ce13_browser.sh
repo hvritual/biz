@@ -28,22 +28,35 @@ prepare)
     --exclude='./dist' \
     -cf - . | tar -C "$isolated_web" -xf -
   cd "$isolated_web"
-  echo 'CE13_BROWSER_PREP_STAGE=npm'
-  npm ci
-  echo 'CE13_BROWSER_PREP_STAGE=browser'
-  # Follow the existing member-browser setup: use runner libraries, not a full
-  # OS/font bootstrap on every run. A real launch below fails closed if a
-  # runner image loses a required library. Keep the lockfile-selected browser.
-  npx --no-install playwright install --only-shell chromium
+  # Font installation and the lockfile-selected browser download are independent.
+  # Start both cold-run prerequisites together; wait and fail closed on either.
   echo 'CE13_BROWSER_PREP_STAGE=font'
-  if ! fc-match "Noto Sans CJK SC" | grep -qi 'Noto Sans CJK'; then
-    sudo apt-get update -qq -o Acquire::Retries=1 -o Acquire::http::Timeout=15 -o Acquire::https::Timeout=15
-    sudo apt-get install -y --no-install-recommends fonts-noto-cjk
+  (
+    set -euo pipefail
+    if ! fc-match "Noto Sans CJK SC" | grep -qi 'Noto Sans CJK'; then
+      sudo apt-get update -qq -o Acquire::Retries=1 -o Acquire::http::Timeout=15 -o Acquire::https::Timeout=15
+      sudo apt-get install -y --no-install-recommends fonts-noto-cjk
+    fi
+    fc-match "Noto Sans CJK SC" | grep -qi 'Noto Sans CJK' || {
+      echo 'CE13_CHINESE_FONT_UNAVAILABLE' >&2
+      exit 1
+    }
+  ) &
+  font_pid=$!
+  echo 'CE13_BROWSER_PREP_STAGE=npm'
+  npm_status=0
+  npm ci || npm_status=$?
+  browser_status=0
+  if (( npm_status == 0 )); then
+    echo 'CE13_BROWSER_PREP_STAGE=browser'
+    # Keep the original pinned headless-shell install and launch prerequisite.
+    npx --no-install playwright install --only-shell chromium || browser_status=$?
   fi
-  fc-match "Noto Sans CJK SC" | grep -qi 'Noto Sans CJK' || {
-    echo 'CE13_CHINESE_FONT_UNAVAILABLE' >&2
-    exit 1
-  }
+  font_status=0
+  wait "$font_pid" || font_status=$?
+  if (( npm_status != 0 )); then exit "$npm_status"; fi
+  if (( browser_status != 0 )); then exit "$browser_status"; fi
+  if (( font_status != 0 )); then exit "$font_status"; fi
   echo 'CE13_BROWSER_PREP_STAGE=launch'
   node --input-type=module <<'JS'
 import { chromium } from '@playwright/test'
