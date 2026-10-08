@@ -129,9 +129,14 @@ jobs:
           # succeed before identity seeding or browser acceptance can start.
           (
             set -euo pipefail
-            go -C biz test -count=1 ./internal/architecture -run '^TestCE13PlatformCommercialWebSessionContract$'
-            go -C biz test -count=1 ./internal/access/infrastructure/persistence ./internal/bizruntime
-            go -C biz vet ./internal/architecture ./internal/access/infrastructure/persistence ./internal/bizruntime
+            checks_failed=0
+            go -C biz test -count=1 ./internal/architecture -run '^TestCE13PlatformCommercialWebSessionContract$' || checks_failed=1
+            go -C biz test -count=1 ./internal/access/infrastructure/persistence ./internal/bizruntime || checks_failed=1
+            go -C biz vet ./internal/architecture ./internal/access/infrastructure/persistence ./internal/bizruntime || checks_failed=1
+            if (( checks_failed != 0 )); then
+              echo 'CE13_SCOPED_CHECKS_FAILED' >&2
+              exit 1
+            fi
           ) &
           scoped_pid=$!
           builds_failed=0

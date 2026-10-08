@@ -312,14 +312,32 @@ class SessionParallelQualificationTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("CE13_SCOPED_VALIDATION_FAILED", result.stderr)
         self.assertNotIn("CE13_SCOPED_VALIDATION=PASS", result.stdout)
+        self.assertEqual(len(commands), 6, commands)
         self.assertEqual(sum(" build " in " " + x + " " for x in commands), 3)
+        self.assertEqual(sum(" test " in " " + x + " " for x in commands), 2)
+        self.assertEqual(sum(" vet " in " " + x + " " for x in commands), 1)
 
     def test_parallel_binary_failure_is_not_hidden_by_successful_tests(self):
         result, commands = self.run_script("ce13-session-idp")
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("CE13_SCOPED_VALIDATION_FAILED", result.stderr)
         self.assertNotIn("CE13_SCOPED_VALIDATION=PASS", result.stdout)
+        self.assertEqual(len(commands), 6, commands)
         self.assertEqual(sum(" test " in " " + x + " " for x in commands), 2)
+
+    def test_parallel_vet_failure_runs_all_six_before_rejecting(self):
+        result, commands = self.run_script(" vet ")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("CE13_SCOPED_VALIDATION_FAILED", result.stderr)
+        self.assertEqual(len(commands), 6, commands)
+        self.assertEqual(sum(" vet " in " " + x + " " for x in commands), 1)
+
+    def test_parallel_second_test_failure_preserves_first_and_vet_evidence(self):
+        result, commands = self.run_script("access/infrastructure/persistence")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("CE13_SCOPED_VALIDATION_FAILED", result.stderr)
+        self.assertEqual(len(commands), 6, commands)
+        self.assertEqual(sum(" vet " in " " + x + " " for x in commands), 1)
 
 if __name__ == "__main__":
     unittest.main()
