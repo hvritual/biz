@@ -222,6 +222,15 @@
           "file": "integration/role_revocation_latency_mysql_test.go"
         }
       ]
+    },
+    {
+      "id": "access-module-journey",
+      "tests": [
+        {
+          "name": "TestCE293AccessModuleFirstSubscriptionRoleJourney",
+          "file": "integration/ce293_access_module_journey_mysql_test.go"
+        }
+      ]
     }
   ]
 }

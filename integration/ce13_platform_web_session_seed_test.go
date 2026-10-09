@@ -20,6 +20,8 @@ import (
 )
 
 type ce13PlatformBrowserFixture struct {
+	Access []ce293AccessBrowserFixture `json:"access"`
+
 	BaseURL            string `json:"base_url"`
 	WebBaseURL         string `json:"web_base_url"`
 	DiscoveryURL       string `json:"discovery_url"`
@@ -181,6 +183,7 @@ func TestCE13PlatformWebSessionSeed(t *testing.T) {
 	}
 
 	fixture := ce13PlatformBrowserFixture{
+		Access:             ce293SeedAccessBrowserFixtures(t, db, store, started.GRPCAddress(), allowedAPIKey),
 		BaseURL:            baseURL,
 		WebBaseURL:         webBaseURL,
 		DiscoveryURL:       issuer + "/.well-known/openid-configuration",
