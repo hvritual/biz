@@ -233,6 +233,10 @@
         {
           "name": "TestCE293RoleCreationVersionedMigrationWithoutAutoMigrate",
           "file": "integration/ce293_role_creation_receipt_mysql_test.go"
+        },
+        {
+          "name": "TestCE293RoleCreationAutoMigrateSchemaParity",
+          "file": "integration/ce293_role_creation_receipt_mysql_test.go"
         }
       ]
     }

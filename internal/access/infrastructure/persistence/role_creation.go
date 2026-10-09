@@ -15,7 +15,7 @@ type roleCreationRecord struct {
 	Key         string  `gorm:"column:receipt_key;primaryKey;size:64"`
 	TenantID    string  `gorm:"column:tenant_id;size:64;not null"`
 	Fingerprint string  `gorm:"column:fingerprint;size:64;not null"`
-	Payload     *string `gorm:"column:payload;type:mediumtext"`
+	Payload     *string `gorm:"column:payload;type:mediumtext;check:access_role_receipt_json,payload IS NULL OR JSON_VALID(payload)"`
 }
 
 func (roleCreationRecord) TableName() string { return "biz_role_creation_receipts" }

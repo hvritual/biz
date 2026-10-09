@@ -5,8 +5,6 @@ package integration
 import (
 	"context"
 	"errors"
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -78,16 +76,14 @@ func TestCE293RoleCreationVersionedMigrationWithoutAutoMigrate(t *testing.T) {
 	if err := db.Exec(`INSERT INTO biz_roles(id, tenant_id) VALUES (?, ?)`, legacyRole, "tenant-legacy").Error; err != nil {
 		t.Fatal(err)
 	}
-	migrationPath := filepath.Join("..", "internal", "access", "infrastructure", "persistence", "migrations", "0022_access_role_creation_receipts.sql")
-	sql, err := os.ReadFile(migrationPath)
-	if err != nil {
-		t.Fatal(err)
-	}
 	if db.Migrator().HasTable("biz_role_creation_receipts") {
 		t.Fatal("receipt table unexpectedly existed before versioned migration")
 	}
+	if err := persistence.RequireRoleCreationReceiptSchema(context.Background(), db); err == nil {
+		t.Fatal("production preflight accepted schema without 0022 migration")
+	}
 	// Create the new table using ONLY the released versioned SQL, not GORM.
-	if err := db.Exec(string(sql)).Error; err != nil {
+	if err := persistence.ApplyRoleCreationReceiptMigration(context.Background(), db); err != nil {
 		t.Fatalf("apply 0022 migration: %v", err)
 	}
 	if !db.Migrator().HasTable("biz_role_creation_receipts") {
@@ -117,7 +113,7 @@ func TestCE293RoleCreationVersionedMigrationWithoutAutoMigrate(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Reapplying the versioned migration must leave old roles and new receipts alone.
-	if err := db.Exec(string(sql)).Error; err != nil {
+	if err := persistence.ApplyRoleCreationReceiptMigration(context.Background(), db); err != nil {
 		t.Fatalf("repeat migration changed schema: %v", err)
 	}
 	if err := db.Table("biz_roles").Where("id=? AND tenant_id=?", legacyRole, "tenant-legacy").Count(&count).Error; err != nil || count != 1 {
@@ -126,5 +122,29 @@ func TestCE293RoleCreationVersionedMigrationWithoutAutoMigrate(t *testing.T) {
 	var stored string
 	if err := db.Table("biz_role_creation_receipts").Select("payload").Where("receipt_key=?", receiptKey).Scan(&stored).Error; err != nil || stored != receipt {
 		t.Fatalf("idempotent migration changed receipt: %s %v", stored, err)
+	}
+}
+
+// Development AutoMigrate and the versioned production upgrade must have
+// equivalent JSON protection; CREATE TABLE IF NOT EXISTS cannot retrofit it.
+func TestCE293RoleCreationAutoMigrateSchemaParity(t *testing.T) {
+	db := ce08FreshFixtureDB(t)
+	store, err := persistence.New(db)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := store.AutoMigrate(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if err := persistence.RequireRoleCreationReceiptSchema(context.Background(), db); err != nil {
+		t.Fatalf("AutoMigrate omitted the released receipt schema invariant: %v", err)
+	}
+	key, fingerprint := strings.Repeat("e", 64), strings.Repeat("f", 64)
+	if err := db.Exec(`INSERT INTO biz_role_creation_receipts(receipt_key, tenant_id, fingerprint, payload) VALUES (?,?,?,?)`, key, "tenant-test", fingerprint, "not-json").Error; err == nil {
+		t.Fatal("AutoMigrate table allowed an invalid JSON receipt")
+	}
+	// Applying the pre-binary upgrade over a dev-created table must preserve the invariant.
+	if err := persistence.ApplyRoleCreationReceiptMigration(context.Background(), db); err != nil {
+		t.Fatal(err)
 	}
 }
