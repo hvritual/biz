@@ -33,12 +33,12 @@ const detail=computed(()=>store.members.find(m=>m.id===detailId.value)??null)
 const recycleOpen=ref(false),restoreTarget=ref<Member|null>(null),restoreReason=ref(''),restoreBusy=ref(false)
 const apiAllows=(code:string)=>store.previewMode||currentAuthorizationAllows(code)
 const apiAllowsAll=(codes:string[])=>store.previewMode||codes.every(currentAuthorizationAllows)
-// Creation and edits use the existing atomic member Operations, not the
-// historical invite/profile/role composition. The server remains authority.
-const canCreateMember=computed(()=>apiAllows('tenant.member.create'))
-const canInviteMember=computed(()=>apiAllows('tenant.member.create'))
-const canEditMember=computed(()=>apiAllows('tenant.member.update'))
-const canChangeRoles=computed(()=>apiAllows('tenant.member.update'))
+// Creation and edits use atomic Operations. These existing forms also need
+// the role directory; a write grant does not imply its independent read grant.
+const canCreateMember=computed(()=>apiAllowsAll(['tenant.member.create','tenant.role.list']))
+const canInviteMember=computed(()=>apiAllowsAll(['tenant.member.create','tenant.role.list']))
+const canEditMember=computed(()=>apiAllowsAll(['tenant.member.update','tenant.role.list']))
+const canChangeRoles=computed(()=>apiAllowsAll(['tenant.member.update','tenant.role.list']))
 const canReadBusinessScope=computed(()=>apiAllows('tenant.member.business_scope.get'))
 const canEditBusinessScope=computed(()=>apiAllowsAll(['tenant.member.business_scope.get','tenant.member.business_scope.set','tenant.member.scope_candidates']))
 const canActivateMember=computed(()=>apiAllows('tenant.member.activate'))

@@ -29,7 +29,9 @@ vi.mock('vue-router', () => ({
   useRoute: () => ({ path: '/enterprise/members', query: {} }),
   useRouter: () => ({ replace: vi.fn() }),
 }))
-vi.mock('vue-i18n', () => ({
+vi.mock('vue-i18n', async (importOriginal) => ({
+  // Imported pagination/formatting modules still need the real createI18n.
+  ...await importOriginal<typeof import('vue-i18n')>(),
   useI18n: () => ({ t: (key: string) => key, locale: ref('zh-CN') }),
 }))
 import MembersView from './MembersView.vue'
@@ -65,8 +67,8 @@ function button(key: string) {
 }
 
 describe('member page canonical operation projection', () => {
-  it('enables API-mode create and invite from the actual atomic create action alone', async () => {
-    const view = await page(['tenant.member.create'])
+  it('enables API-mode create and invite with the atomic action and role directory', async () => {
+    const view = await page(['tenant.member.list', 'tenant.member.create', 'tenant.role.list'])
     expect(button('members.add')).toBeTruthy()
     expect(button('members.invite')).toBeTruthy()
     await button('members.add')!.trigger('click')
@@ -91,7 +93,7 @@ describe('member page canonical operation projection', () => {
     expect(view.findComponent(MemberActionDialog).props('open')).toBe(false)
   })
   it('uses atomic member.update for edit and initial-role replacement', async () => {
-    const view = await page(['tenant.member.update'])
+    const view = await page(['tenant.member.list', 'tenant.member.update', 'tenant.role.list'])
     expect(button('members.add')).toBeUndefined()
     expect(view.findComponent(MemberTable).props('canEdit')).toBe(true)
     expect(view.findComponent(MemberDetailDrawer).props('canChangeRoles')).toBe(true)
@@ -103,6 +105,16 @@ describe('member page canonical operation projection', () => {
     view.findComponent(MemberDetailDrawer).vm.$emit('action', 'role', fixture.store.members[0])
     await flushPromises()
     expect(view.findComponent(MemberActionDialog).props()).toMatchObject({ open: true, action: 'role' })
+  })
+  it('does not expose forms when independent role-directory access is absent', async () => {
+    const view = await page(['tenant.member.list', 'tenant.member.create', 'tenant.member.update'])
+    expect(button('members.add')).toBeUndefined()
+    expect(button('members.invite')).toBeUndefined()
+    expect(view.findComponent(MemberTable).props('canEdit')).toBe(false)
+    expect(view.findComponent(MemberDetailDrawer).props('canChangeRoles')).toBe(false)
+    view.findComponent(MemberTable).vm.$emit('edit', fixture.store.members[0])
+    await flushPromises()
+    expect(view.findComponent(MemberActionDialog).props('open')).toBe(false)
   })
   it('keeps a read-only projection non-mutating without hiding the members list', async () => {
     const view = await page(['tenant.member.list'])
