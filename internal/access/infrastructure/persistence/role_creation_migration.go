@@ -21,27 +21,74 @@ func RequireRoleCreationReceiptSchema(ctx context.Context, db *gorm.DB) error {
 	if db == nil {
 		return errors.New("access: role receipt database required")
 	}
-	for column, dataType := range map[string]string{
-		"receipt_key": "varchar", "tenant_id": "varchar", "fingerprint": "varchar", "payload": "mediumtext",
-	} {
-		var count int64
-		if err := db.WithContext(ctx).Raw(`SELECT COUNT(*) FROM information_schema.COLUMNS
-			WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='biz_role_creation_receipts'
-			AND COLUMN_NAME=? AND DATA_TYPE=?`, column, dataType).Scan(&count).Error; err != nil {
-			return fmt.Errorf("access: role creation receipt schema check: %w", err)
-		}
-		if count != 1 {
-			return fmt.Errorf("access: role creation receipt schema missing/invalid column %s; apply versioned migration 0022 before starting biz", column)
-		}
+	// Match the released 0022 schema, not just a compatible-looking DATA_TYPE.
+	// A shortened key can fail writes; a nullable tenant/fingerprint or an
+	// extra required column can break the receipt authority after startup.
+	type receiptColumn struct {
+		ColumnName string `gorm:"column:column_name"`
+		DataType   string `gorm:"column:data_type"`
+		IsNullable string `gorm:"column:is_nullable"`
+		MaxLength  *int64 `gorm:"column:character_maximum_length"`
 	}
-	var primaryCount int64
-	if err := db.WithContext(ctx).Raw(`SELECT COUNT(*) FROM information_schema.STATISTICS
+	var columns []receiptColumn
+	result := db.WithContext(ctx).Raw(`SELECT COLUMN_NAME, DATA_TYPE, IS_NULLABLE, CHARACTER_MAXIMUM_LENGTH
+		FROM information_schema.COLUMNS
+		WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='biz_role_creation_receipts'`).Scan(&columns)
+	if result.Error != nil {
+		return fmt.Errorf("access: role creation receipt column metadata: %w", result.Error)
+	}
+	type requirement struct {
+		dataType string
+		nullable string
+		length   int64
+	}
+	required := map[string]requirement{
+		"receipt_key": {"varchar", "NO", 64},
+		"tenant_id":   {"varchar", "NO", 64},
+		"fingerprint": {"varchar", "NO", 64},
+		"payload":     {"mediumtext", "YES", 0},
+	}
+	// Fail closed for extra NOT NULL columns without defaults as well.
+	if len(columns) != len(required) {
+		return errors.New("access: role creation receipt schema has incompatible columns; fix migration 0022 before starting biz")
+	}
+	seen := make(map[string]bool, len(columns))
+	for _, col := range columns {
+		want, ok := required[col.ColumnName]
+		if !ok || seen[col.ColumnName] ||
+			!strings.EqualFold(col.DataType, want.dataType) ||
+			col.IsNullable != want.nullable ||
+			(want.length != 0 && (col.MaxLength == nil || *col.MaxLength != want.length)) {
+			return fmt.Errorf("access: role creation receipt schema incompatible column %s; fix migration 0022 before starting biz", col.ColumnName)
+		}
+		seen[col.ColumnName] = true
+	}
+
+	// This receipt is written alongside the role inside its root transaction.
+	// A pre-existing nontransactional table would violate that invariant.
+	var engine string
+	engineResult := db.WithContext(ctx).Raw(`SELECT ENGINE FROM information_schema.TABLES
+		WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='biz_role_creation_receipts'`).Scan(&engine)
+	if engineResult.Error != nil {
+		return fmt.Errorf("access: role receipt storage engine check: %w", engineResult.Error)
+	}
+	if engineResult.RowsAffected != 1 || !strings.EqualFold(engine, "InnoDB") {
+		return errors.New("access: role creation receipt table must use InnoDB; fix migration 0022 before starting biz")
+	}
+
+	// A PRIMARY KEY starting with receipt_key is not enough. The composite
+	// (receipt_key,fingerprint) can store two rows for a single transport key.
+	var primary []struct {
+		ColumnName string `gorm:"column:column_name"`
+	}
+	primaryResult := db.WithContext(ctx).Raw(`SELECT COLUMN_NAME FROM information_schema.STATISTICS
 		WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='biz_role_creation_receipts'
-		AND INDEX_NAME='PRIMARY' AND COLUMN_NAME='receipt_key'`).Scan(&primaryCount).Error; err != nil {
-		return fmt.Errorf("access: role receipt primary key check: %w", err)
+		  AND INDEX_NAME='PRIMARY' ORDER BY SEQ_IN_INDEX`).Scan(&primary)
+	if primaryResult.Error != nil {
+		return fmt.Errorf("access: role receipt primary key metadata: %w", primaryResult.Error)
 	}
-	if primaryCount != 1 {
-		return errors.New("access: role creation receipt schema missing PRIMARY key; fix migration 0022 before starting biz")
+	if len(primary) != 1 || primary[0].ColumnName != "receipt_key" {
+		return errors.New("access: role creation receipt requires receipt_key as sole PRIMARY key; fix migration 0022 before starting biz")
 	}
 	// A named CHECK is insufficient: MySQL 8.4 supports NOT ENFORCED and a
 	// different check body under the same name. Validate both metadata facts
@@ -50,7 +97,7 @@ func RequireRoleCreationReceiptSchema(ctx context.Context, db *gorm.DB) error {
 		Enforced    string `gorm:"column:enforced"`
 		CheckClause string `gorm:"column:check_clause"`
 	}
-	result := db.WithContext(ctx).Raw(`SELECT tc.ENFORCED AS enforced, cc.CHECK_CLAUSE AS check_clause
+	result = db.WithContext(ctx).Raw(`SELECT tc.ENFORCED AS enforced, cc.CHECK_CLAUSE AS check_clause
 		FROM information_schema.TABLE_CONSTRAINTS AS tc
 		JOIN information_schema.CHECK_CONSTRAINTS AS cc
 		  ON cc.CONSTRAINT_SCHEMA=tc.CONSTRAINT_SCHEMA

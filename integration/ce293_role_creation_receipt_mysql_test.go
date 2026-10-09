@@ -203,3 +203,63 @@ func TestCE293RoleCreationAutoMigrateSchemaParity(t *testing.T) {
 		t.Fatalf("re-enabled AutoMigrate receipt constraint rejected: %v", err)
 	}
 }
+
+// An existing table that looks similar to 0022 must never silently pass
+// the default production startup check or --apply. Every mutation below
+// runs only against the isolated MySQL fixture and is restored before the
+// next one, with no application or production database touched.
+func TestCE293RoleCreationRejectsIncompatibleExistingReceiptSchema(t *testing.T) {
+	db := ce08FreshFixtureDB(t)
+	ctx := context.Background()
+	if err := persistence.ApplyRoleCreationReceiptMigration(ctx, db); err != nil {
+		t.Fatal(err)
+	}
+	cases := []struct {
+		name, breakDDL, restoreDDL string
+	}{
+		{
+			"composite primary key",
+			"ALTER TABLE biz_role_creation_receipts DROP PRIMARY KEY, ADD PRIMARY KEY (receipt_key, fingerprint)",
+			"ALTER TABLE biz_role_creation_receipts DROP PRIMARY KEY, ADD PRIMARY KEY (receipt_key)",
+		},
+		{
+			"short idempotency key",
+			"ALTER TABLE biz_role_creation_receipts MODIFY receipt_key VARCHAR(32) NOT NULL",
+			"ALTER TABLE biz_role_creation_receipts MODIFY receipt_key VARCHAR(64) NOT NULL",
+		},
+		{
+			"nullable tenant identifier",
+			"ALTER TABLE biz_role_creation_receipts MODIFY tenant_id VARCHAR(64) NULL",
+			"ALTER TABLE biz_role_creation_receipts MODIFY tenant_id VARCHAR(64) NOT NULL",
+		},
+		{
+			"short fingerprint",
+			"ALTER TABLE biz_role_creation_receipts MODIFY fingerprint VARCHAR(32) NOT NULL",
+			"ALTER TABLE biz_role_creation_receipts MODIFY fingerprint VARCHAR(64) NOT NULL",
+		},
+		{
+			"nontransactional engine",
+			"ALTER TABLE biz_role_creation_receipts ENGINE=MyISAM",
+			"ALTER TABLE biz_role_creation_receipts ENGINE=InnoDB",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if err := db.Exec(tc.breakDDL).Error; err != nil {
+				t.Fatalf("inject incompatible schema: %v", err)
+			}
+			if err := persistence.RequireRoleCreationReceiptSchema(ctx, db); err == nil {
+				t.Fatal("production startup accepted incompatible receipt schema")
+			}
+			if err := persistence.ApplyRoleCreationReceiptMigration(ctx, db); err == nil {
+				t.Fatal("explicit 0022 upgrade accepted incompatible preexisting table")
+			}
+			if err := db.Exec(tc.restoreDDL).Error; err != nil {
+				t.Fatalf("restore valid schema: %v", err)
+			}
+			if err := persistence.RequireRoleCreationReceiptSchema(ctx, db); err != nil {
+				t.Fatalf("correctly restored schema rejected: %v", err)
+			}
+		})
+	}
+}
