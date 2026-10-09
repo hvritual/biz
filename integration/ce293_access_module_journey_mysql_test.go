@@ -5,6 +5,7 @@ package integration
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strings"
 	"testing"
@@ -16,7 +17,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 	"gorm.io/gorm"
 	"yunka.io/gateway/authz"
@@ -30,9 +30,24 @@ func ce293AdmittedAccessFixture(t *testing.T, db *gorm.DB, catalog commercialv1.
 	t.Helper()
 	const code = "access-management"
 	ctx := func() context.Context { return ce04Context(token, ce04Random(t)) }
-	module, err := catalog.GetModule(ctx(), &commercialv1.GetModuleRequest{ModuleCode: code})
-	if status.Code(err) == codes.NotFound {
+	store, err := modulecatalog.NewStore(db)
+	if err != nil {
+		t.Fatal(err)
+	}
+	service, err := modulecatalog.NewService(store, modulecatalog.ProductionRegistry())
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Fixture setup uses the typed domain absence, not a guessed gRPC status.
+	// Creation and all subsequent mutations still traverse the real API.
+	_, lookupErr := service.Get(context.Background(), code)
+	var module *commercialv1.ModuleDTO
+	if errors.Is(lookupErr, modulecatalog.ErrNotFound) {
 		module, err = catalog.CreateModule(ctx(), &commercialv1.CreateModuleRequest{RequestId: ce04Random(t), ModuleCode: code, Name: "Access acceptance fixture", Reason: "isolated pre-admitted module fixture"})
+	} else if lookupErr != nil {
+		t.Fatal(lookupErr)
+	} else {
+		module, err = catalog.GetModule(ctx(), &commercialv1.GetModuleRequest{ModuleCode: code})
 	}
 	if err != nil {
 		t.Fatal(err)
@@ -42,14 +57,6 @@ func ce293AdmittedAccessFixture(t *testing.T, db *gorm.DB, catalog commercialv1.
 		if err != nil {
 			t.Fatal(err)
 		}
-	}
-	store, err := modulecatalog.NewStore(db)
-	if err != nil {
-		t.Fatal(err)
-	}
-	service, err := modulecatalog.NewService(store, modulecatalog.ProductionRegistry())
-	if err != nil {
-		t.Fatal(err)
 	}
 	if err = service.RecordRuntimeVerification(ce04RuntimeVerifier(), modulecatalog.RuntimeVerificationCommand{ModuleCode: code, ModuleVersion: module.Version, EvidenceDigest: strings.Repeat("a", 64), SourceTree: strings.Repeat("b", 64)}); err != nil {
 		t.Fatal(err)
