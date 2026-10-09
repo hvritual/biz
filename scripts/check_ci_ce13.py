@@ -3,12 +3,38 @@
 from pathlib import Path
 import json
 import re
+import yaml
+from check_ci_source_safety import StrictLoader
 
 ROOT = Path(__file__).resolve().parents[1]
 
 def require(ok, reason):
     if not ok:
         raise ValueError(reason)
+
+def check_environment(root, text, lane):
+    """Parse actual job inputs; comments and duplicate YAML cannot satisfy the pin."""
+    version_file = root / ".github/ci/ce13.node-version"
+    require(version_file.is_file() and not version_file.is_symlink(),
+            "CE13_NODE_VERSION_FILE_REQUIRED")
+    require(re.fullmatch(r"[1-9][0-9]*\.[0-9]+\.[0-9]+\n", version_file.read_text()) is not None,
+            "CE13_NODE_EXACT_VERSION_REQUIRED")
+    workflow = yaml.load(text, Loader=StrictLoader)
+    job = workflow.get("jobs", {}).get("qualify", {})
+    require(job.get("runs-on") == "ubuntu-24.04", "CE13_RUNNER_FAMILY_PIN_REQUIRED:" + lane)
+    steps = [step for step in job.get("steps", [])
+             if str(step.get("uses", "")).startswith("actions/setup-node@")]
+    require(len(steps) == 1 and steps[0]["uses"] ==
+            "actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+            "CE13_NODE_SETUP_PROVENANCE_REQUIRED:" + lane)
+    inputs = steps[0].get("with", {})
+    require(inputs.get("node-version-file") == "biz/.github/ci/ce13.node-version"
+            and "node-version" not in inputs and inputs.get("check-latest", False) is False,
+            "CE13_NODE_VERSION_SOURCE_REQUIRED:" + lane)
+    require(inputs.get("cache") == "npm" and
+            inputs.get("cache-dependency-path") == "biz/web/package-lock.json",
+            "CE13_LOCKED_NPM_CACHE_REQUIRED:" + lane)
+
 
 def check(root=ROOT):
     specs = {
@@ -130,6 +156,10 @@ def check(root=ROOT):
             "performance_hard_seconds: 180",
         ]:
             require(marker in block, "CE13_TARGET_MARKER_MISSING:" + job + ":" + marker)
+
+    for lane, spec in specs.items():
+        text = (root / ".github/workflows" / spec["workflow"]).read_text()
+        check_environment(root, text, lane)
 
     print("CE13_BATCH_B_SOURCE_CONTRACT=PASS")
 

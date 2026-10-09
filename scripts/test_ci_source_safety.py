@@ -4,6 +4,7 @@ from pathlib import Path
 import unittest
 from unittest.mock import patch
 from check_ci_source_safety import check, PROTECTED, validate_workflow
+from test_ci_ce13_environment import EnvironmentPinTests
 
 
 def workflow(script):
