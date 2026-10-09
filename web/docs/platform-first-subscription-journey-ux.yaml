@@ -3,8 +3,8 @@ artifact_kind: analysis
 status: ready_for_review
 task_ref:
   issue: "#340"
-  baseline_commit: aa15de7d8e0091dc210f63fe422ad54c649a80fa
-  candidate_commit: ae8539cfa15bbb3219f3d035f911f5d995adf09d
+  baseline_commit: 2b4a333800a8b5426486ca8f1e64ae1879475c4c
+  candidate_commit: 4ed6ddb10b5d9fa1fc04a285cce151d5ea49839d
   name: 平台管理员租户首次订阅与模块开通
 classification:
   type: business_task
@@ -14,8 +14,8 @@ classification:
   asynchronous_effect: true
 context:
   role:
-    summary: 具备平台租户读取、套餐读取、商业目录读取和订阅管理权限的平台管理员。
-    source_refs: [issue_340, proto_contract]
+    summary: 具备平台租户读取、套餐读取、商业目录读取和订阅管理权限的平台管理员；读取或恢复原准备任务还分别需要平台准备任务读取或管理权限。
+    source_refs: [issue_340, proto_contract, provisioning_transport_contract]
   task:
     summary: 为当前无基础订阅的租户选择精确已发布套餐版本，核对范围和影响，确认开通并验证最终权益。
     source_refs: [issue_340]
@@ -47,55 +47,61 @@ sources:
 - id: proto_contract
   kind: repository_contract
   path: contracts/proto/commercial/v1/subscription_change.proto
-  commit: ae8539cfa15bbb3219f3d035f911f5d995adf09d
+  commit: 4ed6ddb10b5d9fa1fc04a285cce151d5ea49839d
   locator: PreviewSubscriptionChangeRequest / ConfirmSubscriptionChangeRequest
   claim: INITIAL 复用现有平台变更协议，首次预览显式携带 sales_scope，确认绑定 preview_hash。
+- id: provisioning_transport_contract
+  kind: repository_contract
+  path: contracts/proto/commercial/v1/provisioning.proto
+  commit: 4ed6ddb10b5d9fa1fc04a285cce151d5ea49839d
+  locator: GetProvisioningTask / RetryProvisioningTask
+  claim: 仅准备任务读取和原任务重试增加可信平台 Web 会话认证，分别要求准备任务读取或管理与租户读取的全部权限；原 API key 认证及其他准备操作的默认拒绝边界保留。
 - id: subscription_model
   kind: implementation
   path: internal/commercial/domain/subscription/model.go
-  commit: ae8539cfa15bbb3219f3d035f911f5d995adf09d
+  commit: 4ed6ddb10b5d9fa1fc04a285cce151d5ea49839d
   locator: OriginInitialActivation / StateProvisioning / Subscription.Validate
   claim: 首次开通具有独立来源事实，准备期间不冒充已激活权益。
 - id: change_authority
   kind: implementation
   path: internal/commercial/application/subscriptionchanges/internal/usecase/confirm.go
-  commit: ae8539cfa15bbb3219f3d035f911f5d995adf09d
+  commit: 4ed6ddb10b5d9fa1fc04a285cce151d5ea49839d
   locator: ConfirmSubscriptionChange
   claim: 首次确认锁定租户与原预览，原子创建订阅和回执；准备期间不会提前生成目标权益。
 - id: preview_authority
   kind: implementation
   path: internal/commercial/application/subscriptionchanges/internal/usecase/preview.go
-  commit: ae8539cfa15bbb3219f3d035f911f5d995adf09d
+  commit: 4ed6ddb10b5d9fa1fc04a285cce151d5ea49839d
   locator: PreviewSubscriptionChange / preview
   claim: 首次预览使用真实租户、销售范围、精确版本资格和商业目录形成服务端预览事实。
 - id: prepared_change_authority
   kind: implementation
   path: internal/commercial/application/subscriptionchanges/internal/usecase/prepared.go
-  commit: ae8539cfa15bbb3219f3d035f911f5d995adf09d
+  commit: 4ed6ddb10b5d9fa1fc04a285cce151d5ea49839d
   locator: CompletePreparedSubscriptionChange / CancelPreparedSubscriptionChange
-  claim: 准备完成后才原子应用订阅及权益，INITIAL 不能通过通用取消恢复不存在的旧订阅。
+  claim: 准备完成后才原子应用订阅及权益，INITIAL 最终回执的生效和到期时间使用实际激活周期并保留原确认时间；INITIAL 不能通过通用取消恢复不存在的旧订阅。
 - id: provisioning_authority
   kind: implementation
   path: internal/commercial/domain/provisioning/model.go
-  commit: ae8539cfa15bbb3219f3d035f911f5d995adf09d
+  commit: 4ed6ddb10b5d9fa1fc04a285cce151d5ea49839d
   locator: Task / Retry / Complete
   claim: 准备任务有独立状态、重试和最终完成事实；INITIAL 禁止用通用取消恢复不存在的旧套餐。
 - id: platform_service
   kind: implementation
   path: web/src/services/commercial/platformCommercial.ts
-  commit: ae8539cfa15bbb3219f3d035f911f5d995adf09d
+  commit: 4ed6ddb10b5d9fa1fc04a285cce151d5ea49839d
   locator: listPlans / previewSubscriptionChange / confirmSubscriptionChange
   claim: 前端使用可信会话、CSRF、幂等键和真实平台商业接口。
 - id: current_page
   kind: implementation
   path: web/src/features/platform/pages/CommercialTenantEntitlementsView.vue
-  commit: ae8539cfa15bbb3219f3d035f911f5d995adf09d
+  commit: 4ed6ddb10b5d9fa1fc04a285cce151d5ea49839d
   locator: CommercialTenantEntitlementsView / InitialSubscriptionWorkspace / useInitialSubscription
-  claim: 当前产品候选已有可信租户上下文首次开通、原变更结果恢复、有效权益确认及已订阅变更入口；四视口与人工体验仍分别验收。
+  claim: 当前产品候选已有可信租户上下文首次开通、原变更结果恢复、有效权益确认及已订阅变更入口；预览直接展示服务端时间、依赖与准备项事实。四视口自动化、原生缩放与人工体验分别验收。
 - id: recovery_orchestration
   kind: implementation
   path: web/src/features/platform/composables/useInitialSubscription.ts
-  commit: ae8539cfa15bbb3219f3d035f911f5d995adf09d
+  commit: 4ed6ddb10b5d9fa1fc04a285cce151d5ea49839d
   locator: retryOriginalConfirmation / recoverConcurrentActivation / restoreSubmission
   claim: 原请求重试保持同一幂等键；明确拒绝后先对账原回执和当前订阅，仅双重 404 解锁重新预览；迟到结果不能跨租户上下文。
 page_pattern:
@@ -103,7 +109,9 @@ page_pattern:
   reason: 首次开通需要在同一租户上下文内协作展示订阅状态、目标版本、影响、处理状态和最终权益回读。
   contract_ref: web/ui-contracts.json:/platform/commercial/tenant-entitlements
   gaps:
-  - 四视口键盘、长中英文与大整数、未知结果和原准备任务恢复用例已补充，待新候选实际执行；200% 浏览器缩放与独立人工体验批准仍未完成。
+  - 同一产品树的四视口 Core 11 例及 API 模式 8 例已实际通过，包含键盘、长中英文与大整数、读取失败和原准备任务恢复；这些接口 fixture 证据只覆盖表现与恢复编排，不替代真实数据库和可信会话业务运行。
+  - 原生 200% 浏览器缩放测试已接入原完整门禁的套餐读取 Web 单元；本地完整 Chromium 被运行环境限制，尚未取得该候选的实际原生缩放结果。独立人工体验批准仍未完成。
+  - 准备项 DTO 尚未提供具体业务说明，页面只展示已有准备项数量、每轮尝试上限和真实状态，不自行生成描述。完整业务验收与当前候选真实运行证据继续在原 Issue/PR 记录收口。
 outcome:
   definition: 管理员只有在同一租户的已应用原开通回执、精确套餐版本、当前有效订阅与权益结果核对完成后才看到完成；权益应反映已有限制与专项覆盖后的实际结果，允许合法固定天数试用态及已应用后停售的历史版本。处理中、失败、未知和结果读取失败保持独立状态，不提前分配成员角色或虚构能力。
   result_contract_refs: [issue_340, change_authority, prepared_change_authority, provisioning_authority]
