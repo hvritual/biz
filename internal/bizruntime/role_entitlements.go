@@ -30,10 +30,21 @@ func (err *roleConflictError) GRPCStatus() *status.Status {
 	return status.New(codes.Aborted, err.cause.Error())
 }
 
+type roleNotFoundError struct{ cause error }
+
+func (err *roleNotFoundError) Error() string { return "access: tenant role not found" }
+func (err *roleNotFoundError) Unwrap() error { return err.cause }
+func (err *roleNotFoundError) GRPCStatus() *status.Status {
+	return status.New(codes.NotFound, err.Error())
+}
+
 func roleExecutionError(ctx context.Context, operation string, err error) error {
 	err = enforcement.ExecutionError(ctx, operation, err)
 	if err == nil {
 		return nil
+	}
+	if errors.Is(err, accessports.ErrTenantRoleNotFound) {
+		return &roleNotFoundError{cause: err}
 	}
 	if errors.Is(err, accessports.ErrTenantRoleConflict) ||
 		errors.Is(err, accessports.ErrTenantRoleProtected) ||
@@ -62,7 +73,7 @@ func (w checkedRoles) GetTenantRole(ctx context.Context, r *accessv1.GetTenantRo
 		return nil, err
 	}
 	v, err := w.inner.GetTenantRole(ctx, r)
-	return v, enforcement.ExecutionError(ctx, "tenant.role.get", err)
+	return v, roleExecutionError(ctx, "tenant.role.get", err)
 }
 func (w checkedRoles) ListTenantRoles(ctx context.Context, r *accessv1.ListTenantRolesRequest) (*accessv1.ListTenantRolesResponse, error) {
 	if err := enforcement.RequireExecuted(ctx, "tenant.role.list"); err != nil {

@@ -222,6 +222,27 @@
           "file": "integration/role_revocation_latency_mysql_test.go"
         }
       ]
+    },
+    {
+      "id": "access-module-journey",
+      "tests": [
+        {
+          "name": "TestCE293AccessModuleFirstSubscriptionRoleJourney",
+          "file": "integration/ce293_access_module_journey_mysql_test.go"
+        },
+        {
+          "name": "TestCE293RoleCreationVersionedMigrationWithoutAutoMigrate",
+          "file": "integration/ce293_role_creation_receipt_mysql_test.go"
+        },
+        {
+          "name": "TestCE293RoleCreationAutoMigrateSchemaParity",
+          "file": "integration/ce293_role_creation_receipt_mysql_test.go"
+        },
+        {
+          "name": "TestCE293RoleCreationRejectsIncompatibleExistingReceiptSchema",
+          "file": "integration/ce293_role_creation_receipt_mysql_test.go"
+        }
+      ]
     }
   ]
 }

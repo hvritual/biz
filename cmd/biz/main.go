@@ -13,9 +13,12 @@ import (
 	"syscall"
 	"time"
 
+	accesspersistence "github.com/hvritual/biz/internal/access/infrastructure/persistence"
 	"github.com/hvritual/biz/internal/bizruntime"
 	"github.com/hvritual/biz/internal/commercial/domain/subscription"
 	"github.com/hvritual/biz/modules/deviceops"
+	gormmysql "gorm.io/driver/mysql"
+	"gorm.io/gorm"
 	"yunka.io/framework/core/eventBus"
 	"yunka.io/framework/platform"
 	"yunka.io/pkg/logExt"
@@ -55,6 +58,11 @@ func run() error {
 	}
 	if err := config.Validate(); err != nil {
 		return err
+	}
+	if !config.AutoMigrate {
+		if err := requireProductionRoleReceiptSchema(dsn); err != nil {
+			return err
+		}
 	}
 
 	webAuth := bizruntime.WebAuthConfig{}
@@ -389,4 +397,21 @@ func optionalRFC3339(raw string) (*time.Time, error) {
 	}
 	value = value.UTC()
 	return &value, nil
+}
+
+// The default production entry must fail before serving traffic when the
+// operator has not run the versioned 0022 migration. It never applies DDL.
+func requireProductionRoleReceiptSchema(dsn string) error {
+	db, err := gorm.Open(gormmysql.Open(dsn), &gorm.Config{})
+	if err != nil {
+		return fmt.Errorf("access role schema preflight database: %w", err)
+	}
+	conn, err := db.DB()
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+	defer cancel()
+	return accesspersistence.RequireRoleCreationReceiptSchema(ctx, db)
 }

@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
+	accessports "github.com/hvritual/biz/internal/access/ports"
 	"yunka.io/framework/execution"
 	"yunka.io/pkg/operationplan"
 )
@@ -32,7 +33,11 @@ func (c tenantCreationReplay) Begin(ctx context.Context, p operationplan.Plan) (
 	if err != nil {
 		return nil, err
 	}
-	return execution.WithIdempotencyKey(replay, original), nil
+	replay = execution.WithIdempotencyKey(replay, original)
+	if p.OperationID == "tenant.role.create" {
+		replay = accessports.WithRoleCreationReplay(replay)
+	}
+	return replay, nil
 }
 func (c tenantCreationReplay) SupportsAtomicCompletion() bool {
 	v, ok := c.IdempotencyCoordinator.(execution.IdempotencyCapabilityReporter)
@@ -48,7 +53,7 @@ func (c tenantCreationReplay) CompleteInTransaction(ctx context.Context, p opera
 
 func durableReceiptOperation(id string) bool {
 	switch id {
-	case "notification.configuration.create", "notification.configuration.update", "notification.configuration.delete", "tenant.create", "commercial.subscription.change.preview", "commercial.subscription.change.confirm", "commercial.provisioning.task.retry", "commercial.provisioning.task.cancel":
+	case "tenant.role.create", "notification.configuration.create", "notification.configuration.update", "notification.configuration.delete", "tenant.create", "commercial.subscription.change.preview", "commercial.subscription.change.confirm", "commercial.provisioning.task.retry", "commercial.provisioning.task.cancel":
 		return true
 	}
 	return false

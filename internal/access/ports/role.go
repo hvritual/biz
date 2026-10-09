@@ -21,6 +21,7 @@ var (
 
 type TenantRoleRepository interface {
 	Create(context.Context, *domain.Role) error
+	CreateOnce(context.Context, *domain.Role, string, string) (domain.Role, error)
 	BootstrapOwner(context.Context, string, string, time.Time) (domain.Role, error)
 	Get(context.Context, string, string) (domain.Role, error)
 	List(context.Context, string, string, string) ([]domain.Role, error)
