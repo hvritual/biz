@@ -234,7 +234,7 @@ test("TestCE293AccessModuleActivationRoleUseAndRevocation", async ({ browser }, 
     // A4: same identity switches tenant. Old context and foreign role cannot
     // authorize a write, even after the second tenant is legitimately entitled.
     const previewID = id("b-preview");
-    const preview = await write(platform, subPath(sample.tenant_b) + "/changes/preview", { requestId: previewID, tenantId: sample.tenant_b, action: "INITIAL", targetPlanCode: planCode, targetPlanVersion: draft.version, salesScope: "default", reason: "second isolated tenant" }, "POST", previewID);
+    const preview = await write(platform, subPath(sample.tenant_b) + "/change-previews", { requestId: previewID, tenantId: sample.tenant_b, action: "INITIAL", targetPlanCode: planCode, targetPlanVersion: draft.version, salesScope: "default", reason: "second isolated tenant" }, "POST", previewID);
     expect(preview.status, preview.text).toBe(200);
     const previewDTO = preview.json as { changeId: string; previewHash: string };
     // Remove the reply-drop hook only after proving A did not reconfirm.
