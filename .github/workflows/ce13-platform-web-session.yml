@@ -225,6 +225,16 @@ jobs:
           export YUNKA_BIZ_OIDC_POST_LOGOUT_REDIRECT_URL="http://127.0.0.1:14183/"
           export YUNKA_BIZ_OIDC_COOKIE_SECURE="false"
           export YUNKA_BIZ_OIDC_SCOPES="openid profile email"
+          # The member UI uses the existing activation flow. Match the B12
+          # activation prerequisites and CE12 verification protection contract.
+          # Keys are ephemeral to this isolated BFF; no external sender is enabled.
+          verification_key="$(openssl rand -base64 32)"
+          verification_hmac="$(openssl rand -base64 32)"
+          export YUNKA_BIZ_VERIFICATION_ACTIVE_KEY_VERSION="v1"
+          export YUNKA_BIZ_VERIFICATION_KEYS_JSON="{\"v1\":\"$verification_key\"}"
+          export YUNKA_BIZ_VERIFICATION_HMAC_KEY_B64="$verification_hmac"
+          export YUNKA_BIZ_MEMBER_ACTIVATION_TTL="15m"
+          export YUNKA_BIZ_MEMBER_ACTIVATION_URL="http://127.0.0.1:18081/idp/member/activate"
           nohup "$RUNNER_TEMP/ce13-session-biz" >"$RUNNER_TEMP/ce13-biz.log" 2>&1 &
           echo $! > "$RUNNER_TEMP/ce13-biz.pid"
           for attempt in $(seq 1 69); do
