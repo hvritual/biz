@@ -6,10 +6,45 @@ import subprocess
 import os
 import textwrap
 import re
+import shutil
+import signal
+import sys
+import time
 
 import check_ci_ce13 as checks
 
 ROOT = Path(__file__).resolve().parents[1]
+APT_SOURCE = ('# Preserve Ubuntu archive policy while selecting its official HTTPS endpoint.\n'
+              'Types: deb\nURIs: mirror+file:/etc/apt/apt-mirrors.txt\n'
+              'Suites: noble noble-updates noble-backports\n'
+              'Components: main restricted universe multiverse\nArchitectures: amd64\n'
+              'Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg\n\n'
+              'Types: deb\nURIs: https://security.ubuntu.com/ubuntu/\n'
+              'Suites: noble-security\nComponents: main restricted universe multiverse\n'
+              'Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg\n')
+
+
+def recorded_child_alive(root):
+    if not (root / 'child-pid').exists():
+        return False
+    # The child records /proc/self because a nested PID namespace can share an outer /proc.
+    original = (root / 'child-proc-stat').read_text()
+    proc_pid = original.split(' ', 1)[0]
+    original_fields = original.rsplit(') ', 1)[1].split()
+    try:
+        current = (Path('/proc') / proc_pid / 'stat').read_text()
+    except FileNotFoundError:
+        return False
+    current_fields = current.rsplit(') ', 1)[1].split()
+    return current_fields[19] == original_fields[19] and current_fields[0] != 'Z'
+
+
+def terminate_recorded_child(root):
+    if recorded_child_alive(root):
+        try:
+            os.kill(int((root / 'child-pid').read_text()), signal.SIGKILL)
+        except ProcessLookupError:
+            pass
 
 class SourceContractTests(unittest.TestCase):
     def mutated(self, path, transform):
@@ -142,7 +177,7 @@ class SourceContractTests(unittest.TestCase):
 class BrowserPreparationTests(unittest.TestCase):
     """Exercise the real shell helper with bounded command doubles, not UI evidence."""
 
-    def probe(self, lane="plan", missing_font=False, **overrides):
+    def probe(self, lane="plan", missing_font=False, apt_source=APT_SOURCE, lifecycle=False, **overrides):
         with tempfile.TemporaryDirectory() as d:
             root = Path(d)
             source = root / "checkout/biz/web"
@@ -156,7 +191,24 @@ class BrowserPreparationTests(unittest.TestCase):
             font = root / "font"
             if not missing_font:
                 font.write_text("ready")
+            (root / "temp").mkdir()
+            source_fixture = root / "ubuntu.sources"
+            source_fixture.write_text(apt_source)
+            capture = root / "apt-capture"
+            capture.mkdir()
             commands = {
+                "mktemp": 'printf "mktemp %s\\n" "$*" >> "$TRACE"; '
+                          '[[ "$#" == 2 && "$1" == -d && "$2" == /tmp/headless-noto-apt.XXXXXX ]] || exit 86; '
+                          'exec "$REAL_MKTEMP" -d "$RUNNER_TEMP/headless-noto-apt.XXXXXX"',
+                "cat": 'if [[ "$#" == 1 && "$1" == /etc/apt/sources.list.d/ubuntu.sources ]]; then '
+                       'echo read-ubuntu-source >> "$TRACE"; '
+                       '[[ "${APT_SOURCE_MISSING:-0}" == 0 ]] || exit 27; '
+                       'if [[ "${APT_HANG_STAGE:-}" == source ]]; then stage-progress source >&2; fi; '
+                       'exec "$REAL_CAT" "$APT_SOURCE_FIXTURE"; fi; exec "$REAL_CAT" "$@"',
+                "stage-progress": '(read -r child_stat < /proc/self/stat; '
+                                  'printf "%s\\n" "$child_stat" > "$CHILD_STAT"; '
+                                  'while :; do echo "$1-download-progress"; sleep 0.02; done) & '
+                                  'child=$!; echo "$child" > "$CHILD_PID"; wait "$child"',
                 "npm": 'printf "npm %s cwd=%s\\n" "$*" "$PWD" >> "$TRACE"; '
                        'if [[ "${CHECK_PREP_OVERLAP:-0}" == 1 ]]; then '
                        'for attempt in $(seq 1 80); do [[ -f "$FONT_PIPELINE_STARTED" ]] && break; sleep 0.02; done; '
@@ -167,10 +219,35 @@ class BrowserPreparationTests(unittest.TestCase):
                 "fc-match": 'if [[ -f "$FONT" ]]; then echo "Noto Sans CJK SC"; '
                             'else echo "DejaVu Sans"; fi',
                 "sudo": 'printf "sudo %s\\n" "$*" >> "$TRACE"; '
-                        'if [[ "$*" == *"update"* ]]; then touch "$FONT_PIPELINE_STARTED"; fi; '
-                        '[[ "${APT_EXIT:-0}" == 0 ]] || exit "$APT_EXIT"; '
-                        'if [[ "$*" == *"install "* && "${NO_FONT_AFTER_INSTALL:-0}" != 1 ]]; '
-                        'then touch "$FONT"; fi',
+                        'if [[ "${1:-}" == rm ]]; then shift; '
+                        '[[ "${CLEANUP_EXIT:-0}" == 0 ]] || exit "$CLEANUP_EXIT"; '
+                        'exec "$REAL_RM" "$@"; fi; '
+                        'if [[ "${1:-}" == -u ]]; then '
+                        '[[ "$2" == _apt && "$3" == test && "$4" == -r ]] || exit 85; '
+                        '[[ "${APT_PERMISSION_EXIT:-0}" == 0 ]] || exit "$APT_PERMISSION_EXIT"; '
+                        'shift 2; "$@"; exit; fi; '
+                        '[[ "${1:-}" == apt-get ]] || exit 83; '
+                        'phase=install; [[ "$*" != *"update"* ]] || phase=update; '
+                        'printf "%s\\0" "$@" > "$APT_CAPTURE/$phase.args"; '
+                        'source_list=""; lists=""; archives=""; parts=""; '
+                        'for option in "$@"; do case "$option" in '
+                        'Dir::Etc::SourceList=*) source_list="${option#*=}" ;; '
+                        'Dir::Etc::SourceParts=*) parts="${option#*=}" ;; '
+                        'Dir::State::Lists=*) lists="${option#*=}" ;; '
+                        'Dir::Cache::Archives=*) archives="${option#*=}" ;; esac; done; '
+                        'if [[ -n "$source_list" ]]; then '
+                        '"$REAL_CAT" "$source_list" > "$APT_CAPTURE/$phase.sources"; '
+                        '[[ -d "$parts" && -z "$(ls -A "$parts")" ]] || exit 84; '
+                        'stat -c "%a" "${source_list%/*}" "$parts" "$lists" "$archives" '
+                        '> "$APT_CAPTURE/$phase.modes"; '
+                        'mkdir -p "$lists/partial" "$archives/partial"; '
+                        'touch "$lists/partial/index-fixture" "$archives/partial/package-fixture"; fi; '
+                        'if [[ "$phase" == update ]]; then touch "$FONT_PIPELINE_STARTED"; '
+                        'if [[ "${APT_HANG_STAGE:-}" == index ]]; then stage-progress index; fi; '
+                        'exit "${APT_UPDATE_EXIT:-${APT_EXIT:-0}}"; fi; '
+                        'if [[ "${APT_HANG_STAGE:-}" == install ]]; then stage-progress install; fi; '
+                        '[[ "${APT_INSTALL_EXIT:-${APT_EXIT:-0}}" == 0 ]] || exit "${APT_INSTALL_EXIT:-$APT_EXIT}"; '
+                        '[[ "${NO_FONT_AFTER_INSTALL:-0}" == 1 ]] || touch "$FONT"',
                 "node": 'cat > "$SMOKE_SOURCE"; printf "node %s cwd=%s\\n" "$*" "$PWD" >> "$TRACE"; '
                         'exit "${SMOKE_EXIT:-0}"',
             }
@@ -182,11 +259,53 @@ class BrowserPreparationTests(unittest.TestCase):
                    "GITHUB_ACTIONS": "true", "GITHUB_RUN_ID": "123", "RUNNER_TEMP": str(root / "temp"),
                    "GITHUB_WORKSPACE": str(root / "checkout"), "TRACE": str(root / "trace"),
                    "FONT": str(font), "SMOKE_SOURCE": str(root / "smoke"),
-                   "FONT_PIPELINE_STARTED": str(root / "font-pipeline-started"), **overrides}
+                   "FONT_PIPELINE_STARTED": str(root / "font-pipeline-started"),
+                   "REAL_CAT": shutil.which("cat"), "REAL_RM": shutil.which("rm"),
+                   "REAL_MKTEMP": shutil.which("mktemp"), "APT_SOURCE_FIXTURE": str(source_fixture),
+                   "APT_CAPTURE": str(capture), "CHILD_PID": str(root / "child-pid"),
+                   "CHILD_STAT": str(root / "child-proc-stat"), **overrides}
             command = ["bash", str(ROOT / "scripts/ci_ce13_browser.sh")]
-            result = subprocess.run([*command, "prepare", lane], env=env,
-                                    capture_output=True, text=True, timeout=10)
             out = root / "temp" / ("ce13-" + lane)
+            if lifecycle:
+                begin = time.monotonic()
+                start = subprocess.run([*command, "start", lane], env=env,
+                                       capture_output=True, text=True, timeout=5)
+                self.assertEqual(0, start.returncode, start.stderr)
+                try:
+                    limit = time.monotonic() + 3
+                    while not ((root / "child-pid").exists() and
+                               (root / "child-proc-stat").exists() and
+                               (root / "child-proc-stat").stat().st_size > 0) and time.monotonic() < limit:
+                        time.sleep(0.01)
+                    self.assertTrue(recorded_child_alive(root), "the original start must own a live font child")
+                    self.assertEqual(os.getpgid(int((root / "child-pid").read_text())),
+                                     int((out / "browser-prep.pid").read_text()),
+                                     "font children must remain in the original setsid process group")
+                    original_started = int((out / "browser-prep.started").read_text())
+                    self.assertLessEqual(original_started, int(time.time()))
+                    # Age only the fixture clock: the actual unchanged 150-second wait condition runs.
+                    (out / "browser-prep.started").write_text(str(int(time.time()) - 150))
+                    result = subprocess.run([*command, "wait", lane], env=env,
+                                            capture_output=True, text=True, timeout=5)
+                    stop = subprocess.run([*command, "stop", lane], env=env,
+                                          capture_output=True, text=True, timeout=5)
+                    result.stop_returncode = stop.returncode
+                    limit = time.monotonic() + 2
+                    while recorded_child_alive(root) and time.monotonic() < limit:
+                        time.sleep(0.01)
+                    result.child_alive = recorded_child_alive(root)
+                    post_stop_wait = subprocess.run([*command, "wait", lane], env=env,
+                                                    capture_output=True, text=True, timeout=5)
+                    result.post_stop_wait_returncode = post_stop_wait.returncode
+                    result.post_stop_wait_stdout = post_stop_wait.stdout
+                    result.lifecycle_seconds = time.monotonic() - begin
+                finally:
+                    subprocess.run([*command, "stop", lane], env=env,
+                                   capture_output=True, text=True, timeout=5)
+                    terminate_recorded_child(root)
+            else:
+                result = subprocess.run([*command, "prepare", lane], env=env,
+                                        capture_output=True, text=True, timeout=10)
             ready = (out / "browser-prep.ready").exists()
             exit_code = (out / "browser-prep.exit").read_text().strip() if (out / "browser-prep.exit").exists() else None
             trace = (root / "trace").read_text() if (root / "trace").exists() else ""
@@ -201,6 +320,22 @@ class BrowserPreparationTests(unittest.TestCase):
                 wait = subprocess.run([*command, "wait", lane], env=env,
                                       capture_output=True, text=True, timeout=5)
                 self.assertEqual(wait.returncode, 0, wait.stderr)
+            result.apt_calls = {}
+            for phase in ["update", "install"]:
+                arguments_file = capture / (phase + ".args")
+                if arguments_file.exists():
+                    arguments = arguments_file.read_bytes().decode().rstrip("\0").split("\0")
+                    result.apt_calls[phase] = {
+                        "arguments": arguments,
+                        "options": dict(item.split("=", 1) for item in arguments if "=" in item),
+                        "source": (capture / (phase + ".sources")).read_text()
+                        if (capture / (phase + ".sources")).exists() else None,
+                        "modes": (capture / (phase + ".modes")).read_text().splitlines()
+                        if (capture / (phase + ".modes")).exists() else [],
+                    }
+            result.fixture_root = str(root)
+            result.apt_temp_remaining = list((root / "temp").glob("headless-noto-apt.*"))
+            self.assertEqual(apt_source, source_fixture.read_text())
             return result, trace, smoke, ready, exit_code
 
     def test_ready_runner_both_lanes_skip_os_bootstrap_and_probe_browser(self):
@@ -295,6 +430,99 @@ class BrowserPreparationTests(unittest.TestCase):
 
 
 
+    def test_private_noto_https_source_is_shared_by_update_install_and_preserves_fields(self):
+        for uri in ["mirror+file:/etc/apt/apt-mirrors.txt", "http://azure.archive.ubuntu.com/ubuntu/",
+                    "https://archive.ubuntu.com/ubuntu/"]:
+            with self.subTest(uri=uri):
+                source = APT_SOURCE.replace("mirror+file:/etc/apt/apt-mirrors.txt", uri)
+                result, trace, _, ready, exit_code = self.probe(missing_font=True, apt_source=source)
+                self.assertEqual(0, result.returncode, result.stderr)
+                self.assertTrue(ready)
+                self.assertEqual("0", exit_code)
+                self.assertEqual({"update", "install"}, set(result.apt_calls))
+                update, install = result.apt_calls["update"], result.apt_calls["install"]
+                self.assertEqual(source.replace(uri, "https://archive.ubuntu.com/ubuntu/"), update["source"])
+                self.assertEqual(update["source"], install["source"])
+                self.assertEqual(update["options"], install["options"])
+                for name in ["Dir::Etc::SourceList", "Dir::Etc::SourceParts", "Dir::State::Lists", "Dir::Cache::Archives"]:
+                    self.assertTrue(update["options"][name].startswith(result.fixture_root + "/temp/headless-noto-apt."))
+                self.assertEqual("", update["options"]["Dir::Cache::pkgcache"])
+                self.assertEqual("", update["options"]["Dir::Cache::srcpkgcache"])
+                self.assertEqual(["755"] * 4, update["modes"])
+                self.assertIn("sudo -u _apt test -r", trace)
+                self.assertIn("--no-install-recommends fonts-noto-cjk", trace)
+                self.assertNotIn("--allow-unauthenticated", trace)
+                for name in ["RootDir", "Dir::State::status", "Dir::Etc::Trusted", "APT::Sandbox::User",
+                             "Acquire::https::Verify-Peer", "Acquire::https::Verify-Host"]:
+                    self.assertNotIn(name, update["options"])
+                self.assertEqual([], result.apt_temp_remaining)
+
+    def test_private_noto_invalid_source_or_permissions_fail_before_apt(self):
+        cases = [(APT_SOURCE, {"APT_SOURCE_MISSING": "1"}),
+                 (APT_SOURCE, {"APT_PERMISSION_EXIT": "33"}),
+                 (APT_SOURCE.replace("mirror+file:/etc/apt/apt-mirrors.txt", "https://unknown.invalid/ubuntu/"), {}),
+                 (APT_SOURCE.replace("Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg\n", ""), {}),
+                 (APT_SOURCE.replace("URIs: mirror+file:/etc/apt/apt-mirrors.txt",
+                                     "URIs: mirror+file:/etc/apt/apt-mirrors.txt\n# interrupted continuation\n https://unknown.invalid/ubuntu/"), {}),
+                 (APT_SOURCE.replace("URIs: mirror+file:/etc/apt/apt-mirrors.txt",
+                                     "URIs: mirror+file:/etc/apt/apt-mirrors.txt\nURIs: https://unknown.invalid/ubuntu/"), {})]
+        for source, overrides in cases:
+            with self.subTest(source=source, overrides=overrides):
+                result, trace, _, ready, _ = self.probe(missing_font=True, apt_source=source, **overrides)
+                self.assertNotEqual(0, result.returncode)
+                self.assertEqual({}, result.apt_calls)
+                self.assertNotIn("node ", trace)
+                self.assertFalse(ready)
+                self.assertEqual([], result.apt_temp_remaining)
+
+    def test_private_noto_error_codes_and_final_font_check_precede_cleanup_error(self):
+        cases = [({"APT_UPDATE_EXIT": "19"}, 19), ({"APT_INSTALL_EXIT": "21"}, 21),
+                 ({"CLEANUP_EXIT": "29"}, 29),
+                 ({"APT_INSTALL_EXIT": "21", "CLEANUP_EXIT": "29"}, 21),
+                 ({"NO_FONT_AFTER_INSTALL": "1", "CLEANUP_EXIT": "29"}, 1)]
+        for overrides, expected in cases:
+            with self.subTest(overrides=overrides):
+                result, trace, _, ready, exit_code = self.probe(missing_font=True, **overrides)
+                self.assertEqual(expected, result.returncode, result.stderr)
+                self.assertEqual(str(expected), exit_code)
+                self.assertNotIn("node ", trace)
+                self.assertFalse(ready)
+                if overrides.get("NO_FONT_AFTER_INSTALL"):
+                    self.assertIn("CE13_CHINESE_FONT_UNAVAILABLE", result.stderr)
+                if overrides.get("CLEANUP_EXIT"):
+                    self.assertIn("CE13_NOTO_APT_CLEANUP_FAILED exit=29", result.stderr)
+                if "APT_INSTALL_EXIT" in overrides:
+                    self.assertEqual({"update", "install"}, set(result.apt_calls))
+
+    def test_private_noto_keeps_original_deadline_and_stop_process_group_cleanup(self):
+        for stage in ["source", "index", "install"]:
+            with self.subTest(stage=stage):
+                result, trace, _, ready, exit_code = self.probe(
+                    missing_font=True, lifecycle=True, APT_HANG_STAGE=stage)
+                self.assertNotEqual(0, result.returncode)
+                self.assertIn("CE13_BROWSER_PREP_TIMEOUT", result.stderr)
+                self.assertIn(stage + "-download-progress", result.stderr)
+                self.assertEqual(0, result.stop_returncode)
+                self.assertFalse(result.child_alive)
+                self.assertFalse(ready)
+                # The existing EXIT receipt can be zero after TERM. Readiness is also mandatory.
+                self.assertNotEqual(0, result.post_stop_wait_returncode)
+                self.assertNotIn("CE13_BROWSER_PREP_SECONDS=", result.post_stop_wait_stdout)
+                self.assertEqual([], result.apt_temp_remaining)
+                self.assertNotIn("node ", trace)
+                self.assertLess(result.lifecycle_seconds, 5)
+
+    def test_private_noto_ready_font_never_reads_source_or_calls_apt(self):
+        result, trace, _, ready, exit_code = self.probe(APT_SOURCE_MISSING="1", CLEANUP_EXIT="29")
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertTrue(ready)
+        self.assertEqual("0", exit_code)
+        self.assertNotIn("read-ubuntu-source", trace)
+        self.assertNotIn("sudo", trace)
+        self.assertEqual({}, result.apt_calls)
+        self.assertEqual([], result.apt_temp_remaining)
+
+
 class SessionParallelQualificationTests(unittest.TestCase):
     """Exercise the actual workflow shell, not a duplicate command model."""
 
@@ -369,6 +597,197 @@ class SessionParallelQualificationTests(unittest.TestCase):
         self.assertIn("CE13_SCOPED_VALIDATION_FAILED", result.stderr)
         self.assertEqual(len(commands), 6, commands)
         self.assertEqual(sum(" vet " in " " + x + " " for x in commands), 1)
+
+class SessionHealthPollingTests(unittest.TestCase):
+    """Run the real startup steps with controlled health responses and process lifetimes."""
+
+    steps = (
+        ("Start first-party OIDC IdP", "http://127.0.0.1:18081/healthz", "ce13-idp.pid"),
+        ("Start Biz BFF resource server", "http://127.0.0.1:18080/healthz", "ce13-biz.pid"),
+        ("Start Vue console proxy", "http://127.0.0.1:14183/", "ce13-vite.pid"),
+    )
+
+    @staticmethod
+    def run_step(step, mode):
+        name, health_url, pid_file = step
+        workflow = (ROOT / ".github/workflows/ce13-platform-web-session.yml").read_text()
+        match = re.search(
+            r"(?ms)^      - name: " + re.escape(name) +
+            r"\n        shell: bash\n        run: \|\n(?P<commands>.*?)(?=^      - name:|\Z)",
+            workflow,
+        )
+        if match is None:
+            raise AssertionError("Missing startup step: " + name)
+        commands = textwrap.dedent(match.group("commands")).strip()
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            bin_root = root / "fake-bin"
+            bin_root.mkdir()
+            (root / "ce13-session/web").mkdir(parents=True)
+            (root / "ticks").write_text("0\n")
+            (root / "health-count").write_text("0\n")
+            real_sleep = shutil.which("sleep")
+            if not real_sleep:
+                raise AssertionError("Real sleep executable unavailable")
+            launch = r'''#!/bin/bash
+set -euo pipefail
+read -r child_stat < /proc/self/stat
+printf '%s\n' "$BASHPID" > "$CE13_HEALTH_ROOT/child-pid"
+printf '%s\n' "$child_stat" > "$CE13_HEALTH_ROOT/child-proc-stat"
+printf 'launch %s %s\n' "$0" "$*" >> "$CE13_HEALTH_ROOT/trace"
+if [[ "$CE13_HEALTH_MODE" == early ]]; then "$CE13_REAL_SLEEP" 0.04; fi
+: > "$CE13_HEALTH_ROOT/ready"
+'''
+            curl = r'''#!/bin/bash
+set -euo pipefail
+printf 'curl %s\n' "$*" >> "$CE13_HEALTH_ROOT/trace"
+for ((attempt=0; attempt<200; attempt++)); do
+  [[ -s "$CE13_HEALTH_ROOT/child-proc-stat" ]] && break
+  "$CE13_REAL_SLEEP" 0.005
+done
+[[ -s "$CE13_HEALTH_ROOT/child-proc-stat" ]] || exit 97
+if [[ "$*" == '-fsS http://127.0.0.1:18081/idp/.well-known/openid-configuration' ]]; then
+  [[ "$CE13_HEALTH_MODE" != discovery_failure ]] || exit 22
+  printf '{"issuer":"http://127.0.0.1:18081/idp"}\n'
+  exit 0
+fi
+[[ "$*" == "-fsS $CE13_HEALTH_URL" ]] || exit 97
+read -r count < "$CE13_HEALTH_ROOT/health-count"
+count=$((count + 1))
+printf '%s\n' "$count" > "$CE13_HEALTH_ROOT/health-count"
+read -r ticks < "$CE13_HEALTH_ROOT/ticks"
+case "$CE13_HEALTH_MODE" in
+  never) exit 7 ;;
+  edge) (( ticks >= 600 )) || exit 7 ;;
+  early) (( count > 1 )) && [[ -f "$CE13_HEALTH_ROOT/ready" ]] || exit 7 ;;
+  final_failure) (( count == 1 )) || exit 22 ;;
+  immediate|discovery_failure) ;;
+  *) exit 97 ;;
+esac
+printf '{"ok":true}\n'
+'''
+            sleep = r'''#!/bin/bash
+set -euo pipefail
+printf 'sleep %s\n' "$*" >> "$CE13_HEALTH_ROOT/trace"
+read -r ticks < "$CE13_HEALTH_ROOT/ticks"
+case "$*" in
+  0.1) ticks=$((ticks + 1)) ;;
+  1) ticks=$((ticks + 10)) ;;
+  *) exit 97 ;;
+esac
+printf '%s\n' "$ticks" > "$CE13_HEALTH_ROOT/ticks"
+if [[ "$CE13_HEALTH_MODE" == early ]]; then
+  printf 'real-sleep-start %s\n' "$EPOCHREALTIME" >> "$CE13_HEALTH_ROOT/trace"
+  "$CE13_REAL_SLEEP" "$1"
+  printf 'real-sleep-end %s\n' "$EPOCHREALTIME" >> "$CE13_HEALTH_ROOT/trace"
+fi
+'''
+            for target, text in [
+                (root / "ce13-session-idp", launch), (root / "ce13-session-biz", launch),
+                (bin_root / "node", launch), (bin_root / "curl", curl), (bin_root / "sleep", sleep),
+            ]:
+                target.write_text(text)
+                target.chmod(0o755)
+            env = {**os.environ, "PATH": str(bin_root) + os.pathsep + os.environ["PATH"],
+                   "RUNNER_TEMP": str(root), "YUNKA_TEST_MYSQL_DSN": "unused-command-fixture",
+                   "CE13_HEALTH_ROOT": str(root), "CE13_HEALTH_MODE": mode,
+                   "CE13_HEALTH_URL": health_url, "CE13_REAL_SLEEP": real_sleep}
+            try:
+                result = subprocess.run(["bash", "-c", commands], env=env, cwd=ROOT,
+                                        capture_output=True, text=True, timeout=15)
+                trace = (root / "trace").read_text().splitlines()
+                for _ in range(50):
+                    if not recorded_child_alive(root):
+                        break
+                    time.sleep(0.002)
+                evidence = {
+                    "trace": trace,
+                    "sleeps": [line.removeprefix("sleep ") for line in trace if line.startswith("sleep ")],
+                    "curl_calls": [line.removeprefix("curl ") for line in trace if line.startswith("curl ")],
+                    "health_count": int((root / "health-count").read_text()),
+                    "ticks": int((root / "ticks").read_text()),
+                    "child_alive_before_cleanup": recorded_child_alive(root),
+                    "recorded_pid": int((root / "child-pid").read_text()),
+                    "startup_pid": int((root / pid_file).read_text()),
+                    "discovery": (root / "ce13-discovery.json").read_text()
+                                 if (root / "ce13-discovery.json").exists() else None,
+                }
+                return result, evidence
+            finally:
+                terminate_recorded_child(root)
+
+    def test_immediate_readiness_runs_final_health_and_discovery_without_sleep(self):
+        for step in self.steps:
+            with self.subTest(step=step[0]):
+                result, evidence = self.run_step(step, "immediate")
+                self.assertEqual(0, result.returncode, result.stderr)
+                self.assertEqual([], evidence["sleeps"])
+                expected = ["-fsS " + step[1]] * 2
+                if step == self.steps[0]:
+                    expected.append("-fsS http://127.0.0.1:18081/idp/.well-known/openid-configuration")
+                    self.assertIn('"issuer"', evidence["discovery"])
+                self.assertEqual(expected, evidence["curl_calls"])
+                self.assertEqual(evidence["startup_pid"], evidence["recorded_pid"])
+                self.assertFalse(evidence["child_alive_before_cleanup"])
+
+    def test_early_readiness_uses_real_tenth_second_sleep(self):
+        for step in self.steps:
+            with self.subTest(step=step[0]):
+                result, evidence = self.run_step(step, "early")
+                self.assertEqual(0, result.returncode, result.stderr)
+                self.assertEqual(["0.1"], evidence["sleeps"])
+                starts = [float(line.split()[1]) for line in evidence["trace"] if line.startswith("real-sleep-start ")]
+                ends = [float(line.split()[1]) for line in evidence["trace"] if line.startswith("real-sleep-end ")]
+                self.assertEqual(1, len(starts))
+                self.assertEqual(1, len(ends))
+                self.assertGreaterEqual(ends[0] - starts[0], 0.09)
+                self.assertEqual(3, evidence["health_count"])
+                self.assertEqual(["-fsS " + step[1]] * 3, evidence["curl_calls"][:3])
+                self.assertFalse(evidence["child_alive_before_cleanup"])
+
+    def test_never_ready_keeps_sixty_seconds_nominal_backoff_and_final_failure(self):
+        for step in self.steps:
+            with self.subTest(step=step[0]):
+                result, evidence = self.run_step(step, "never")
+                self.assertEqual(7, result.returncode, result.stderr)
+                self.assertEqual(["0.1"] * 10 + ["1"] * 59, evidence["sleeps"])
+                self.assertEqual(600, evidence["ticks"])
+                self.assertEqual(70, evidence["health_count"])
+                self.assertEqual(["-fsS " + step[1]] * 70, evidence["curl_calls"])
+                self.assertFalse(evidence["child_alive_before_cleanup"])
+
+    def test_final_check_can_become_ready_at_nominal_sixty_seconds(self):
+        for step in self.steps:
+            with self.subTest(step=step[0]):
+                result, evidence = self.run_step(step, "edge")
+                self.assertEqual(0, result.returncode, result.stderr)
+                self.assertEqual(["0.1"] * 10 + ["1"] * 59, evidence["sleeps"])
+                self.assertEqual(600, evidence["ticks"])
+                self.assertEqual(70, evidence["health_count"])
+                expected = ["-fsS " + step[1]] * 70
+                if step == self.steps[0]:
+                    expected.append("-fsS http://127.0.0.1:18081/idp/.well-known/openid-configuration")
+                self.assertEqual(expected, evidence["curl_calls"])
+                self.assertFalse(evidence["child_alive_before_cleanup"])
+
+    def test_final_health_failure_rejects_successful_poll(self):
+        for step in self.steps:
+            with self.subTest(step=step[0]):
+                result, evidence = self.run_step(step, "final_failure")
+                self.assertEqual(22, result.returncode, result.stderr)
+                self.assertEqual([], evidence["sleeps"])
+                self.assertEqual(["-fsS " + step[1]] * 2, evidence["curl_calls"])
+                self.assertFalse(evidence["child_alive_before_cleanup"])
+
+    def test_discovery_failure_rejects_successful_idp_health(self):
+        result, evidence = self.run_step(self.steps[0], "discovery_failure")
+        self.assertEqual(22, result.returncode, result.stderr)
+        self.assertEqual([], evidence["sleeps"])
+        self.assertEqual(["-fsS " + self.steps[0][1]] * 2 +
+                         ["-fsS http://127.0.0.1:18081/idp/.well-known/openid-configuration"],
+                         evidence["curl_calls"])
+        self.assertFalse(evidence["child_alive_before_cleanup"])
+
 
 if __name__ == "__main__":
     unittest.main()
