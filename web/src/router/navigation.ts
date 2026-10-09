@@ -114,8 +114,8 @@ export const systemQuickActions = [
 ]
 
 export const quickActions = [
-  { label: '新增成员', icon: 'plus', path: '/enterprise/members?action=create', authorizationActions: ['tenant.member.invite', 'tenant.member.profile.update', 'tenant.role.assign_member', 'tenant.member.activate'], authorizationMode: 'all' },
-  { label: '邀请成员', icon: 'invite', path: '/enterprise/members?action=invite', authorizationActions: ['tenant.member.invite', 'tenant.member.profile.update', 'tenant.role.assign_member'], authorizationMode: 'all' },
+  { label: '新增成员', icon: 'plus', path: '/enterprise/members?action=create', authorizationActions: ['tenant.member.create'], authorizationMode: 'all' },
+  { label: '邀请成员', icon: 'invite', path: '/enterprise/members?action=invite', authorizationActions: ['tenant.member.create'], authorizationMode: 'all' },
   { label: '新建角色', icon: 'shield', path: '/enterprise/roles?action=create', authorizationActions: ['tenant.role.create', 'tenant.role.set_permissions', 'tenant.role.enable', 'tenant.role.disable'], authorizationMode: 'all' },
   { label: '调整套餐', icon: 'crown', path: '/enterprise/plan?action=upgrade', authorizationActions: ['commercial.subscription.change.targets_my', 'commercial.subscription.change.preview_my', 'commercial.subscription.change.confirm_my', 'commercial.subscription.change.get_my'], authorizationMode: 'all' },
   { label: '编辑企业信息', icon: 'edit', path: '/enterprise/company', authorizationActions: ['tenant.profile.update'] },

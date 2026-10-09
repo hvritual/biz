@@ -1,5 +1,6 @@
 import { expect, test, type Browser, type BrowserContext, type Page } from "@playwright/test";
 import { readFileSync } from "node:fs";
+import { verifyMemberManagementUI } from "./member-management-ui.steps";
 
 interface Fixture {
   access: Array<{
@@ -265,6 +266,9 @@ test("TestCE293AccessModuleActivationRoleUseAndRevocation", async ({ browser }, 
     expect((await read(platform, subPath(sample.tenant_a))).json).toEqual(subscription.json);
     expect(errors).toEqual([]);
     await admin.page.screenshot({ path: testInfo.outputPath("ce293-access-roles-after-revocation.png"), fullPage: true });
+    // #360: extend, never replace, the original Access sample assertions.
+    await verifyMemberManagementUI(admin.page, data.web_base_url, operatorName, testInfo);
+    expect(errors).toEqual([]);
   } finally {
     await Promise.all(sessions.map((actor) => actor.context.close()));
   }

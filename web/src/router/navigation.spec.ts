@@ -68,13 +68,16 @@ describe('primary navigation information architecture', () => {
     const byPath = new Map(quickActions.map((item) => [item.path, item]))
     expect(byPath.get('/enterprise/members?action=create')).toMatchObject({
       authorizationMode: 'all',
-      authorizationActions: [
-        'tenant.member.invite',
-        'tenant.member.profile.update',
-        'tenant.role.assign_member',
-        'tenant.member.activate',
-      ],
+      authorizationActions: ['tenant.member.create'],
     })
+    expect(byPath.get('/enterprise/members?action=invite')).toMatchObject({
+      authorizationMode: 'all',
+      authorizationActions: ['tenant.member.create'],
+    })
+    // Creating a pending member is not administrator activation. The
+    // backend atomic Operation still owns all permission prerequisites.
+    expect(byPath.get('/enterprise/members?action=create')?.authorizationActions)
+      .not.toContain('tenant.member.activate')
     expect(byPath.get('/enterprise/roles?action=create')).toMatchObject({
       authorizationMode: 'all',
       authorizationActions: [
