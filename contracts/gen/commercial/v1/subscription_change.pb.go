@@ -29,13 +29,15 @@ type PreviewSubscriptionChangeRequest struct {
 	state     protoimpl.MessageState `protogen:"open.v1"`
 	TenantId  string                 `protobuf:"bytes,1,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
 	RequestId string                 `protobuf:"bytes,2,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
-	// SWITCH, RENEW or STOP_RENEWAL. Direction is calculated by the server.
+	// INITIAL, SWITCH, RENEW or STOP_RENEWAL. Direction is calculated by the server.
 	Action            string `protobuf:"bytes,3,opt,name=action,proto3" json:"action,omitempty"`
 	TargetPlanCode    string `protobuf:"bytes,4,opt,name=target_plan_code,json=targetPlanCode,proto3" json:"target_plan_code,omitempty"`
 	TargetPlanVersion uint64 `protobuf:"varint,5,opt,name=target_plan_version,json=targetPlanVersion,proto3" json:"target_plan_version,omitempty"`
 	// Empty means the server's safe default; a future UTC instant schedules only.
-	EffectiveAt   string `protobuf:"bytes,6,opt,name=effective_at,json=effectiveAt,proto3" json:"effective_at,omitempty"`
-	Reason        string `protobuf:"bytes,7,opt,name=reason,proto3" json:"reason,omitempty"`
+	EffectiveAt string `protobuf:"bytes,6,opt,name=effective_at,json=effectiveAt,proto3" json:"effective_at,omitempty"`
+	Reason      string `protobuf:"bytes,7,opt,name=reason,proto3" json:"reason,omitempty"`
+	// Required only for INITIAL. Existing subscriptions always use their stored scope.
+	SalesScope    string `protobuf:"bytes,8,opt,name=sales_scope,json=salesScope,proto3" json:"sales_scope,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -115,6 +117,13 @@ func (x *PreviewSubscriptionChangeRequest) GetEffectiveAt() string {
 func (x *PreviewSubscriptionChangeRequest) GetReason() string {
 	if x != nil {
 		return x.Reason
+	}
+	return ""
+}
+
+func (x *PreviewSubscriptionChangeRequest) GetSalesScope() string {
+	if x != nil {
+		return x.SalesScope
 	}
 	return ""
 }
@@ -1844,7 +1853,7 @@ var File_commercial_v1_subscription_change_proto protoreflect.FileDescriptor
 
 const file_commercial_v1_subscription_change_proto_rawDesc = "" +
 	"\n" +
-	"'commercial/v1/subscription_change.proto\x12\rcommercial.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x1ayunka/dsl/v1/options.proto\x1a\x18commercial/v1/plan.proto\x1a commercial/v1/subscription.proto\x1a\x1fcommercial/v1/entitlement.proto\x1a commercial/v1/provisioning.proto\"\x8b\x02\n" +
+	"'commercial/v1/subscription_change.proto\x12\rcommercial.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x1ayunka/dsl/v1/options.proto\x1a\x18commercial/v1/plan.proto\x1a commercial/v1/subscription.proto\x1a\x1fcommercial/v1/entitlement.proto\x1a commercial/v1/provisioning.proto\"\xac\x02\n" +
 	" PreviewSubscriptionChangeRequest\x12\x1b\n" +
 	"\ttenant_id\x18\x01 \x01(\tR\btenantId\x12\x1d\n" +
 	"\n" +
@@ -1853,7 +1862,9 @@ const file_commercial_v1_subscription_change_proto_rawDesc = "" +
 	"\x10target_plan_code\x18\x04 \x01(\tR\x0etargetPlanCode\x12.\n" +
 	"\x13target_plan_version\x18\x05 \x01(\x04R\x11targetPlanVersion\x12!\n" +
 	"\feffective_at\x18\x06 \x01(\tR\veffectiveAt\x12\x16\n" +
-	"\x06reason\x18\a \x01(\tR\x06reason\"\xb6\x01\n" +
+	"\x06reason\x18\a \x01(\tR\x06reason\x12\x1f\n" +
+	"\vsales_scope\x18\b \x01(\tR\n" +
+	"salesScope\"\xb6\x01\n" +
 	" ConfirmSubscriptionChangeRequest\x12\x1b\n" +
 	"\ttenant_id\x18\x01 \x01(\tR\btenantId\x12\x1b\n" +
 	"\tchange_id\x18\x02 \x01(\tR\bchangeId\x12\x1d\n" +
@@ -2024,7 +2035,7 @@ const file_commercial_v1_subscription_change_proto_rawDesc = "" +
 	"\x15subscription_revision\x18\x04 \x01(\x04R\x14subscriptionRevision\x12%\n" +
 	"\x0esource_version\x18\x05 \x01(\x04R\rsourceVersion\x12/\n" +
 	"\x13entitlement_version\x18\x06 \x01(\x04R\x12entitlementVersion\x120\n" +
-	"\x14provisioning_task_id\x18\a \x01(\tR\x12provisioningTaskId2\x90)\n" +
+	"\x14provisioning_task_id\x18\a \x01(\tR\x12provisioningTaskId2\xc1)\n" +
 	"\x1eSubscriptionChangesApplication\x12\xfd\x02\n" +
 	"\x1fListMySubscriptionChangeTargets\x125.commercial.v1.ListMySubscriptionChangeTargetsRequest\x1a6.commercial.v1.ListMySubscriptionChangeTargetsResponse\"\xea\x01\xe2\xf3\x18\xb7\x01\n" +
 	")commercial.subscription.change.targets_my\x12#list_my_subscription_change_targets\x1a\x1atenant.subscription.manage\x1a\x17commercial.catalog.read(\x012\x02\x02\x04B\"commercial.plan.change_target.listH\x01R\x04\b\x03\x10\x01\x82\xd3\xe4\x93\x02(\x12&/v1/tenant/subscription/change-targets\x12\xb3\x03\n" +
@@ -2037,16 +2048,18 @@ const file_commercial_v1_subscription_change_proto_rawDesc = "" +
 	"\x1eGetMySubscriptionChangeReceipt\x125.commercial.v1.ReadMySubscriptionChangeReceiptRequest\x1a+.commercial.v1.SubscriptionChangeReceiptDTO\"\xaa\x01\xe2\xf3\x18s\n" +
 	"%commercial.subscription.change.get_my\x12\"get_my_subscription_change_receipt\x1a\x1atenant.subscription.manage(\x012\x02\x02\x04R\x04\b\x02\x10\x01\x82\xd3\xe4\x93\x02-\x12+/v1/tenant/subscription/changes/{change_id}\x12\x9a\x02\n" +
 	"\x19ListMySubscriptionChanges\x12/.commercial.v1.ListMySubscriptionChangesRequest\x1a0.commercial.v1.ListMySubscriptionChangesResponse\"\x99\x01\xe2\xf3\x18n\n" +
-	"&commercial.subscription.change.list_my\x12\x1clist_my_subscription_changes\x1a\x1atenant.subscription.manage(\x012\x02\x02\x04R\x04\b\x02\x10\x01\x82\xd3\xe4\x93\x02!\x12\x1f/v1/tenant/subscription/changes\x12\xcd\x03\n" +
-	"\x19PreviewSubscriptionChange\x12/.commercial.v1.PreviewSubscriptionChangeRequest\x1a+.commercial.v1.SubscriptionChangePreviewDTO\"\xd1\x02\xe2\xf3\x18\x84\x02\n" +
-	"&commercial.subscription.change.preview\x12\x1bpreview_subscription_change\x1a\x1cplatform.subscription.manage\x1a\x14platform.tenant.read\x1a\x12platform.plan.read\x1a\x17commercial.catalog.read2\x02\x02\x04B\x13commercial.plan.getB\x1bcommercial.plan.eligibilityB\x1ecommercial.module.plan_catalogH\x01R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02B:\x01*\"=/v1/platform/tenants/{tenant_id}/subscription/change-previews\x12\xda\x03\n" +
-	"\x19ConfirmSubscriptionChange\x12/.commercial.v1.ConfirmSubscriptionChangeRequest\x1a+.commercial.v1.SubscriptionChangeReceiptDTO\"\xde\x02\xe2\xf3\x18\x85\x02\n" +
-	"&commercial.subscription.change.confirm\x12\x1bconfirm_subscription_change\x1a\x1dplatform.subscription.confirm\x1a\x14platform.tenant.read\x1a\x12platform.plan.read\x1a\x17commercial.catalog.read2\x02\x02\x04B\x13commercial.plan.getB\x1bcommercial.plan.eligibilityB\x1ecommercial.module.plan_catalogH\x01R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02N:\x01*\"I/v1/platform/tenants/{tenant_id}/subscription/changes/{change_id}/confirm\x12\xdb\x02\n" +
+	"&commercial.subscription.change.list_my\x12\x1clist_my_subscription_changes\x1a\x1atenant.subscription.manage(\x012\x02\x02\x04R\x04\b\x02\x10\x01\x82\xd3\xe4\x93\x02!\x12\x1f/v1/tenant/subscription/changes\x12\xd9\x03\n" +
+	"\x19PreviewSubscriptionChange\x12/.commercial.v1.PreviewSubscriptionChangeRequest\x1a+.commercial.v1.SubscriptionChangePreviewDTO\"\xdd\x02\xe2\xf3\x18\x90\x02\n" +
+	"&commercial.subscription.change.preview\x12\x1bpreview_subscription_change\x1a\x1cplatform.subscription.manage\x1a\x14platform.tenant.read\x1a\x12platform.plan.read\x1a\x17commercial.catalog.read2\x02\x02\x04B\n" +
+	"tenant.getB\x13commercial.plan.getB\x1bcommercial.plan.eligibilityB\x1ecommercial.module.plan_catalogH\x01R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02B:\x01*\"=/v1/platform/tenants/{tenant_id}/subscription/change-previews\x12\xe6\x03\n" +
+	"\x19ConfirmSubscriptionChange\x12/.commercial.v1.ConfirmSubscriptionChangeRequest\x1a+.commercial.v1.SubscriptionChangeReceiptDTO\"\xea\x02\xe2\xf3\x18\x91\x02\n" +
+	"&commercial.subscription.change.confirm\x12\x1bconfirm_subscription_change\x1a\x1dplatform.subscription.confirm\x1a\x14platform.tenant.read\x1a\x12platform.plan.read\x1a\x17commercial.catalog.read2\x02\x02\x04B\n" +
+	"tenant.getB\x13commercial.plan.getB\x1bcommercial.plan.eligibilityB\x1ecommercial.module.plan_catalogH\x01R\x04\b\x03\x10\x02\x82\xd3\xe4\x93\x02N:\x01*\"I/v1/platform/tenants/{tenant_id}/subscription/changes/{change_id}/confirm\x12\xdb\x02\n" +
 	"\x1cGetSubscriptionChangePreview\x12,.commercial.v1.ReadSubscriptionChangeRequest\x1a+.commercial.v1.SubscriptionChangePreviewDTO\"\xdf\x01\xe2\xf3\x18\x89\x01\n" +
 	"*commercial.subscription.change.preview.get\x12\x1fget_subscription_change_preview\x1a\x1aplatform.subscription.read\x1a\x14platform.tenant.read2\x02\x02\x04R\x04\b\x02\x10\x01\x82\xd3\xe4\x93\x02K\x12I/v1/platform/tenants/{tenant_id}/subscription/change-previews/{change_id}\x12\xcb\x02\n" +
 	"\x1cGetSubscriptionChangeReceipt\x12,.commercial.v1.ReadSubscriptionChangeRequest\x1a+.commercial.v1.SubscriptionChangeReceiptDTO\"\xcf\x01\xe2\xf3\x18\x81\x01\n" +
-	"\"commercial.subscription.change.get\x12\x1fget_subscription_change_receipt\x1a\x1aplatform.subscription.read\x1a\x14platform.tenant.read2\x02\x02\x04R\x04\b\x02\x10\x01\x82\xd3\xe4\x93\x02C\x12A/v1/platform/tenants/{tenant_id}/subscription/changes/{change_id}\x1a\x87\v\xda\xf3\x18\x82\v\n" +
-	"\x14subscription_changes\x12\x1acommercial/plan_management\x12\x19commercial/module_catalog\x1a\xf7\x02\n" +
+	"\"commercial.subscription.change.get\x12\x1fget_subscription_change_receipt\x1a\x1aplatform.subscription.read\x1a\x14platform.tenant.read2\x02\x02\x04R\x04\b\x02\x10\x01\x82\xd3\xe4\x93\x02C\x12A/v1/platform/tenants/{tenant_id}/subscription/changes/{change_id}\x1a\xa0\v\xda\xf3\x18\x9b\v\n" +
+	"\x14subscription_changes\x12\x1acommercial/plan_management\x12\x19commercial/module_catalog\x12\x17access/tenant_lifecycle\x1a\xf7\x02\n" +
 	"'commercial.subscription.change.prepared\x12%complete_prepared_subscription_change\x1a\x1dplatform.provisioning.execute\x1a\x12platform.plan.read\x1a\x17commercial.catalog.read2\x01\x02B\x13commercial.plan.getB\x1bcommercial.plan.eligibilityB\x1ecommercial.module.plan_catalogH\x01R\x04\b\x03\x10\x01Z/commercial.v1.PreparedSubscriptionChangeRequestb'commercial.v1.ProvisioningCompletionDTOj\"CompletePreparedSubscriptionChange\x1a\xa8\x02\n" +
 	"1commercial.subscription.change.preparation.cancel\x12#cancel_prepared_subscription_change\x1a\x1cplatform.provisioning.cancel\x1a\x12platform.plan.read\x1a\x17commercial.catalog.read2\x01\x02R\x04\b\x03\x10\x01Z/commercial.v1.PreparedSubscriptionChangeRequestb'commercial.v1.ProvisioningCompletionDTOj CancelPreparedSubscriptionChange\x1a\xfe\x01\n" +
 	"(commercial.subscription.transition.claim\x12 claim_commercial_time_transition\x1a\x1dplatform.provisioning.execute2\x01\x02H\x01R\x04\b\x03\x10\x01Z2commercial.v1.ClaimCommercialTimeTransitionRequestb3commercial.v1.ClaimCommercialTimeTransitionResponsej\x1dClaimCommercialTimeTransition\x1a\x8c\x03\n" +

@@ -6118,6 +6118,13 @@
           "number": 7,
           "kind": "scalar",
           "type": "string"
+        },
+        {
+          "name": "sales_scope",
+          "jsonName": "salesScope",
+          "number": 8,
+          "kind": "scalar",
+          "type": "string"
         }
       ],
       "dto": {
@@ -13516,7 +13523,8 @@
             ],
             "permissionMode": "all",
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "execution": {
               "transaction": "read_only",
@@ -13531,7 +13539,8 @@
             ],
             "permissionMode": "all",
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         },
@@ -13634,7 +13643,8 @@
             ],
             "permissionMode": "all",
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "execution": {
               "transaction": "local",
@@ -13649,7 +13659,8 @@
             ],
             "permissionMode": "all",
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         }
@@ -13662,6 +13673,7 @@
       "application": {
         "name": "subscription_changes",
         "requires": [
+          "access/tenant_lifecycle",
           "commercial/module_catalog",
           "commercial/plan_management"
         ],
@@ -13839,7 +13851,8 @@
             "requiresOperations": [
               "commercial.module.plan_catalog",
               "commercial.plan.eligibility",
-              "commercial.plan.get"
+              "commercial.plan.get",
+              "tenant.get"
             ],
             "composition": "local",
             "execution": {
@@ -14193,7 +14206,8 @@
             "requiresOperations": [
               "commercial.module.plan_catalog",
               "commercial.plan.eligibility",
-              "commercial.plan.get"
+              "commercial.plan.get",
+              "tenant.get"
             ],
             "composition": "local",
             "execution": {

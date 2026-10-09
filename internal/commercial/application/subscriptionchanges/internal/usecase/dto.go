@@ -19,7 +19,11 @@ func impactDTO(impact change.Impact) *v1.SubscriptionChangeImpact {
 	}
 }
 func previewDTO(p change.Preview) *v1.SubscriptionChangePreviewDTO {
-	out := &v1.SubscriptionChangePreviewDTO{ChangeId: p.ChangeID, TenantId: p.Input.TenantID, ActorId: p.ActorID, RequestId: p.Input.RequestID, Action: p.Input.Action, Classification: p.Classification, Mode: p.Mode, PreviewHash: p.Hash, Before: projection.SubscriptionDTO(p.Before), Target: projection.VersionDTO(p.Target), SubscriptionRevision: p.Before.Revision, SourceVersion: p.Current.SourceVersion, EntitlementVersion: p.Current.EntitlementVersion, CatalogRevision: p.Current.CatalogRevision, CreatedAt: projection.Instant(&p.CreatedAt), ExpiresAt: projection.Instant(&p.ExpiresAt), EffectiveAt: projection.Instant(&p.EffectiveAt), EntitlementExpiresAt: projection.Instant(p.EntitlementExpiresAt), CurrentEntitlements: projection.ViewDTO(p.Current), ProjectedEntitlements: projection.ViewDTO(p.Projected), Impacts: append([]string(nil), p.Impacts...), PricingBasis: p.PricingBasis, QuotaValidationRequired: p.QuotaValidationRequired}
+	before := projection.SubscriptionDTO(p.Before)
+	if p.Input.Action == change.Initial {
+		before = nil
+	}
+	out := &v1.SubscriptionChangePreviewDTO{ChangeId: p.ChangeID, TenantId: p.Input.TenantID, ActorId: p.ActorID, RequestId: p.Input.RequestID, Action: p.Input.Action, Classification: p.Classification, Mode: p.Mode, PreviewHash: p.Hash, Before: before, Target: projection.VersionDTO(p.Target), SubscriptionRevision: p.Before.Revision, SourceVersion: p.Current.SourceVersion, EntitlementVersion: p.Current.EntitlementVersion, CatalogRevision: p.Current.CatalogRevision, CreatedAt: projection.Instant(&p.CreatedAt), ExpiresAt: projection.Instant(&p.ExpiresAt), EffectiveAt: projection.Instant(&p.EffectiveAt), EntitlementExpiresAt: projection.Instant(p.EntitlementExpiresAt), CurrentEntitlements: projection.ViewDTO(p.Current), ProjectedEntitlements: projection.ViewDTO(p.Projected), Impacts: append([]string(nil), p.Impacts...), PricingBasis: p.PricingBasis, QuotaValidationRequired: p.QuotaValidationRequired}
 	for _, r := range p.ProvisioningRequirements {
 		out.ProvisioningRequirements = append(out.ProvisioningRequirements, &v1.ProvisioningRequirementDTO{Code: r.Code, Adapter: r.Adapter, Version: r.Version, MaxAttempts: r.MaxAttempts})
 	}
@@ -35,7 +39,11 @@ func previewDTO(p change.Preview) *v1.SubscriptionChangePreviewDTO {
 	return out
 }
 func receiptDTO(r change.Receipt) *v1.SubscriptionChangeReceiptDTO {
-	out := &v1.SubscriptionChangeReceiptDTO{ProvisioningTaskId: r.ProvisioningTaskID, FailureCode: r.FailureCode, ChangeId: r.ChangeID, TenantId: r.TenantID, ActorId: r.ActorID, RequestId: r.RequestID, PreviewHash: r.PreviewHash, Action: r.Action, Status: r.Status, Mode: r.Mode, ConfirmedAt: projection.Instant(&r.ConfirmedAt), EffectiveAt: projection.Instant(&r.EffectiveAt), EntitlementExpiresAt: projection.Instant(r.EntitlementExpiresAt), Reason: r.Reason, Before: projection.SubscriptionDTO(r.Before), After: projection.SubscriptionDTO(r.After), BeforeSourceVersion: r.BeforeSourceVersion, AfterSourceVersion: r.AfterSourceVersion, BeforeEntitlementVersion: r.BeforeEntitlementVersion, AfterEntitlementVersion: r.AfterEntitlementVersion, QuotaValidationRequired: r.QuotaValidationRequired, PricingAuthority: r.PricingAuthority}
+	before := projection.SubscriptionDTO(r.Before)
+	if r.Action == change.Initial {
+		before = nil
+	}
+	out := &v1.SubscriptionChangeReceiptDTO{ProvisioningTaskId: r.ProvisioningTaskID, FailureCode: r.FailureCode, ChangeId: r.ChangeID, TenantId: r.TenantID, ActorId: r.ActorID, RequestId: r.RequestID, PreviewHash: r.PreviewHash, Action: r.Action, Status: r.Status, Mode: r.Mode, ConfirmedAt: projection.Instant(&r.ConfirmedAt), EffectiveAt: projection.Instant(&r.EffectiveAt), EntitlementExpiresAt: projection.Instant(r.EntitlementExpiresAt), Reason: r.Reason, Before: before, After: projection.SubscriptionDTO(r.After), BeforeSourceVersion: r.BeforeSourceVersion, AfterSourceVersion: r.AfterSourceVersion, BeforeEntitlementVersion: r.BeforeEntitlementVersion, AfterEntitlementVersion: r.AfterEntitlementVersion, QuotaValidationRequired: r.QuotaValidationRequired, PricingAuthority: r.PricingAuthority}
 	for _, q := range r.Quotas {
 		out.QuotaImpacts = append(out.QuotaImpacts, quotaDTO(q))
 	}

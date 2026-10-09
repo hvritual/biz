@@ -113,7 +113,20 @@ jobs:
           test "$(git -C yunka.io rev-parse HEAD)" = "$YUNKA_SHA"
           bad="$(gofmt -l             biz/internal/architecture/ce13_platform_web_session_contract_test.go             biz/integration/ce13_platform_web_session_seed_test.go)"
           test -z "$bad" || { printf 'gofmt required:\n%s\n' "$bad"; exit 1; }
-          make -C biz check YUNKA_ROOT="$GITHUB_WORKSPACE/yunka.io" PROTOC="$(command -v protoc)"
+          # Compile only into the Go build cache while the original read-only
+          # checks execute. This is not a test result or a qualified executable.
+          # Both readers must finish before generation can mutate any source.
+          go -C biz build ./internal/bizruntime &
+          compile_pid=$!
+          checks_failed=0
+          make -C biz check YUNKA_ROOT="$GITHUB_WORKSPACE/yunka.io" PROTOC="$(command -v protoc)" || checks_failed=1
+          compile_failed=0
+          wait "$compile_pid" || compile_failed=1
+          if (( checks_failed != 0 || compile_failed != 0 )); then
+            echo "CE13_READONLY_PREPARATION_FAILED checks=$checks_failed compile=$compile_failed" >&2
+            exit 1
+          fi
+          test -z "$(git -C biz status --porcelain)" || { git -C biz status --short; exit 1; }
           make -C biz generate YUNKA_ROOT="$GITHUB_WORKSPACE/yunka.io" PROTOC="$(command -v protoc)"
           test -z "$(git -C biz status --porcelain)" || { git -C biz status --short; git -C biz diff --stat; exit 1; }
 
@@ -155,6 +168,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          go -C biz test -count=1 -tags=integration ./integration -run '^TestCE340MySQL'
           go -C biz test -count=1 -tags=integration ./integration -run '^TestCE13PlatformWebSessionSeed$'
           test -s "$CE13_PLATFORM_E2E_ENV_FILE"
           chmod 600 "$CE13_PLATFORM_E2E_ENV_FILE"
@@ -271,9 +285,11 @@ jobs:
           assert stats.get('unexpected', 0) == 0, stats
           assert stats.get('skipped', 0) == 0, stats
           assert stats.get('flaky', 0) == 0, stats
-          assert stats.get('expected', 0) >= 3, stats
-          assert 'TestCE13PlatformCommercialTrustedWebSession' in json.dumps(result), 'CE-13 platform browser acceptance identity missing'
-          print('CE13_PLATFORM_WEB_SESSION=PASS')
+          assert stats.get('expected', 0) >= 4, stats
+          payload = json.dumps(result)
+          assert 'TestCE13PlatformCommercialTrustedWebSession' in payload, 'CE-13 platform browser acceptance identity missing'
+          assert 'TestCE340PlatformFirstSubscriptionThroughTrustedWebSession' in payload, 'CE-340 first subscription browser acceptance identity missing'
+          print('CE13_PLATFORM_WEB_SESSION=PASS CE340_FIRST_SUBSCRIPTION=PASS')
           PY
 
       - name: Write CE13 performance receipt

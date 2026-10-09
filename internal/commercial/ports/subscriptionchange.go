@@ -22,6 +22,14 @@ type SubscriptionChangeRepository interface {
 	UpdateReceipt(context.Context, change.Receipt, change.Receipt) error
 	Now(context.Context) (time.Time, error)
 }
+
+// InitialSubscriptionChangeRepository is an additive first-activation seam.
+// Existing CE-09 repository fakes and implementations do not need to implement it.
+type InitialSubscriptionChangeRepository interface {
+	LockTenantOptional(context.Context, string) (*subscription.Subscription, error)
+	CreateCurrent(context.Context, subscription.Subscription) error
+}
+
 type SubscriptionChangeRepositories struct {
 	Tasks        ProvisioningRepository
 	Events       OutboxRepository

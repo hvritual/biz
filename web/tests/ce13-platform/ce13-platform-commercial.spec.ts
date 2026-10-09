@@ -12,6 +12,8 @@ interface Fixture {
   tenant_email: string;
   tenant_password: string;
   tenant_id: string;
+  initial_tenant_id: string;
+  initial_retry_tenant_id: string;
   allowed_api_key: string;
   allowed_subject: string;
   denied_subject: string;
@@ -115,6 +117,20 @@ async function login(
 
 test("TestCE13PlatformCommercialTrustedWebSession", async ({ browser, request }) => {
   const data = fixture();
+  const taskPath = `/v1/platform/tenants/${encodeURIComponent(data.tenant_id)}/provisioning/tasks/ce340-session-boundary-missing-task`;
+  const taskActions = ["commercial.provisioning.task.get", "commercial.provisioning.task.retry"];
+  const retryInput = {
+    requestId: "ce340-session-boundary-retry",
+    expectedRevision: "1",
+    reason: "CE-340 provisioning session boundary acceptance",
+  };
+
+  // These real requests exercise the existing protected routes without
+  // creating a task or claiming preparation has succeeded.
+  const anonymousTask = await request.get(data.base_url + taskPath);
+  expect(anonymousTask.status(), await anonymousTask.text()).toBe(401);
+  const anonymousRetry = await request.post(data.base_url + taskPath + "/retry", { data: retryInput });
+  expect(anonymousRetry.status(), await anonymousRetry.text()).toBe(401);
 
   const discovery = await request.get(data.discovery_url);
   expect(discovery.status()).toBe(200);
@@ -126,6 +142,10 @@ test("TestCE13PlatformCommercialTrustedWebSession", async ({ browser, request })
     headers: { Authorization: `Bearer ${data.allowed_api_key}` },
   });
   expect(apiKeyResponse.status(), await apiKeyResponse.text()).toBe(200);
+  const apiKeyTask = await request.get(data.base_url + taskPath, {
+    headers: { Authorization: `Bearer ${data.allowed_api_key}` },
+  });
+  expect(apiKeyTask.status(), await apiKeyTask.text()).toBe(404);
 
   // A tenant browser identity cannot self-assert platform authority through headers.
   const tenant = await login(browser, data, data.tenant_email, data.tenant_password);
@@ -140,6 +160,17 @@ test("TestCE13PlatformCommercialTrustedWebSession", async ({ browser, request })
     },
   });
   expect(spoofed.status, spoofed.text).toBe(403);
+  const tenantTask = await browserRequest(tenant.page, data.web_base_url, taskPath, {
+    headers: { "X-Tenant-ID": data.tenant_id, "X-Platform": "true", "X-Principal": data.allowed_subject },
+  });
+  expect(tenantTask.status, tenantTask.text).toBe(403);
+  expect(tenant.session.csrf_token).toBeTruthy();
+  const tenantRetry = await browserRequest(tenant.page, data.web_base_url, taskPath + "/retry", {
+    method: "POST",
+    headers: { "X-CSRF-Token": String(tenant.session.csrf_token), "Idempotency-Key": retryInput.requestId },
+    body: retryInput,
+  });
+  expect(tenantRetry.status, tenantRetry.text).toBe(403);
   await tenant.context.close();
 
   // A real platform OIDC session without platform.module.read remains denied.
@@ -152,6 +183,18 @@ test("TestCE13PlatformCommercialTrustedWebSession", async ({ browser, request })
   expect(deniedProjection.status, deniedProjection.text).toBe(200);
   expect((deniedProjection.json as AuthorizationView).platform_subject).toBe(data.denied_subject);
   expect((deniedProjection.json as AuthorizationView).button_codes).not.toContain("commercial.module.list");
+  for (const action of taskActions) {
+    expect((deniedProjection.json as AuthorizationView).button_codes).not.toContain(action);
+  }
+  const deniedTask = await browserRequest(denied.page, data.web_base_url, taskPath);
+  expect(deniedTask.status, deniedTask.text).toBe(403);
+  expect(denied.session.csrf_token).toBeTruthy();
+  const deniedRetry = await browserRequest(denied.page, data.web_base_url, taskPath + "/retry", {
+    method: "POST",
+    headers: { "X-CSRF-Token": String(denied.session.csrf_token), "Idempotency-Key": retryInput.requestId },
+    body: retryInput,
+  });
+  expect(deniedRetry.status, deniedRetry.text).toBe(403);
   const deniedModules = await browserRequest(denied.page, data.web_base_url, "/v1/platform/modules");
   expect(deniedModules.status, deniedModules.text).toBe(403);
   await denied.context.close();
@@ -175,7 +218,31 @@ test("TestCE13PlatformCommercialTrustedWebSession", async ({ browser, request })
     "commercial.module.create",
     "commercial.module.set_sales_status",
     "commercial.module.set_technical_status",
+    ...taskActions,
   ]));
+  const allowedTask = await browserRequest(allowed.page, data.web_base_url, taskPath);
+  expect(allowedTask.status, allowedTask.text).toBe(404);
+  expect(allowedTask.text.trim()).toBe("application not found");
+  const retryWithoutCSRF = await browserRequest(allowed.page, data.web_base_url, taskPath + "/retry", {
+    method: "POST",
+    headers: { "Idempotency-Key": retryInput.requestId },
+    body: retryInput,
+  });
+  expect(retryWithoutCSRF.status, retryWithoutCSRF.text).toBe(401);
+  const retryWithoutKey = await browserRequest(allowed.page, data.web_base_url, taskPath + "/retry", {
+    method: "POST",
+    headers: { "X-CSRF-Token": String(allowed.session.csrf_token) },
+    body: retryInput,
+  });
+  expect(retryWithoutKey.status, retryWithoutKey.text).toBe(400);
+  expect(retryWithoutKey.text.trim()).toBe("idempotency key required");
+  const retryMissingTask = await browserRequest(allowed.page, data.web_base_url, taskPath + "/retry", {
+    method: "POST",
+    headers: { "X-CSRF-Token": String(allowed.session.csrf_token), "Idempotency-Key": retryInput.requestId },
+    body: retryInput,
+  });
+  expect(retryMissingTask.status, retryMissingTask.text).toBe(404);
+  expect(retryMissingTask.text.trim()).toBe("application not found");
 
   const modules = await browserRequest(allowed.page, data.web_base_url, "/v1/platform/modules");
   expect(modules.status, modules.text).toBe(200);
@@ -338,6 +405,245 @@ test("TestCE13PlatformCommercialLifecycleThroughTrustedWebSession", async ({ bro
   const readback = await browserRequest(allowed.page, data.web_base_url, `/v1/platform/tenants/${data.tenant_id}/subscription/changes/${encodeURIComponent(previewDTO.changeId)}`);
   expect(readback.status, readback.text).toBe(200);
   expect((readback.json as { changeId: string }).changeId).toBe(previewDTO.changeId);
+  await allowed.context.close();
+});
+
+test("TestCE340PlatformFirstSubscriptionThroughTrustedWebSession", async ({ browser }, testInfo) => {
+  const data = fixture();
+  // A confirmation may really commit before a test assertion fails; a retry
+  // must never reuse that already-mutated tenant or accept a false clean state.
+  const initialTenant = testInfo.retry === 0 ? data.initial_tenant_id : data.initial_retry_tenant_id;
+  expect(initialTenant).toBeTruthy();
+  const allowed = await login(browser, data, data.allowed_email, data.allowed_password);
+  const csrf = allowed.session.csrf_token;
+  expect(csrf).toBeTruthy();
+
+  const requestID = (name: string) => `ce340-browser-${name}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const write = (path: string, body: unknown, idempotencyKey: string, method = "POST") => browserRequest(
+    allowed.page,
+    data.web_base_url,
+    path,
+    {
+      method,
+      headers: { "X-CSRF-Token": String(csrf), "Idempotency-Key": idempotencyKey },
+      body,
+    },
+  );
+
+  const before = await browserRequest(
+    allowed.page,
+    data.web_base_url,
+    `/v1/platform/tenants/${encodeURIComponent(initialTenant)}/subscription`,
+  );
+  expect(before.status).toBe(404);
+
+  const planCode = `ce340-first-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
+  const createID = requestID("plan-create");
+  const created = await write("/v1/platform/plans", {
+    requestId: createID,
+    planCode,
+    name: "CE-340 首次开通套餐",
+    terms: {
+      modules: [{
+        moduleCode: "device-operations",
+        capabilityCodes: ["device.lifecycle"],
+        quotas: [{ key: "tenant.devices", value: "100", unlimited: false }],
+        fields: [],
+      }],
+      salesScope: ["default"],
+      validityMode: "fixed_days",
+      validityDays: 365,
+      priceRef: "",
+    },
+    reason: "CE-340 trusted first activation fixture",
+  }, createID);
+  expect(created.status, created.text).toBe(200);
+  const draft = created.json as { version: number; revision: number; state: string };
+  expect(draft.state).toBe("DRAFT");
+
+  const publishID = requestID("plan-publish");
+  const published = await write(`/v1/platform/plans/${encodeURIComponent(planCode)}/versions/${draft.version}/publish`, {
+    requestId: publishID,
+    planCode,
+    version: draft.version,
+    expectedRevision: draft.revision,
+    reason: "publish CE-340 exact target",
+  }, publishID);
+  expect(published.status, published.text).toBe(200);
+  expect((published.json as { state: string }).state).toBe("PUBLISHED");
+
+  await allowed.page.goto(`${data.web_base_url}/#/platform/commercial/tenant-entitlements`);
+  await allowed.page.getByLabel("租户编号").fill(initialTenant);
+  await allowed.page.getByRole("button", { name: "读取权益" }).click();
+  const initial = allowed.page.getByTestId("platform-initial-subscription");
+  await expect(initial.getByRole("heading", { name: "首次开通套餐" })).toBeVisible();
+  await expect(initial.getByText("完成首次开通不会自动给成员分配角色或操作权限。")).toBeVisible();
+
+  await initial.getByLabel("适用范围").fill("default");
+  await initial.getByRole("button", { name: "读取套餐目录" }).click();
+  await initial.getByLabel("套餐", { exact: true }).click();
+  await allowed.page.locator(`[data-slot="select-item"][data-ui-option-value="${planCode}"]`).click();
+  await initial.getByRole("button", { name: "检查已发布版本" }).click();
+  await expect(initial.getByText(`exact v${draft.version}`)).toBeVisible();
+
+  await initial.getByLabel("首次开通原因").fill("CE-340 平台首次开通");
+  await initial.getByRole("button", { name: "查看首次开通方案" }).click();
+  await initial.getByText(/我已核对 exact 套餐版本/).click();
+  await initial.getByLabel("确认原因").fill("CE-340 真实平台会话批准");
+  const browserErrors: string[] = [];
+  allowed.page.on("pageerror", (error) => browserErrors.push(error.message));
+  const viewports = [
+    { width: 1366, height: 768 }, { width: 1440, height: 900 },
+    { width: 1536, height: 1024 }, { width: 390, height: 844 },
+  ];
+  for (const viewport of viewports) {
+    await allowed.page.setViewportSize(viewport);
+    await expect(initial.getByRole("button", { name: "确认首次开通" })).toBeEnabled();
+    await allowed.page.screenshot({ path: testInfo.outputPath(`ce340-confirm-${viewport.width}.png`), fullPage: true });
+  }
+  await allowed.page.setViewportSize(viewports[0]);
+  // Execute the real command, then drop only its browser reply. No mocked
+  // subscription, receipt, entitlement or business-success response is used.
+  let confirmationCalls = 0;
+  let commandStatus = 0;
+  let replyDropped = false;
+  let actualChangeId = "";
+  await allowed.page.route("**/api/v1/platform/tenants/*/subscription/changes/*/confirm", async (route) => {
+    confirmationCalls += 1;
+    const pathname = new URL(route.request().url()).pathname;
+    const change = pathname.match(/\/subscription\/changes\/([^/]+)\/confirm$/);
+    expect(change?.[1]).toBeTruthy();
+    actualChangeId = decodeURIComponent(String(change?.[1]));
+    const actual = await route.fetch();
+    commandStatus = actual.status();
+    await route.abort("failed");
+    replyDropped = true;
+  });
+  await initial.getByRole("button", { name: "确认首次开通" }).click();
+  // The browser request can still be in flight after the click and route
+  // navigation complete. Wait for the actual upstream 200 and aborted reply.
+  await expect.poll(() => replyDropped, { timeout: 15000 }).toBe(true);
+  expect(commandStatus).toBe(200);
+  expect(confirmationCalls).toBe(1);
+  expect(actualChangeId).toBeTruthy();
+  // The original server command was APPLIED, not a mocked client response.
+  // A route that already reconciled the receipt may remove initialChange;
+  // retaining it is mandatory only while recovery is still pending.
+  const appliedReceipt = await browserRequest(
+    allowed.page, data.web_base_url,
+    `/v1/platform/tenants/${encodeURIComponent(initialTenant)}/subscription/changes/${encodeURIComponent(actualChangeId)}`,
+  );
+  expect(appliedReceipt.status, appliedReceipt.text).toBe(200);
+  expect(appliedReceipt.json).toMatchObject({
+    tenantId: initialTenant,
+    changeId: actualChangeId,
+    action: "INITIAL",
+    status: "APPLIED",
+    after: { tenantId: initialTenant, planCode, planVersion: String(draft.version) },
+  });
+  await expect(allowed.page.getByLabel("租户编号")).toHaveValue(initialTenant);
+  await expect(allowed.page.getByText("选择或输入租户编号开始", { exact: true })).toHaveCount(0);
+  const finalCard = allowed.page.locator(".subscription-card").getByText(/CE-340 首次开通套餐/);
+  if (!allowed.page.url().includes("initialChange=")) {
+    // Recovery link was cleared only after the real subscription became visible.
+    await expect(finalCard).toBeVisible();
+  }
+  const pendingResult = initial.getByText("首次开通结果待确认", { exact: true });
+  const receivedReceipt = initial.getByText("结果待确认", { exact: true });
+  const verifiedResult = initial.getByText("首次开通已完成，最终权益已确认", { exact: true });
+  await expect(pendingResult.or(receivedReceipt).or(verifiedResult).or(finalCard).first()).toBeVisible();
+  await allowed.page.screenshot({ path: testInfo.outputPath("ce340-lost-confirmation.png"), fullPage: true });
+  await allowed.page.reload();
+  await expect(allowed.page.locator(".subscription-card").getByText(/CE-340 首次开通套餐/)).toBeVisible();
+  expect(confirmationCalls).toBe(1);
+  expect(browserErrors).toEqual([]);
+  for (const viewport of viewports) {
+    await allowed.page.setViewportSize(viewport);
+    await expect(allowed.page.locator(".subscription-card")).toBeVisible();
+    await allowed.page.screenshot({ path: testInfo.outputPath(`ce340-restored-${viewport.width}.png`), fullPage: true });
+  }
+  const finalSubscription = await browserRequest(
+    allowed.page,
+    data.web_base_url,
+    `/v1/platform/tenants/${encodeURIComponent(initialTenant)}/subscription`,
+  );
+  expect(finalSubscription.status, finalSubscription.text).toBe(200);
+  expect(finalSubscription.json).toMatchObject({
+    tenantId: initialTenant,
+    planCode,
+    planVersion: String(draft.version),
+    salesScope: "default",
+  });
+  const applied = appliedReceipt.json as {
+    effectiveAt: string;
+    entitlementExpiresAt: string;
+    after: { subscriptionId: string; periodStart: string; periodEnd: string };
+  };
+  expect(applied.after.subscriptionId).toBeTruthy();
+  expect(applied.effectiveAt).toBeTruthy();
+  expect(applied.entitlementExpiresAt).toBeTruthy();
+  expect(applied.after).toMatchObject({
+    kind: "BASE",
+    state: "ACTIVE",
+    periodStart: applied.effectiveAt,
+    periodEnd: applied.entitlementExpiresAt,
+  });
+  expect(finalSubscription.json).toMatchObject({
+    subscriptionId: applied.after.subscriptionId,
+    kind: "BASE",
+    state: "ACTIVE",
+    periodStart: applied.after.periodStart,
+    periodEnd: applied.after.periodEnd,
+  });
+
+  const entitlements = await browserRequest(
+    allowed.page,
+    data.web_base_url,
+    `/v1/platform/tenants/${encodeURIComponent(initialTenant)}/entitlements`,
+    {
+      method: "POST",
+      headers: { "X-CSRF-Token": String(csrf), "Idempotency-Key": requestID("entitlements") },
+      body: { tenantId: initialTenant, capabilityCodes: ["device.lifecycle"] },
+    },
+  );
+  expect(entitlements.status, entitlements.text).toBe(200);
+  const decisions = (entitlements.json as { decisions?: Array<{ kind: string; key: string; allowed: boolean }> }).decisions ?? [];
+  expect(decisions).toEqual(expect.arrayContaining([
+    expect.objectContaining({ kind: "capability", key: "device.lifecycle", allowed: true }),
+    expect.objectContaining({ kind: "quota", key: "tenant.devices" }),
+  ]));
+  // Requested capabilities do not filter the persisted module/quota decisions.
+  const targetDecisions = decisions.filter((decision) => (decision as { moduleCode?: string }).moduleCode === "device-operations");
+  for (const expected of [
+    { kind: "module", key: "device-operations" },
+    { kind: "capability", key: "device.lifecycle" },
+    { kind: "quota", key: "tenant.devices" },
+  ]) {
+    const matching = targetDecisions.filter((decision) => decision.kind === expected.kind && decision.key === expected.key);
+    expect(matching).toEqual([expect.objectContaining({ ...expected, moduleCode: "device-operations", allowed: true })]);
+  }
+  const quota = targetDecisions.find((decision) => decision.kind === "quota" && decision.key === "tenant.devices") as
+    { limit?: { value?: string; unlimited?: boolean } } | undefined;
+  expect(quota?.limit?.value).toBe("100");
+  // protojson encodes uint64 as a string and may omit the proto3 false value.
+  expect([undefined, false]).toContain(quota?.limit?.unlimited);
+
+  // Once INITIAL has applied, a historical or forged recovery bookmark is
+  // not permission to hide the normal subscription-management controls.
+  // Verify both against the real subscription and tenant ID (not mock data).
+  for (const stale of [actualChangeId, "not-a-current-initial-change"]) {
+    await allowed.page.goto(
+      `${data.web_base_url}/#/platform/commercial/tenant-entitlements?tenant=${encodeURIComponent(initialTenant)}&initialChange=${encodeURIComponent(stale)}`,
+    );
+    await expect(allowed.page.getByLabel("租户编号")).toHaveValue(initialTenant);
+    await expect(allowed.page.getByTestId("ce13-subscription-change")).toBeVisible();
+    await expect(allowed.page.getByTestId("platform-initial-subscription")).toHaveCount(0);
+    await expect(allowed.page).not.toHaveURL(/initialChange=/);
+    await expect(allowed.page.locator(".subscription-card").getByText(/CE-340 首次开通套餐/)).toBeVisible();
+  }
+  expect(confirmationCalls).toBe(1);
+  expect(browserErrors).toEqual([]);
+
   await allowed.context.close();
 });
 

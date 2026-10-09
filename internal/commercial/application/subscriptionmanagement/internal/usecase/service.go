@@ -275,8 +275,7 @@ func (s *service) BootstrapBaseSubscription(ctx context.Context, r *v1.Bootstrap
 		if e != nil {
 			return subscription.Subscription{}, e
 		}
-		sidSum := sha256.Sum256([]byte(r.TenantId))
-		sid := "sub-" + hex.EncodeToString(sidSum[:12])
+		sid := subscription.ID(r.TenantId)
 		for _, src := range planSources(r.TenantId, sid, now, pv) {
 			if e := src.ValidateShape(); e != nil {
 				return subscription.Subscription{}, e
@@ -288,7 +287,7 @@ func (s *service) BootstrapBaseSubscription(ctx context.Context, r *v1.Bootstrap
 		if e := sc.Repositories().Entitlements.Advance(call, r.TenantId, state.Version); e != nil {
 			return subscription.Subscription{}, e
 		}
-		v := subscription.Subscription{ID: sid, TenantID: r.TenantId, Kind: subscription.KindBase, State: s.lifecycle.StateFor(chosen.PlanCode, chosen.PlanVersion), PlanCode: chosen.PlanCode, PlanVersion: chosen.PlanVersion, RuleID: chosen.RuleID, RuleVersion: chosen.Version, SalesScope: r.SalesScope, EntitlementSourceVersion: state.Version + 1, CreatedAt: now, MatchExplanation: fmt.Sprintf("rule=%s@%d priority=%d scope=%s", chosen.RuleID, chosen.Version, chosen.Priority, chosen.SalesScope)}
+		v := subscription.Subscription{Origin: subscription.OriginDefaultRule, ID: sid, TenantID: r.TenantId, Kind: subscription.KindBase, State: s.lifecycle.StateFor(chosen.PlanCode, chosen.PlanVersion), PlanCode: chosen.PlanCode, PlanVersion: chosen.PlanVersion, RuleID: chosen.RuleID, RuleVersion: chosen.Version, SalesScope: r.SalesScope, EntitlementSourceVersion: state.Version + 1, CreatedAt: now, MatchExplanation: fmt.Sprintf("rule=%s@%d priority=%d scope=%s", chosen.RuleID, chosen.Version, chosen.Priority, chosen.SalesScope)}
 		v.Revision = 1
 		v.PeriodStart = now
 		v.SourceNamespace = sid

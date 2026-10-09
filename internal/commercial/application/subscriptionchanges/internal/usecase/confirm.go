@@ -6,6 +6,7 @@ import (
 
 	v1 "github.com/hvritual/biz/contracts/gen/commercial/v1"
 	pv "github.com/hvritual/biz/internal/commercial/domain/provisioning"
+	"github.com/hvritual/biz/internal/commercial/domain/subscription"
 	change "github.com/hvritual/biz/internal/commercial/domain/subscriptionchange"
 	"github.com/hvritual/biz/internal/commercial/ports"
 	"yunka.io/framework/requestscope"
@@ -31,7 +32,39 @@ func (s *service) confirm(ctx context.Context, actorID, tenantID, changeID, requ
 	result, err := requestscope.JoinValue(ctx, s.repositories, func(sc *requestscope.View[ports.SubscriptionChangeRepositories]) (change.Receipt, error) {
 		repos, call := sc.Repositories(), sc.Context()
 		repo := repos.Changes
-		raw, err := repo.LockTenant(call, tenantID)
+		hint, err := repo.Preview(call, tenantID, changeID, false)
+		if err != nil {
+			return change.Receipt{}, err
+		}
+		if hint == nil {
+			// A used confirmation key still belongs to its original fingerprint
+			// when a caller supplies a different tenant/change lookup. Preserve
+			// that conflict (or exact replay) before reporting a missing preview.
+			replay, replayErr := repo.ReceiptForRequest(call, tenantID, actorID, requestID, fingerprint)
+			if replayErr != nil {
+				return change.Receipt{}, replayErr
+			}
+			if replay != nil {
+				return *replay, nil
+			}
+			return change.Receipt{}, change.ErrNotFound
+		}
+		var raw subscription.Subscription
+		var current *subscription.Subscription
+		var initialRepo ports.InitialSubscriptionChangeRepository
+		if hint.Input.Action == change.Initial {
+			if tenantSelfService {
+				return change.Receipt{}, change.ErrScope
+			}
+			var ok bool
+			initialRepo, ok = repo.(ports.InitialSubscriptionChangeRepository)
+			if !ok {
+				return change.Receipt{}, change.ErrCorrupt
+			}
+			current, err = initialRepo.LockTenantOptional(call, tenantID)
+		} else {
+			raw, err = repo.LockTenant(call, tenantID)
+		}
 		if err != nil {
 			return change.Receipt{}, err
 		}
@@ -62,7 +95,9 @@ func (s *service) confirm(ctx context.Context, actorID, tenantID, changeID, requ
 		if preview.Hash != previewHash {
 			return change.Receipt{}, change.ErrConflict
 		}
-		if tenantSelfService && preview.PricingBasis != "NO_PRICE_REFERENCE" {
+		if (tenantSelfService || preview.Input.Action == change.Initial) && preview.PricingBasis != "NO_PRICE_REFERENCE" {
+			// Paid first activation remains owned by #124/#125/#132. Platform
+			// administration is not permission to invent a payment/approval fact.
 			return change.Receipt{}, errExternalApprovalRequired
 		}
 		now, err := repo.Now(call)
@@ -72,11 +107,20 @@ func (s *service) confirm(ctx context.Context, actorID, tenantID, changeID, requ
 		if !now.Before(preview.ExpiresAt) {
 			return change.Receipt{}, change.ErrExpired
 		}
-		if raw.PendingChangeID != "" {
+		if preview.Input.Action == change.Initial {
+			if current != nil {
+				return change.Receipt{}, change.ErrConflict
+			}
+			if err = s.validateInitialTenant(call, tenantID); err != nil {
+				return change.Receipt{}, err
+			}
+		} else if raw.PendingChangeID != "" {
 			return change.Receipt{}, change.ErrPending
 		}
 		var material material
-		if tenantSelfService {
+		if preview.Input.Action == change.Initial {
+			material, err = s.captureInitial(call, repos, preview.Input)
+		} else if tenantSelfService {
 			material, err = s.captureTenant(call, repos, raw, preview.Input)
 		} else {
 			material, err = s.capture(call, repos, raw, preview.Input)
@@ -132,10 +176,30 @@ func (s *service) confirm(ctx context.Context, actorID, tenantID, changeID, requ
 			}
 		}
 		after := material.before
-		after.Revision++
-		after.EntitlementSourceVersion = material.state.Version
-		if preview.Input.Action != change.StopRenewal {
-			after.State = s.lifecycle.StateFor(material.target.PlanCode, material.target.Number)
+		if preview.Input.Action == change.Initial {
+			after = subscription.Subscription{
+				Origin:                   subscription.OriginInitialActivation,
+				ID:                       subscription.ID(tenantID),
+				TenantID:                 tenantID,
+				Kind:                     subscription.KindBase,
+				State:                    s.lifecycle.StateFor(material.target.PlanCode, material.target.Number),
+				PlanCode:                 material.target.PlanCode,
+				PlanVersion:              material.target.Number,
+				SalesScope:               preview.Input.SalesScope,
+				EntitlementSourceVersion: material.state.Version,
+				CreatedAt:                admitted,
+				MatchExplanation:         "initial activation " + changeID,
+				Revision:                 1,
+				PeriodStart:              at,
+				PeriodEnd:                end,
+				SourceNamespace:          changeID,
+			}
+		} else {
+			after.Revision++
+			after.EntitlementSourceVersion = material.state.Version
+			if preview.Input.Action != change.StopRenewal {
+				after.State = s.lifecycle.StateFor(material.target.PlanCode, material.target.Number)
+			}
 		}
 		pricingAuthority := "PLATFORM_MANUAL_APPROVAL"
 		if tenantSelfService {
@@ -144,9 +208,39 @@ func (s *service) confirm(ctx context.Context, actorID, tenantID, changeID, requ
 		receipt := change.Receipt{ChangeID: changeID, TenantID: tenantID, ActorID: actorID, RequestID: requestID, Fingerprint: fingerprint, PreviewHash: preview.Hash, Action: preview.Input.Action, Status: change.Applied, Mode: mode, ConfirmedAt: admitted, EffectiveAt: at, EntitlementExpiresAt: end, Reason: reason, Before: material.before, BeforeSourceVersion: material.state.Version, AfterSourceVersion: material.state.Version, BeforeEntitlementVersion: material.current.EntitlementVersion, AfterEntitlementVersion: material.current.EntitlementVersion, QuotaValidationRequired: deferred, Quotas: quotas, PricingAuthority: pricingAuthority}
 		if mode == change.Immediate && len(requirements) > 0 {
 			after.PendingChangeID = changeID
-			task, err := pv.New(tenantID, pv.Approval{ChangeID: changeID, ActorID: actorID, PreviewHash: preview.Hash, TargetHash: material.target.ContentSHA256, TargetPlanCode: material.target.PlanCode, TargetPlanVersion: material.target.Number, SubscriptionRevision: after.Revision, SourceVersion: material.state.Version, EntitlementVersion: material.current.EntitlementVersion, CatalogRevision: material.current.CatalogRevision}, requirements, admitted)
+			approvalSourceVersion := material.state.Version
+			approvalEntitlementVersion := material.current.EntitlementVersion
+			if preview.Input.Action == change.Initial {
+				after.State = subscription.StateProvisioning
+				// A first activation can legitimately start at source version zero.
+				// Provisioning approvals require a positive, durable generation, so
+				// reserve an empty entitlement generation before any plan grant.
+				if err = repos.Entitlements.Advance(call, tenantID, material.state.Version); err != nil {
+					return receipt, err
+				}
+				after.EntitlementSourceVersion = material.state.Version + 1
+				baseline, readErr := s.snapshots.ReadSnapshot(call, tenantID, nil)
+				if readErr != nil {
+					return receipt, readErr
+				}
+				if baseline.SourceVersion != after.EntitlementSourceVersion || baseline.EntitlementVersion <= material.current.EntitlementVersion {
+					return receipt, change.ErrCorrupt
+				}
+				approvalSourceVersion = baseline.SourceVersion
+				approvalEntitlementVersion = baseline.EntitlementVersion
+				receipt.AfterSourceVersion = baseline.SourceVersion
+				receipt.AfterEntitlementVersion = baseline.EntitlementVersion
+			}
+			task, err := pv.New(tenantID, pv.Approval{ChangeID: changeID, ActorID: actorID, PreviewHash: preview.Hash, TargetHash: material.target.ContentSHA256, TargetPlanCode: material.target.PlanCode, TargetPlanVersion: material.target.Number, SubscriptionRevision: after.Revision, SourceVersion: approvalSourceVersion, EntitlementVersion: approvalEntitlementVersion, CatalogRevision: material.current.CatalogRevision}, requirements, admitted)
 			if err != nil {
 				return receipt, err
+			}
+			if preview.Input.Action == change.Initial {
+				task.CancellationDisabled = true
+				task = task.Seal()
+				if err = task.Integrity(); err != nil {
+					return receipt, err
+				}
 			}
 			if err = repos.Tasks.Insert(call, task); err != nil {
 				return receipt, err
@@ -165,12 +259,24 @@ func (s *service) confirm(ctx context.Context, actorID, tenantID, changeID, requ
 		} else if preview.Input.Action == change.StopRenewal {
 			after.RenewalStopped = true
 		} else {
-			receipt.AfterSourceVersion, receipt.AfterEntitlementVersion, err = s.applySources(call, repos, material, &after, changeID, at, end)
+			if preview.Input.Action == change.Initial {
+				receipt.AfterSourceVersion, receipt.AfterEntitlementVersion, err = s.applyInitialSources(call, repos, material, &after, changeID, at, end)
+			} else {
+				receipt.AfterSourceVersion, receipt.AfterEntitlementVersion, err = s.applySources(call, repos, material, &after, changeID, at, end)
+			}
 			if err != nil {
 				return receipt, err
 			}
 		}
-		if err = repo.SaveCurrent(call, material.before, after); err != nil {
+		if preview.Input.Action == change.Initial {
+			if initialRepo == nil {
+				return receipt, change.ErrCorrupt
+			}
+			err = initialRepo.CreateCurrent(call, after)
+		} else {
+			err = repo.SaveCurrent(call, material.before, after)
+		}
+		if err != nil {
 			return receipt, err
 		}
 		receipt.After = after

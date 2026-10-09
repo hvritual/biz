@@ -2,7 +2,9 @@
 import { UiButton, UiInput, UiTextarea } from '@/ui/base'
 
 import AuthorityPicker from '@/features/platform/components/AuthorityPicker.vue'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onScopeDispose, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { subscribeSessionContextChange } from '@/services/runtime/sessionCoordinator'
 import { backendBusinessText, backendTermLabel } from '@/i18n/backend-terms'
 import { currentUiLocale } from '@/i18n'
 import PageHeading from '@/ui/common/PageHeading.vue'
@@ -10,6 +12,7 @@ import StatusBadge from '@/ui/common/StatusBadge.vue'
 import EntitlementDecisionTable from '@/features/platform/components/EntitlementDecisionTable.vue'
 import EntitlementOverrideDialog from '@/features/platform/components/EntitlementOverrideDialog.vue'
 import EntitlementOverrideTable from '@/features/platform/components/EntitlementOverrideTable.vue'
+import InitialSubscriptionWorkspace from '@/features/platform/components/InitialSubscriptionWorkspace.vue'
 import SubscriptionChangeWorkspace from '@/features/platform/components/SubscriptionChangeWorkspace.vue'
 import {
   CommercialApiError,
@@ -17,6 +20,9 @@ import {
   createEntitlementOverride,
   explainTenantEntitlements,
   getTenantSubscription,
+  getSubscriptionChangeReceipt,
+  getPlanVersion,
+  type PlanVersionDTO,
   listEntitlementOverrides,
   listPlatformModules,
   revokeEntitlementOverride,
@@ -29,7 +35,13 @@ import {
 
 type LoadState = 'idle' | 'loading' | 'ready' | 'blocked' | 'error'
 
-const tenantIdInput = ref('')
+const route = useRoute()
+const router = useRouter()
+let generation = 0
+let disposed = false
+const initialChangeId = ref('')
+const subscriptionPlan = ref<PlanVersionDTO | null>(null)
+const tenantIdInput = ref(typeof route.query.tenant === 'string' ? route.query.tenant : '')
 const activeTenantId = ref('')
 const capabilityFilter = ref('')
 const loadState = ref<LoadState>('idle')
@@ -89,7 +101,16 @@ async function readSubscription(tenantId: string) {
 }
 
 async function loadWorkspace() {
+  const token = ++generation
   const tenantId = tenantIdInput.value.trim()
+  const current = () => !disposed && token === generation && activeTenantId.value === tenantId
+  initialChangeId.value = ''
+  subscriptionPlan.value = null
+  subscription.value = null
+  entitlement.value = null
+  overrides.value = []
+  overrideDialogOpen.value = false
+  revokeTarget.value = null
   if (!tenantId) {
     loadState.value = 'idle'
     activeTenantId.value = ''
@@ -108,12 +129,53 @@ async function loadWorkspace() {
       listEntitlementOverrides(tenantId),
       explainTenantEntitlements(tenantId, capabilityCodes()),
     ])
+    if (!current()) return
+    const requestedChange = route.query.tenant === tenantId && typeof route.query.initialChange === 'string'
+      ? route.query.initialChange.trim() : ''
+    // An unconfirmed request may be restored on a tenant without a subscription.
+    // Once a subscription exists, an arbitrary URL cannot replace its real
+    // management controls. Only the CURRENT tenant-owned pending INITIAL
+    // receipt identifies an active first-activation recovery.
+    let restoreId = subscriptionResult ? '' : requestedChange
+    if (subscriptionResult?.pendingChangeId) {
+      const pendingReceipt = await getSubscriptionChangeReceipt(tenantId, subscriptionResult.pendingChangeId)
+      if (!current()) return
+      if (pendingReceipt.tenantId !== tenantId || pendingReceipt.changeId !== subscriptionResult.pendingChangeId) {
+        throw new Error('待处理变更与当前租户不一致。')
+      }
+      if (pendingReceipt.action === 'INITIAL' && pendingReceipt.status === 'PROVISIONING'
+        && pendingReceipt.after?.subscriptionId === subscriptionResult.subscriptionId
+        && pendingReceipt.provisioningTaskId) {
+        restoreId = pendingReceipt.changeId
+      }
+    }
+    // Reject stale, mistyped, historical or cross-tenant links while preserving
+    // a legitimate pending first activation. The route is a navigation hint,
+    // never an entitlement/receipt authority.
+    if (subscriptionResult && requestedChange !== restoreId) {
+      const query = { ...route.query }
+      if (restoreId) query.initialChange = restoreId
+      else delete query.initialChange
+      void router.replace({ query }).catch(() => {
+        if (current()) actionError.value = '开通链接更新失败，请重新读取当前租户状态。'
+      })
+    }
+    if (subscriptionResult) {
+      try {
+        const exact = await getPlanVersion(subscriptionResult.planCode, subscriptionResult.planVersion)
+        if (!current()) return
+        if (exact.planCode === subscriptionResult.planCode && String(exact.version) === String(subscriptionResult.planVersion)) subscriptionPlan.value = exact
+      } catch { /* An unavailable display name must not fabricate a plan or hide the subscription. */ }
+    }
+    if (!current()) return
+    initialChangeId.value = restoreId
     subscription.value = subscriptionResult
     overrides.value = overrideResult.sources
     sourceVersion.value = overrideResult.sourceVersion
     entitlement.value = entitlementResult
     loadState.value = 'ready'
   } catch (error) {
+    if (!current()) return
     if (error instanceof CommercialApiError && ['unauthenticated', 'forbidden'].includes(error.code)) {
       loadState.value = 'blocked'
       errorMessage.value = error.message
@@ -202,7 +264,72 @@ async function handleActionError(error: unknown, fallback: string, rereadOnConfl
   actionError.value = error instanceof Error ? error.message : fallback
 }
 
-onMounted(loadModules)
+async function recordInitialSubmission(changeId: string) {
+  if (!activeTenantId.value) return
+  await router.replace({ query: { ...route.query, tenant: activeTenantId.value, initialChange: changeId } })
+}
+
+async function clearInitialChangeLink() {
+  if (!route.query.initialChange) return
+  const query = { ...route.query }
+  delete query.initialChange
+  await router.replace({ query })
+}
+async function initialFinished() {
+  const tenant = activeTenantId.value
+  await clearInitialChangeLink()
+  if (!disposed && activeTenantId.value === tenant) await loadWorkspace()
+}
+
+const unsubscribe = subscribeSessionContextChange(() => {
+  generation++
+  activeTenantId.value = ''
+  subscription.value = null
+  subscriptionPlan.value = null
+  entitlement.value = null
+  initialChangeId.value = ''
+  overrides.value = []
+  overrideDialogOpen.value = false
+  revokeTarget.value = null
+  loadState.value = 'idle'
+})
+onScopeDispose(() => { disposed = true; generation++; unsubscribe() })
+
+// A trusted authorization recheck can temporarily detach the routed page.
+// The URL preserves the tenant and original INITIAL change; a remount or a
+// delayed route-query update must restore them instead of showing an empty
+// tenant selector. Do not replace the business facts with cached browser data.
+function resumeRouteTenant() {
+  const tenant = typeof route.query.tenant === 'string' ? route.query.tenant.trim() : ''
+  if (!tenant) return
+  if (activeTenantId.value !== tenant || loadState.value === 'idle') {
+    tenantIdInput.value = tenant
+    void loadWorkspace()
+    return
+  }
+  if (loadState.value === 'ready') {
+    const requestedChange = typeof route.query.initialChange === 'string'
+      ? route.query.initialChange.trim() : ''
+    if (initialChangeId.value !== requestedChange) {
+      if (subscription.value) {
+        // Recheck the current pending change against tenant authority first.
+        // Do not show the INITIAL recovery component for a URL string alone.
+        void loadWorkspace()
+      } else {
+        initialChangeId.value = requestedChange
+      }
+    }
+  }
+}
+watch([() => route.query.tenant, () => route.query.initialChange], resumeRouteTenant, {
+  immediate: true,
+  flush: 'post',
+})
+onMounted(() => {
+  void loadModules()
+  resumeRouteTenant()
+  if (tenantIdInput.value && loadState.value === 'idle') void loadWorkspace()
+})
 </script>
 
 <template>
@@ -251,7 +378,7 @@ onMounted(loadModules)
       <section class="card subscription-card" data-ui-region="subscription">
         <div class="section-header"><div><h2>当前订阅</h2><p>订阅是权益来源之一，最终可用权益以当前结果为准。</p></div><StatusBadge v-if="subscription" :text="backendTermLabel('subscriptionState', subscription.state)" :tone="subscription.state === 'ACTIVE' ? 'success' : 'neutral'" /></div>
         <div v-if="subscription" class="subscription-grid">
-          <div><span>套餐</span><strong>{{ backendTermLabel('plan', subscription.planCode) }} v{{ subscription.planVersion }}</strong></div>
+          <div><span>套餐</span><strong>{{ subscriptionPlan?.name || backendTermLabel('plan', subscription.planCode) }} v{{ subscription.planVersion }}</strong></div>
           <div><span>销售范围</span><strong>{{ backendTermLabel('salesScope', subscription.salesScope) }}</strong></div>
           <div><span>期间</span><strong>{{ formatTime(subscription.periodStart) }} → {{ formatTime(subscription.periodEnd) }}</strong></div>
           <div><span>权益来源版本</span><strong>{{ subscription.entitlementSourceVersion }}</strong></div>
@@ -261,7 +388,10 @@ onMounted(loadModules)
         <p v-else class="empty-text">当前没有可读取的租户订阅记录。</p>
       </section>
 
-      <div data-ui-region="change-workspace"><SubscriptionChangeWorkspace :tenant-id="activeTenantId" :subscription="subscription" @refresh="loadWorkspace" /></div>
+      <div data-ui-region="change-workspace">
+        <SubscriptionChangeWorkspace v-if="subscription && !initialChangeId" :tenant-id="activeTenantId" :subscription="subscription" @refresh="loadWorkspace" />
+        <InitialSubscriptionWorkspace v-else :tenant-id="activeTenantId" :change-id="initialChangeId" @submitted="recordInitialSubmission" @cleared="clearInitialChangeLink" @refresh="initialFinished" />
+      </div>
 
       <section class="resolver-meta card" data-ui-region="resolver-meta">
         <span>计算时间 {{ formatTime(entitlement.evaluatedAt) }}</span>

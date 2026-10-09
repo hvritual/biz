@@ -10,10 +10,12 @@ import (
 	"time"
 
 	accessv1 "github.com/hvritual/biz/contracts/gen/access/v1"
+	accessdomain "github.com/hvritual/biz/internal/access/domain"
 	accesspersistence "github.com/hvritual/biz/internal/access/infrastructure/persistence"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
+	"gorm.io/gorm"
 	"yunka.io/gateway/authz"
 )
 
@@ -28,6 +30,8 @@ type ce13PlatformBrowserFixture struct {
 	TenantEmail        string `json:"tenant_email"`
 	TenantPassword     string `json:"tenant_password"`
 	TenantID           string `json:"tenant_id"`
+	InitialTenantID    string `json:"initial_tenant_id"`
+	RetryTenantID      string `json:"initial_retry_tenant_id"`
 	AllowedAPIKey      string `json:"allowed_api_key"`
 	AllowedSubject     string `json:"allowed_subject"`
 	DeniedSubject      string `json:"denied_subject"`
@@ -121,6 +125,8 @@ func TestCE13PlatformWebSessionSeed(t *testing.T) {
 			"platform.subscription.manage",
 			"platform.subscription.read",
 			"platform.subscription.confirm",
+			"platform.provisioning.read",
+			"platform.provisioning.manage",
 			"platform.entitlement.manage",
 			"platform.entitlement.read",
 			"commercial.catalog.read",
@@ -129,6 +135,8 @@ func TestCE13PlatformWebSessionSeed(t *testing.T) {
 		t.Fatal(err)
 	}
 	tenantID := seedCE13TenantSubscription(t, started.GRPCAddress(), allowedAPIKey)
+	initialTenantID := seedCE13NoSubscriptionTenant(t, db)
+	initialRetryTenantID := seedCE13NoSubscriptionTenant(t, db)
 	seedCE13WebUser(t, store, tenantID, tenantUserID, tenantEmail, tenantPassword)
 	if err := store.BootstrapPlatform(ctx, accesspersistence.PlatformBootstrap{
 		Subject: deniedSubject,
@@ -183,6 +191,8 @@ func TestCE13PlatformWebSessionSeed(t *testing.T) {
 		TenantEmail:        tenantEmail,
 		TenantPassword:     tenantPassword,
 		TenantID:           tenantID,
+		InitialTenantID:    initialTenantID,
+		RetryTenantID:      initialRetryTenantID,
 		AllowedAPIKey:      allowedAPIKey,
 		AllowedSubject:     allowedSubject,
 		DeniedSubject:      deniedSubject,
@@ -204,6 +214,37 @@ func TestCE13PlatformWebSessionSeed(t *testing.T) {
 	if err := os.WriteFile(path, payload, 0o600); err != nil {
 		t.Fatal(err)
 	}
+}
+
+func seedCE13NoSubscriptionTenant(t *testing.T, db *gorm.DB) string {
+	t.Helper()
+	repository, err := accesspersistence.NewTenantRepository(db)
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := time.Now().UTC().Truncate(time.Microsecond)
+	id := "ce13-initial-" + ce04Random(t)
+	tenant := accessdomain.NewTenant(id, "CE-13 first activation tenant", now)
+	if err := tenant.Activate(now); err != nil {
+		t.Fatal(err)
+	}
+	if err := repository.Create(context.Background(), &tenant); err != nil {
+		t.Fatal(err)
+	}
+	var subscriptions, memberships, roles int64
+	for table, out := range map[string]*int64{
+		"biz_commercial_subscriptions": &subscriptions,
+		"biz_memberships":              &memberships,
+		"biz_roles":                    &roles,
+	} {
+		if err := db.Table(table).Where("tenant_id=?", id).Count(out).Error; err != nil {
+			t.Fatal(err)
+		}
+	}
+	if subscriptions != 0 || memberships != 0 || roles != 0 {
+		t.Fatalf("CE13 first activation fixture leaked bootstrap state subscriptions=%d memberships=%d roles=%d", subscriptions, memberships, roles)
+	}
+	return id
 }
 
 func valueOrDefault(value, fallback string) string {

@@ -152,7 +152,7 @@ export function serverStateGroups(repositoryRoot) {
   // These are source-symbol references, never copied wire values. An additional
   // constant is rejected until its presentation purpose is explicitly bound.
   const changeBindings = {
-    changeAction: ['Switch', 'Renew', 'StopRenewal'],
+    changeAction: ['Initial', 'Switch', 'Renew', 'StopRenewal'],
     effectiveMode: ['Immediate', 'Scheduled'],
     receiptStatus: ['Applied', 'Scheduled', 'Provisioning', 'Failed'],
   }
@@ -182,7 +182,7 @@ export function serverStateGroups(repositoryRoot) {
     changeAction: fromSymbols(changeBindings.changeAction),
     effectiveMode: fromSymbols(changeBindings.effectiveMode),
     receiptStatus: fromSymbols(changeBindings.receiptStatus),
-    changeClassification: [...literalReturns(changeSource, 'Classify'), ...fromSymbols(['Renew', 'StopRenewal'])],
+    changeClassification: [...literalReturns(changeSource, 'Classify'), ...fromSymbols(['Initial', 'Renew', 'StopRenewal'])],
   }
   for (const [kind, codes] of Object.entries(groups)) {
     if (!codes.length) throw new Error(`Empty commercial state group ${kind}`)

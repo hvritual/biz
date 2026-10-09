@@ -17,6 +17,7 @@ PROTECTED = (
     'scripts/ci_safety_requirements.txt',
     'scripts/literal_patch.py', 'scripts/test_literal_patch.py',
     'scripts/delivery_progress.py', 'scripts/test_delivery_progress.py',
+    'scripts/test_ci_ce13_environment.py', '.github/ci/ce13.node-version',
 )
 REGISTRY = 'scripts/ci_access_tests.json'
 
