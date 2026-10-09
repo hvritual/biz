@@ -137,7 +137,7 @@ test("TestCE293AccessModuleActivationRoleUseAndRevocation", async ({ browser }, 
     const createID = id("plan-create");
     const created = await write(platform, "/v1/platform/plans", {
       requestId: createID, planCode, name: "Access 模块真实验收套餐",
-      terms: { modules: [{ moduleCode: "access-management", capabilityCodes: ["tenant.member.lifecycle", "tenant.role.permission"], quotas: [{ key: "tenant.members", value: "100", unlimited: false }], fields: [{ key: "member.profile", action: "read", mode: "allow" }] }], salesScope: ["default"], validityMode: "fixed_days", validityDays: 30, priceRef: "" },
+      terms: { modules: [{ moduleCode: "access-management", capabilityCodes: ["tenant.member.lifecycle", "tenant.role.permission"], quotas: [{ key: "tenant.members", value: "100", unlimited: false }], fields: [{ key: "member.profile", action: "read", mode: "masked" }] }], salesScope: ["default"], validityMode: "fixed_days", validityDays: 30, priceRef: "" },
       reason: "isolated Access journey; manual activation, not payment proof",
     }, "POST", createID);
     expect(created.status, created.text).toBe(200);

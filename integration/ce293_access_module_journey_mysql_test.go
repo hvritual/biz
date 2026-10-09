@@ -147,7 +147,17 @@ func TestCE293AccessModuleFirstSubscriptionRoleJourney(t *testing.T) {
 		_, err := e.subscriptions.GetTenantSubscription(e.ctx(), &commercialv1.GetTenantSubscriptionRequest{TenantId: tenant})
 		ce09Code(t, err, codes.NotFound)
 	}
-	terms := &commercialv1.PlanTerms{Modules: []*commercialv1.PlanModule{{ModuleCode: "access-management", CapabilityCodes: []string{"tenant.member.lifecycle", "tenant.role.permission"}, Quotas: []*commercialv1.PlanQuota{{Key: "tenant.members", Value: 100}}, Fields: []*commercialv1.PlanField{{Key: "member.profile", Action: "read", Mode: "allow"}}}}, SalesScope: []string{"ce09"}, ValidityMode: "fixed_days", ValidityDays: 30}
+	terms := &commercialv1.PlanTerms{Modules: []*commercialv1.PlanModule{{ModuleCode: "access-management", CapabilityCodes: []string{"tenant.member.lifecycle", "tenant.role.permission"}, Quotas: []*commercialv1.PlanQuota{{Key: "tenant.members", Value: 100}}, Fields: []*commercialv1.PlanField{{Key: "member.profile", Action: "read", Mode: "masked"}}}}, SalesScope: []string{"ce09"}, ValidityMode: "fixed_days", ValidityDays: 30}
+	// The privacy floor is an independent product rule, not a fixture bypass.
+	invalidTerms := proto.Clone(terms).(*commercialv1.PlanTerms)
+	invalidTerms.Modules[0].Fields[0].Mode = "allow"
+	invalidCode := "ce293-raw-profile-" + ce04Random(t)
+	_, err = e.plans.CreatePlanDraft(e.ctx(), &commercialv1.CreatePlanDraftRequest{RequestId: ce04Random(t), PlanCode: invalidCode, Name: "must reject raw profile", Terms: invalidTerms, Reason: "retain privacy-floor negative control"})
+	ce09Code(t, err, codes.InvalidArgument)
+	var invalidPlans int64
+	if err := e.db.Table("biz_commercial_plan_versions").Where("plan_code=?", invalidCode).Count(&invalidPlans).Error; err != nil || invalidPlans != 0 {
+		t.Fatalf("invalid raw-profile plan persisted: count=%d error=%v", invalidPlans, err)
+	}
 	target := e.plan(terms)
 	var firstReceipt *commercialv1.SubscriptionChangeReceiptDTO
 	for _, tenant := range []string{tenantA, tenantB} {
