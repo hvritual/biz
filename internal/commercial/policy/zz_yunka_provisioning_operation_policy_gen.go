@@ -21,9 +21,9 @@ func ProvisioningResolver() authz.StaticResolver {
 func provisioningPolicies() map[string]authz.Policy {
 	return map[string]authz.Policy{
 		"/commercial.v1.ProvisioningApplication/CancelProvisioningTask":     {Operation: OperationProvisioningCancelProvisioningTask, Permissions: []authz.PermissionKey{"commercial.catalog.read", "platform.plan.read", "platform.provisioning.cancel", "platform.tenant.read"}, Mode: authz.PermissionAll, Authentication: []string{"api-key"}},
-		"/commercial.v1.ProvisioningApplication/GetProvisioningTask":        {Operation: OperationProvisioningGetProvisioningTask, Permissions: []authz.PermissionKey{"platform.provisioning.read", "platform.tenant.read"}, Mode: authz.PermissionAll, Authentication: []string{"api-key"}},
+		"/commercial.v1.ProvisioningApplication/GetProvisioningTask":        {Operation: OperationProvisioningGetProvisioningTask, Permissions: []authz.PermissionKey{"platform.provisioning.read", "platform.tenant.read"}, Mode: authz.PermissionAll, Authentication: []string{"api-key", "web-session"}},
 		"/commercial.v1.ProvisioningApplication/ListProvisioningDeliveries": {Operation: OperationProvisioningListProvisioningDeliveries, Permissions: []authz.PermissionKey{"platform.provisioning.read", "platform.tenant.read"}, Mode: authz.PermissionAll, Authentication: []string{"api-key"}},
 		"/commercial.v1.ProvisioningApplication/ListProvisioningTasks":      {Operation: OperationProvisioningListProvisioningTasks, Permissions: []authz.PermissionKey{"platform.provisioning.read", "platform.tenant.read"}, Mode: authz.PermissionAll, Authentication: []string{"api-key"}},
-		"/commercial.v1.ProvisioningApplication/RetryProvisioningTask":      {Operation: OperationProvisioningRetryProvisioningTask, Permissions: []authz.PermissionKey{"platform.provisioning.manage", "platform.tenant.read"}, Mode: authz.PermissionAll, Authentication: []string{"api-key"}},
+		"/commercial.v1.ProvisioningApplication/RetryProvisioningTask":      {Operation: OperationProvisioningRetryProvisioningTask, Permissions: []authz.PermissionKey{"platform.provisioning.manage", "platform.tenant.read"}, Mode: authz.PermissionAll, Authentication: []string{"api-key", "web-session"}},
 	}
 }

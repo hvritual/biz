@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 
+	accessv1 "github.com/hvritual/biz/contracts/gen/access/v1"
 	v1 "github.com/hvritual/biz/contracts/gen/commercial/v1"
 	projection "github.com/hvritual/biz/internal/commercial/application/planprojection"
 	"github.com/hvritual/biz/internal/commercial/domain/entitlement"
@@ -30,6 +31,102 @@ func (s *service) capture(ctx context.Context, repos ports.SubscriptionChangeRep
 
 func (s *service) captureTenant(ctx context.Context, repos ports.SubscriptionChangeRepositories, raw subscription.Subscription, i change.Input) (material, error) {
 	return s.captureWithPlanAuthority(ctx, repos, raw, i, true)
+}
+
+func (s *service) validateInitialTenant(ctx context.Context, tenantID string) error {
+	tenant, err := s.capabilities.AccessTenantLifecycle().GetTenant(ctx, &accessv1.GetTenantRequest{Id: tenantID})
+	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			return change.ErrNotFound
+		}
+		return err
+	}
+	if tenant == nil || tenant.Id != tenantID {
+		return change.ErrCorrupt
+	}
+	return nil
+}
+
+func (s *service) captureInitial(ctx context.Context, repos ports.SubscriptionChangeRepositories, i change.Input) (material, error) {
+	out := material{}
+	if i.Action != change.Initial || i.Validate() != nil {
+		return out, change.ErrInvalid
+	}
+	eligible, err := s.capabilities.CommercialPlanManagement().CheckPlanEligibility(ctx, &v1.CheckPlanEligibilityRequest{PlanCode: i.TargetPlanCode, Version: i.TargetPlanVersion, SalesScope: i.SalesScope})
+	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			return out, change.ErrTarget
+		}
+		return out, err
+	}
+	if eligible == nil || eligible.Version == nil {
+		return out, change.ErrCorrupt
+	}
+	if !eligible.Eligible {
+		return out, change.ErrTarget
+	}
+	out.target, err = projection.Version(eligible.Version)
+	if err != nil {
+		return out, err
+	}
+	if s.lifecycle.StateFor(out.target.PlanCode, out.target.Number) == subscription.StateTrial && out.target.Terms.ValidityMode != "fixed_days" {
+		return out, change.ErrTarget
+	}
+
+	catalog, err := s.capabilities.CommercialModuleCatalog().ReadPlanCatalog(ctx, &v1.ListModulesRequest{})
+	if err != nil {
+		return out, err
+	}
+	if catalog == nil {
+		return out, change.ErrCorrupt
+	}
+	selected := map[string]bool{}
+	for _, m := range out.target.Terms.Modules {
+		selected[m.Code] = true
+	}
+	for _, m := range catalog.Modules {
+		if m == nil {
+			return out, change.ErrCorrupt
+		}
+		tech := "not_ready"
+		if m.TechnicalStatus == v1.ModuleTechnicalStatus_MODULE_TECHNICAL_STATUS_READY {
+			tech = "ready"
+		}
+		if m.TechnicalStatus == v1.ModuleTechnicalStatus_MODULE_TECHNICAL_STATUS_DISABLED {
+			tech = "disabled"
+		}
+		sales := "retired"
+		if m.SalesStatus == v1.ModuleSalesStatus_MODULE_SALES_STATUS_SELLABLE {
+			sales = "sellable"
+		}
+		out.catalog = append(out.catalog, entitlement.ModuleDefinition{Code: m.ModuleCode, TechnicalStatus: tech, SalesStatus: sales, Version: m.Version, Capabilities: append([]string(nil), m.CapabilityCodes...), QuotaKeys: append([]string(nil), m.QuotaSchemaKeys...), FieldKeys: append([]string(nil), m.FieldPolicySchemaKeys...), Dependencies: append([]string(nil), m.Dependencies...)})
+		if selected[m.ModuleCode] {
+			out.dependencies = append(out.dependencies, change.Dependency{ModuleCode: m.ModuleCode, Requires: append([]string(nil), m.Dependencies...)})
+		}
+	}
+	if err = out.catalog.Validate(); err != nil {
+		return out, err
+	}
+	out.state, err = repos.Entitlements.Lock(ctx, i.TenantID)
+	if err != nil {
+		return out, err
+	}
+	if out.state.Version == ^uint64(0) {
+		return out, change.ErrCorrupt
+	}
+	for _, source := range out.state.Sources {
+		if source.SourceKind == entitlement.PlanSource && source.RevokedAt == nil {
+			return out, change.ErrConflict
+		}
+	}
+	out.current, err = s.snapshots.ReadSnapshot(ctx, i.TenantID, nil)
+	if err != nil {
+		return out, err
+	}
+	if out.current.SourceVersion != out.state.Version || out.current.EntitlementVersion == 0 || out.current.CatalogRevision == 0 {
+		return out, change.ErrCorrupt
+	}
+	return out, nil
 }
 
 func (s *service) captureWithPlanAuthority(ctx context.Context, repos ports.SubscriptionChangeRepositories, raw subscription.Subscription, i change.Input, tenantSelfService bool) (material, error) {

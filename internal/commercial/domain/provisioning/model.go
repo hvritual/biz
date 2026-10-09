@@ -118,27 +118,28 @@ type Completion struct {
 	AppliedAt            time.Time `json:"applied_at"`
 }
 type Task struct {
-	ID                 string      `json:"task_id"`
-	TenantID           string      `json:"tenant_id"`
-	Approval           Approval    `json:"approval"`
-	Revision           uint64      `json:"revision"`
-	State              string      `json:"state"`
-	Steps              []Step      `json:"steps"`
-	StepIndex          int         `json:"step_index"`
-	Stage              string      `json:"stage"`
-	NextAttemptAt      time.Time   `json:"next_attempt_at"`
-	CreatedAt          time.Time   `json:"created_at"`
-	UpdatedAt          time.Time   `json:"updated_at"`
-	Deadline           time.Time   `json:"deadline"`
-	LeaseOwner         string      `json:"lease_owner,omitempty"`
-	LeaseToken         uint64      `json:"lease_token"`
-	LeaseUntil         *time.Time  `json:"lease_until,omitempty"`
-	FailureCode        string      `json:"failure_code,omitempty"`
-	RetryAllowed       bool        `json:"retry_allowed"`
-	RetryCycles        uint32      `json:"retry_cycles"`
-	ActivationAttempts uint32      `json:"activation_attempts"`
-	Completion         *Completion `json:"completion,omitempty"`
-	Hash               string      `json:"hash"`
+	ID                   string      `json:"task_id"`
+	TenantID             string      `json:"tenant_id"`
+	Approval             Approval    `json:"approval"`
+	Revision             uint64      `json:"revision"`
+	State                string      `json:"state"`
+	Steps                []Step      `json:"steps"`
+	StepIndex            int         `json:"step_index"`
+	Stage                string      `json:"stage"`
+	NextAttemptAt        time.Time   `json:"next_attempt_at"`
+	CreatedAt            time.Time   `json:"created_at"`
+	UpdatedAt            time.Time   `json:"updated_at"`
+	Deadline             time.Time   `json:"deadline"`
+	LeaseOwner           string      `json:"lease_owner,omitempty"`
+	LeaseToken           uint64      `json:"lease_token"`
+	LeaseUntil           *time.Time  `json:"lease_until,omitempty"`
+	FailureCode          string      `json:"failure_code,omitempty"`
+	RetryAllowed         bool        `json:"retry_allowed"`
+	CancellationDisabled bool        `json:"cancellation_disabled,omitempty"`
+	RetryCycles          uint32      `json:"retry_cycles"`
+	ActivationAttempts   uint32      `json:"activation_attempts"`
+	Completion           *Completion `json:"completion,omitempty"`
+	Hash                 string      `json:"hash"`
 }
 
 func New(tenant string, a Approval, rs []Requirement, now time.Time) (Task, error) {
@@ -354,7 +355,7 @@ func (t *Task) Observe(owner string, token uint64, o Observation, now time.Time)
 	return nil
 }
 func (t Task) Cancellable() bool {
-	if t.State == Running || t.Terminal() {
+	if t.CancellationDisabled || t.State == Running || t.Terminal() {
 		return false
 	}
 	for _, s := range t.Steps {

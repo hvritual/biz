@@ -56,7 +56,15 @@ func (s *service) CompletePreparedSubscriptionChange(ctx context.Context, r *v1.
 		if change.Digest(raw) != change.Digest(receipt.After) {
 			return pv.Completion{}, pv.ErrStale
 		}
-		m, e := s.capture(call, repos, raw, p.Input)
+		var m material
+		if p.Input.Action == change.Initial {
+			if raw.Origin != subscription.OriginInitialActivation || raw.State != subscription.StateProvisioning || raw.PlanCode != p.Input.TargetPlanCode || raw.PlanVersion != p.Input.TargetPlanVersion || raw.SalesScope != p.Input.SalesScope {
+				return pv.Completion{}, pv.ErrStale
+			}
+			m, e = s.captureInitial(call, repos, p.Input)
+		} else {
+			m, e = s.capture(call, repos, raw, p.Input)
+		}
 		if e != nil {
 			return pv.Completion{}, e
 		}
@@ -123,19 +131,35 @@ func (s *service) CompletePreparedSubscriptionChange(ctx context.Context, r *v1.
 			}
 		}
 		after := m.before
+		beforeForSave := m.before
+		if p.Input.Action == change.Initial {
+			after = raw
+			beforeForSave = raw
+		}
 		after.Revision++
 		after.PendingChangeID = ""
 		after.State = s.lifecycle.StateFor(m.target.PlanCode, m.target.Number)
-		source, ent, e := s.applySources(call, repos, m, &after, task.Approval.ChangeID, at, end)
+		var source, ent uint64
+		if p.Input.Action == change.Initial {
+			source, ent, e = s.applyInitialSources(call, repos, m, &after, task.Approval.ChangeID, at, end)
+		} else {
+			source, ent, e = s.applySources(call, repos, m, &after, task.Approval.ChangeID, at, end)
+		}
 		if e != nil {
 			return pv.Completion{}, e
 		}
-		if e = repos.Changes.SaveCurrent(call, m.before, after); e != nil {
+		if e = repos.Changes.SaveCurrent(call, beforeForSave, after); e != nil {
 			return pv.Completion{}, e
 		}
 		nextReceipt := *receipt
 		nextReceipt.Status = change.Applied
 		nextReceipt.After = after
+		if p.Input.Action == change.Initial {
+			// Preparation can outlive confirmation. Publish the same admitted
+			// period as the activated subscription, retaining ConfirmedAt.
+			nextReceipt.EffectiveAt = at
+			nextReceipt.EntitlementExpiresAt = end
+		}
 		nextReceipt.AfterSourceVersion = source
 		nextReceipt.AfterEntitlementVersion = ent
 		nextReceipt.Quotas = report

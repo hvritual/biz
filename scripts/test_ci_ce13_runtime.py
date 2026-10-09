@@ -51,6 +51,7 @@ class SourceContractTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             root = Path(d)
             paths = [
+                ".github/ci/ce13.node-version",
                 ".github/workflows/ce13-plan-catalog-qualification.yml",
                 ".github/workflows/ce13-platform-web-session.yml",
                 ".github/workflows/pr-qualification.yml",
@@ -64,8 +65,13 @@ class SourceContractTests(unittest.TestCase):
                 target = root / item
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_bytes((ROOT / item).read_bytes())
+            # A complete clean fixture must pass before injecting one defect.
+            checks.check(root)
             target = root / path
-            target.write_text(transform(target.read_text()))
+            before = target.read_text()
+            changed = transform(before)
+            self.assertNotEqual(before, changed, "fixture must inject a real change")
+            target.write_text(changed)
             with self.assertRaises(ValueError):
                 checks.check(root)
 

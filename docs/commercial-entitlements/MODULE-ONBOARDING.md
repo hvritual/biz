@@ -151,8 +151,11 @@ RuntimeConsole 的设备演示工作区当成已产品化的设备页面。以�
 | 成员任务和恢复 | `web/src/features/enterprise/pages/MembersView.vue`、既有真实服务/Store | 复制整页、伪造成功回执 |
 | 开通到最终权益 | #340 / PR #354 的真实首次订阅链，先核验已合并版本 | 为样板再写一次 INITIAL 状态机 |
 
-#354 尚未完成时，本样板的“首次订阅与完整业务验收”保持待验收。不能拿引用到
-候选分支的源码当 main 已交付，也不能把写出样板文档当真实用户已跑通。
+本节复核基线为 `main@3143d2c0acefff723d4f59cfcf9859b642867fbe`；
+[PR #354](https://github.com/hvritual/biz/pull/354) 已合并，首次订阅实现可从主线
+复用。这里记录复用起点，不重新授予业务验收：#340 原始全部场景、Access 样板
+从开通到成员/角色操作与恢复的完整旅程仍须在各自任务中独立证明。每次接入
+重新回读实际主线和对应证据，不把旧候选、文档或局部测试当作完整业务交付。
 
 ### 现有可执行反例
 
@@ -161,7 +164,7 @@ RuntimeConsole 的设备演示工作区当成已产品化的设备页面。以�
 | `integration/ce05_enforcement_mysql_test.go::TestCE05MySQLNoImplicitAccessManagementOrExpiredGrant` | Access 无隐式权益、有效授权后可读取、过期/未来权益拒绝 | 是 Access 场景，不单独声称完整 2×2 矩阵 |
 | `integration/b12_role_runtime_mysql_test.go::TestB124TenantRolePermissionsAreTenantScopedAndImmediate` | 角色作用域与立即生效 | 权限测试不替代开通旅程 |
 | `integration/ce05_enforcement_mysql_test.go::TestCE294MySQLDeviceCreateIAMEntitlementMatrix` | IAM × Entitlement 四象限、拒绝后无写入、允许后恰好一条 | 这是设备模块现有参考；不得冒称 Access 已跑同一个矩阵 |
-| `web/e2e/enterprise-members-real.spec.ts`、`web/e2e/enterprise-roles-real.spec.ts` | 成员/角色 UI 消费与恢复 | 文件名 real 不构成真实 API/DB 证据，先检查是否拦截请求 |
+| `web/e2e/enterprise-members-real.spec.ts`、`web/e2e/enterprise-roles-real.spec.ts` | 成员/角色 UI 消费与恢复 | 本节基线两份文件均使用 `page.route`/`route.fulfill` 请求拦截，属于 Mock UI 证据，不证明真实 API/DB 旅程 |
 
 复用矩阵的形式，但按目标模块声明实际动作和独立预期：两项都缺、只有 IAM、
 只有权益必须拒绝；两项都有仍需对象范围/状态/额度合法才允许。每个拒绝断言

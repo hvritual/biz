@@ -1,29 +1,7 @@
 import { selectUiOption } from './ui.helpers'
-import { expect, test, type Page, type Route } from '@playwright/test'
-
-async function fulfillJson(route: Route, body: unknown, status = 200) {
-  await route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) })
-}
-
-const moduleCatalog = {
-  modules: [{
-    moduleCode: 'device',
-    name: '设备管理',
-    category: 'business',
-    salesScope: ['default'],
-    technicalStatus: 'MODULE_TECHNICAL_STATUS_READY',
-    salesStatus: 'MODULE_SALES_STATUS_SELLABLE',
-    capabilityCodes: ['device.lifecycle'],
-    quotaSchemaKeys: ['device.count'],
-    fieldPolicySchemaKeys: ['device.serial'],
-    dependencies: [],
-    version: '3',
-  }],
-}
-
-async function mockModules(page: Page) {
-  await page.route('**/api/v1/platform/modules', (route) => fulfillJson(route, moduleCatalog))
-}
+import { expect, test } from '@playwright/test'
+import { observeInitialSubscription } from './initial-subscription-visual.helpers'
+import { fulfillJson, mockModules, runFirstSubscriptionJourney, runFirstProvisioningRecovery } from './initial-subscription.scenarios'
 
 function subscription() {
   return {
@@ -190,3 +168,41 @@ test('TestCE13TenantOverrideCreateAndRevokeUseSourceVersionCas', async ({ page }
   expect(revokeHeaders?.['x-csrf-token']).toBe('csrf-entitlement-write')
   expect(revokeHeaders?.authorization).toBeUndefined()
 })
+
+const ce340Viewports = [
+  { width: 1366, height: 768 },
+  { width: 1440, height: 900 },
+  { width: 1536, height: 1024 },
+  { width: 390, height: 844 },
+]
+
+for (const viewport of ce340Viewports) {
+  test(`TestCE340FirstSubscriptionRequiresExactPublishedVersionAndFinalEntitlementReadback ${viewport.width}x${viewport.height}`, async ({ page }, testInfo) => {
+    await page.setViewportSize(viewport)
+    await runFirstSubscriptionJourney(page, {
+      observe: observeInitialSubscription(page, testInfo, `${viewport.width}x${viewport.height}`),
+    })
+    await page.screenshot({
+      path: testInfo.outputPath(`ce340-first-subscription-${viewport.width}x${viewport.height}.png`),
+      fullPage: true,
+    })
+  })
+}
+
+test('TestCE340ProvisioningFailureRetriesSameTaskWithoutSecondSubscription', async ({ page }, info) => {
+  await runFirstProvisioningRecovery(page, { observe: observeInitialSubscription(page, info, 'provisioning') })
+})
+
+for (const viewport of ce340Viewports) {
+  test(`TestCE340KeyboardAndLongContentRecoverOriginalUnknownReadbackAndProvisioning ${viewport.width}x${viewport.height}`, async ({ page }, info) => {
+    await page.setViewportSize(viewport)
+    const options = {
+      keyboard: true, longContent: true, recoverResults: true,
+      observe: observeInitialSubscription(page, info, `keyboard-recovery-${viewport.width}x${viewport.height}`),
+    }
+    await runFirstSubscriptionJourney(page, options)
+    await page.goto('about:blank')
+    await page.unrouteAll({ behavior: 'wait' })
+    await runFirstProvisioningRecovery(page, options)
+  })
+}

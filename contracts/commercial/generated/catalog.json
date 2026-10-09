@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
-  "mapping_version": "29",
+  "mapping_version": "30",
   "inputs_sha256": {
-    "contracts/commercial/operation-capabilities.v1.json": "03b5e88c8b95b0ca714667418d2d40b344da642a4d7ba20a00c624e6fb7509c3",
-    "contracts/generated/manifest.json": "40b3592c77e41ff58eae981df56f96b0bb8369ec34a447a59cef0342555450e8",
-    "contracts/generated/operation-plans.json": "44cb96c4f6ec9802f6cff9e712d48c8452faf2e6eba4e4e82f54656ee7aaedd3",
+    "contracts/commercial/operation-capabilities.v1.json": "0b415d7dc7503f6b79285b739501b073997a49e5a414b58a2d7bd1436dcaa336",
+    "contracts/generated/manifest.json": "3edf14e49e5cc79f3ac5eb1601c05bb85da3e39ac4f3862fbc29cb132ccaa554",
+    "contracts/generated/operation-plans.json": "12eba2985f6b216dadc6f4cab8d5ddd5cee3dc2729b37997355008263c14e843",
     "internal/access/application/member_business_scope.go": "9401a3c99e75c62aeb364d49d21ef6028e32be54d6daf8c75f393e62f09ba76e",
     "internal/access/application/tenant_data_policy.go": "e50a4bbf3ce4b7eca729278a92c5be04676dfa0375d3e73b637b3befefea6cf2",
     "internal/access/application/tenant_delegation.go": "b43e6709e61b7867395bc04a901a19c2a54cf4ec9565e875b354b1622e636589",
@@ -14,10 +14,10 @@
     "internal/commercial/application/planmanagement/internal/usecase/service.go": "363fbef037c5ec8049eca198626449d97c87a76a0bd2c77f7c9904a263d40702",
     "internal/commercial/application/planmanagement/internal/usecase/tenant_change.go": "13e38c0942b14e4a8fe35cfdb8965bdb6ea76b9c30de0f7a354f85941eb8b16f",
     "internal/commercial/application/provisioning/internal/usecase/service.go": "92437abf3396ad9a5e3942998cd73940935949f2d06e9d366488448752273341",
-    "internal/commercial/application/subscriptionchanges/internal/usecase/confirm.go": "4d96448de0576930278aee623dac140c30ab0183c3d9a238ee54d4b834461758",
-    "internal/commercial/application/subscriptionchanges/internal/usecase/context.go": "87947d1cdf3a7e5f7b868d7718a15da4d5a2f3ee611fb2fe2e86a4423eb540c5",
+    "internal/commercial/application/subscriptionchanges/internal/usecase/confirm.go": "77a5d1b8a65cf4b8248297a0573943d76eeb31f746259ef266b9e3267c5754a3",
+    "internal/commercial/application/subscriptionchanges/internal/usecase/context.go": "c22c204e7f01b20b1ee5aee6620c91bc0aa0a50eff13cc396f8602690ed0784c",
     "internal/commercial/application/subscriptionchanges/internal/usecase/selfservice.go": "03f65f299498dc1f26b00d0583acbce3587d06a60c67e6960b02295739f66e81",
-    "internal/commercial/application/subscriptionmanagement/internal/usecase/service.go": "7e6d141af2e12741b0ffe40b9a009a24d5928ab36499cd02bacd0bd30cf5b446",
+    "internal/commercial/application/subscriptionmanagement/internal/usecase/service.go": "d9981ade9db8999de1a02289e774bf097e7805cb3f29edd8e8d4a4069006ea76",
     "internal/commercial/application/subscriptionmanagement/internal/usecase/usage.go": "1f685e5e93b210d3adf881d02acf811adbfe5dc2c8688bde4ce4f569e6a33c0c",
     "internal/deviceops/application/cross_application_transfer.go": "bffaca1f1be420371bfcb770c5ccfd79f18553938ca92de0584f5e921460d9d8",
     "internal/deviceops/application/service.go": "f7a37a30cd01fadfb5f1a1f3a6c497eaeba5dc8f706e484c445eed9193abbcaa"
@@ -820,6 +820,12 @@
           "mode": "conditional",
           "condition": "uncommitted valid change path; eligibility is omitted for STOP_RENEWAL",
           "source": "internal/commercial/application/subscriptionchanges/internal/usecase/context.go#capture"
+        },
+        {
+          "operation_id": "tenant.get",
+          "mode": "conditional",
+          "condition": "INITIAL first activation only; validates that the target tenant exists before preview or confirmation admission",
+          "source": "internal/commercial/application/subscriptionchanges/internal/usecase/context.go#validateInitialTenant"
         }
       ],
       "consumer_type": "platform",
@@ -957,6 +963,12 @@
           "mode": "conditional",
           "condition": "uncommitted valid change path; eligibility is omitted for STOP_RENEWAL",
           "source": "internal/commercial/application/subscriptionchanges/internal/usecase/context.go#capture"
+        },
+        {
+          "operation_id": "tenant.get",
+          "mode": "conditional",
+          "condition": "INITIAL first activation only; validates that the target tenant exists before preview or confirmation admission",
+          "source": "internal/commercial/application/subscriptionchanges/internal/usecase/context.go#validateInitialTenant"
         }
       ],
       "consumer_type": "platform",
