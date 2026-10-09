@@ -31,6 +31,11 @@ export async function verifyMemberManagementUI(
   const editedName = `基础成员 Bob-${suffix}`
   const viewerName = `只读成员 Viewer-${suffix}`
   await page.goto(`${baseURL}/#/enterprise/roles`)
+  // The preceding Access sample changes the same session's tenant via raw
+  // API calls to test stale-context rejection. Start this independent UI
+  // task with a fresh document, retaining the real authenticated cookie.
+  // Do not reuse the stale SPA store or override its authorization projection.
+  await page.reload()
   await page.getByRole('button', { name: '新建角色', exact: true }).click()
   const roleDialog = page.getByRole('dialog', { name: '新建角色' })
   await roleDialog.getByLabel('角色名称').fill(viewerName)
