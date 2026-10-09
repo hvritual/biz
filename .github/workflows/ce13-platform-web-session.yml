@@ -25,7 +25,7 @@ env:
 
 jobs:
   qualify:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     env:
       BIZ_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
@@ -83,7 +83,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
-          node-version: '22'
+          node-version-file: biz/.github/ci/ce13.node-version
           cache: npm
           cache-dependency-path: biz/web/package-lock.json
 
@@ -113,7 +113,20 @@ jobs:
           test "$(git -C yunka.io rev-parse HEAD)" = "$YUNKA_SHA"
           bad="$(gofmt -l             biz/internal/architecture/ce13_platform_web_session_contract_test.go             biz/integration/ce13_platform_web_session_seed_test.go)"
           test -z "$bad" || { printf 'gofmt required:\n%s\n' "$bad"; exit 1; }
-          make -C biz check YUNKA_ROOT="$GITHUB_WORKSPACE/yunka.io" PROTOC="$(command -v protoc)"
+          # Compile only into the Go build cache while the original read-only
+          # checks execute. This is not a test result or a qualified executable.
+          # Both readers must finish before generation can mutate any source.
+          go -C biz build ./internal/bizruntime &
+          compile_pid=$!
+          checks_failed=0
+          make -C biz check YUNKA_ROOT="$GITHUB_WORKSPACE/yunka.io" PROTOC="$(command -v protoc)" || checks_failed=1
+          compile_failed=0
+          wait "$compile_pid" || compile_failed=1
+          if (( checks_failed != 0 || compile_failed != 0 )); then
+            echo "CE13_READONLY_PREPARATION_FAILED checks=$checks_failed compile=$compile_failed" >&2
+            exit 1
+          fi
+          test -z "$(git -C biz status --porcelain)" || { git -C biz status --short; exit 1; }
           make -C biz generate YUNKA_ROOT="$GITHUB_WORKSPACE/yunka.io" PROTOC="$(command -v protoc)"
           test -z "$(git -C biz status --porcelain)" || { git -C biz status --short; git -C biz diff --stat; exit 1; }
 
