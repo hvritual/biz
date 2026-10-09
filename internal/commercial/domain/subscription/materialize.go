@@ -8,6 +8,11 @@ import (
 	"time"
 )
 
+func ID(tenant string) string {
+	h := sha256.Sum256([]byte(tenant))
+	return "sub-" + hex.EncodeToString(h[:12])
+}
+
 // SourceID preserves CE-08 identities; a new confirmed change uses a fresh
 // namespace, leaving prior source rows and their revocation history intact.
 func SourceID(namespace, module, kind, key, action string) string {

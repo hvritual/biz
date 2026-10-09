@@ -28,6 +28,46 @@ func (s *service) preparationRequirements(ctx context.Context, action string, ta
 	return append([]pv.Requirement(nil), rs...), nil
 }
 
+func (s *service) applyInitialSources(ctx context.Context, repos ports.SubscriptionChangeRepositories, m material, after *subscription.Subscription, id string, at time.Time, end *time.Time) (uint64, uint64, error) {
+	sources, err := change.ProjectInitialSources(after.TenantID, m.target, m.state.Sources, id, at, end)
+	if err != nil {
+		return 0, 0, err
+	}
+	existing := map[string]bool{}
+	for _, source := range m.state.Sources {
+		existing[source.ID] = true
+	}
+	for _, source := range sources {
+		if existing[source.ID] {
+			continue
+		}
+		if err = source.Validate(m.catalog); err != nil {
+			return 0, 0, err
+		}
+		if err = repos.Entitlements.Insert(ctx, source); err != nil {
+			return 0, 0, err
+		}
+	}
+	if err = repos.Entitlements.Advance(ctx, after.TenantID, m.state.Version); err != nil {
+		return 0, 0, err
+	}
+	after.PlanCode = m.target.PlanCode
+	after.PlanVersion = m.target.Number
+	after.PeriodStart = at
+	after.PeriodEnd = end
+	after.SourceNamespace = id
+	after.RenewalStopped = false
+	after.EntitlementSourceVersion = m.state.Version + 1
+	view, err := s.snapshots.ReadSnapshot(ctx, after.TenantID, nil)
+	if err != nil {
+		return 0, 0, err
+	}
+	if view.SourceVersion != after.EntitlementSourceVersion || view.EntitlementVersion <= m.current.EntitlementVersion {
+		return 0, 0, change.ErrCorrupt
+	}
+	return view.SourceVersion, view.EntitlementVersion, nil
+}
+
 // Both callers join the original root and use identical authority/snapshot rules.
 func (s *service) applySources(ctx context.Context, repos ports.SubscriptionChangeRepositories, m material, after *subscription.Subscription, id string, at time.Time, end *time.Time) (uint64, uint64, error) {
 	sources, err := change.ProjectSources(m.before, m.old, m.target, m.state.Sources, id, at, end)

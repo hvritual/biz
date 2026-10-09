@@ -1050,6 +1050,7 @@ export interface Commercial_V1_PreviewSubscriptionChangeRequest {
   targetPlanVersion?: string;
   effectiveAt?: string;
   reason?: string;
+  salesScope?: string;
 }
 
 export interface Commercial_V1_ProvisioningCompletionDTO {

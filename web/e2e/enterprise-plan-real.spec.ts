@@ -3,6 +3,8 @@ import { installApiFailFast } from './ui.helpers'
 import { mkdirSync } from 'node:fs'
 import { qualifyCommercialStateZoom } from './commercial-state-zoom.helpers'
 import { registerPlanFeedbackScenarios } from './plan-feedback.scenarios'
+import { installInitialPlatformSession, qualifyInitialSubscriptionZoom } from './initial-subscription-zoom.helpers'
+import { runFirstSubscriptionJourney, runFirstProvisioningRecovery } from './initial-subscription.scenarios'
 
 test.skip(!process.env.ENTERPRISE_PLAN_REAL_E2E, 'runs only against the VITE_DATA_MODE=api build')
 
@@ -293,3 +295,21 @@ test('commercial status typography (API fixture): actual 200 percent browser zoo
 })
 
 registerPlanFeedbackScenarios(mockPlanServer)
+
+test('initial subscription typography (API fixture): actual 200 percent browser zoom preserves keyboard and original-operation recovery', async ({ browserName }, info) => {
+  test.setTimeout(90000)
+  expect(browserName).toBe('chromium')
+  await qualifyInitialSubscriptionZoom(info, async (page, afterNavigation, observe) => {
+    const options = {
+      keyboard: true, longContent: true, recoverResults: true,
+      apiRecoverySurface: 'workspace' as const,
+      beforeNavigation: () => installInitialPlatformSession(page), afterNavigation, observe,
+    }
+    await installApiFailFast(page)
+    await runFirstSubscriptionJourney(page, options)
+    await page.goto('about:blank')
+    await page.unrouteAll({ behavior: 'wait' })
+    await installApiFailFast(page)
+    await runFirstProvisioningRecovery(page, options)
+  })
+})

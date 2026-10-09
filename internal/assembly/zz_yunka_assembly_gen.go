@@ -27,7 +27,7 @@ import (
 	platform "yunka.io/framework/platform"
 )
 
-const AssemblyPlanDigest = "32f2a15a7ed1828ef8d599ee6d1ab68a9b1e9bdb4122017b4794f7a925a7e154"
+const AssemblyPlanDigest = "a5da6ffce02f325c153b519636f4e8c96526fb03d0c16139f23eb1a790ca4263"
 
 type AccessTenantAuditManagementDependencies struct {
 }
@@ -79,6 +79,7 @@ type CommercialProvisioningDependencies struct {
 }
 
 type CommercialSubscriptionChangesDependencies struct {
+	AccessTenantLifecycle    commercialapplication.SubscriptionChangesToAccessTenantLifecycleChildCapability
 	CommercialModuleCatalog  commercialapplication.SubscriptionChangesToCommercialModuleCatalogChildCapability
 	CommercialPlanManagement commercialapplication.SubscriptionChangesToCommercialPlanManagementChildCapability
 }
@@ -198,32 +199,6 @@ func BuildApplications(factories ApplicationFactories, executor operation.Execut
 	if applications.CommercialPlanManagement == nil {
 		return Applications{}, errors.New("yunka assembly: application factory returned nil for commercial/plan_management")
 	}
-	commercialSubscriptionChangesCommercialModuleCatalogCapability, err := commercialapplication.NewSubscriptionChangesToCommercialModuleCatalogChildCapability(applications.CommercialModuleCatalog, executor)
-	if err != nil {
-		return Applications{}, fmt.Errorf("yunka assembly: build commercial/subscription_changes dependency commercial/module_catalog: %w", err)
-	}
-	commercialSubscriptionChangesCommercialPlanManagementCapability, err := commercialapplication.NewSubscriptionChangesToCommercialPlanManagementChildCapability(applications.CommercialPlanManagement, executor)
-	if err != nil {
-		return Applications{}, fmt.Errorf("yunka assembly: build commercial/subscription_changes dependency commercial/plan_management: %w", err)
-	}
-	applications.CommercialSubscriptionChanges, err = factories.BuildCommercialSubscriptionChanges(CommercialSubscriptionChangesDependencies{CommercialModuleCatalog: commercialSubscriptionChangesCommercialModuleCatalogCapability, CommercialPlanManagement: commercialSubscriptionChangesCommercialPlanManagementCapability})
-	if err != nil {
-		return Applications{}, fmt.Errorf("yunka assembly: build application commercial/subscription_changes: %w", err)
-	}
-	if applications.CommercialSubscriptionChanges == nil {
-		return Applications{}, errors.New("yunka assembly: application factory returned nil for commercial/subscription_changes")
-	}
-	commercialProvisioningCommercialSubscriptionChangesCapability, err := commercialapplication.NewProvisioningToCommercialSubscriptionChangesChildCapability(applications.CommercialSubscriptionChanges, executor)
-	if err != nil {
-		return Applications{}, fmt.Errorf("yunka assembly: build commercial/provisioning dependency commercial/subscription_changes: %w", err)
-	}
-	applications.CommercialProvisioning, err = factories.BuildCommercialProvisioning(CommercialProvisioningDependencies{CommercialSubscriptionChanges: commercialProvisioningCommercialSubscriptionChangesCapability})
-	if err != nil {
-		return Applications{}, fmt.Errorf("yunka assembly: build application commercial/provisioning: %w", err)
-	}
-	if applications.CommercialProvisioning == nil {
-		return Applications{}, errors.New("yunka assembly: application factory returned nil for commercial/provisioning")
-	}
 	applications.DeviceopsDelegatedDeviceAccess, err = factories.BuildDeviceopsDelegatedDeviceAccess(DeviceopsDelegatedDeviceAccessDependencies{})
 	if err != nil {
 		return Applications{}, fmt.Errorf("yunka assembly: build application deviceops/delegated_device_access: %w", err)
@@ -323,6 +298,36 @@ func BuildApplications(factories ApplicationFactories, executor operation.Execut
 	}
 	if applications.CommercialEntitlementManagement == nil {
 		return Applications{}, errors.New("yunka assembly: application factory returned nil for commercial/entitlement_management")
+	}
+	commercialSubscriptionChangesAccessTenantLifecycleCapability, err := commercialapplication.NewSubscriptionChangesToAccessTenantLifecycleChildCapability(applications.AccessTenantLifecycle, executor)
+	if err != nil {
+		return Applications{}, fmt.Errorf("yunka assembly: build commercial/subscription_changes dependency access/tenant_lifecycle: %w", err)
+	}
+	commercialSubscriptionChangesCommercialModuleCatalogCapability, err := commercialapplication.NewSubscriptionChangesToCommercialModuleCatalogChildCapability(applications.CommercialModuleCatalog, executor)
+	if err != nil {
+		return Applications{}, fmt.Errorf("yunka assembly: build commercial/subscription_changes dependency commercial/module_catalog: %w", err)
+	}
+	commercialSubscriptionChangesCommercialPlanManagementCapability, err := commercialapplication.NewSubscriptionChangesToCommercialPlanManagementChildCapability(applications.CommercialPlanManagement, executor)
+	if err != nil {
+		return Applications{}, fmt.Errorf("yunka assembly: build commercial/subscription_changes dependency commercial/plan_management: %w", err)
+	}
+	applications.CommercialSubscriptionChanges, err = factories.BuildCommercialSubscriptionChanges(CommercialSubscriptionChangesDependencies{AccessTenantLifecycle: commercialSubscriptionChangesAccessTenantLifecycleCapability, CommercialModuleCatalog: commercialSubscriptionChangesCommercialModuleCatalogCapability, CommercialPlanManagement: commercialSubscriptionChangesCommercialPlanManagementCapability})
+	if err != nil {
+		return Applications{}, fmt.Errorf("yunka assembly: build application commercial/subscription_changes: %w", err)
+	}
+	if applications.CommercialSubscriptionChanges == nil {
+		return Applications{}, errors.New("yunka assembly: application factory returned nil for commercial/subscription_changes")
+	}
+	commercialProvisioningCommercialSubscriptionChangesCapability, err := commercialapplication.NewProvisioningToCommercialSubscriptionChangesChildCapability(applications.CommercialSubscriptionChanges, executor)
+	if err != nil {
+		return Applications{}, fmt.Errorf("yunka assembly: build commercial/provisioning dependency commercial/subscription_changes: %w", err)
+	}
+	applications.CommercialProvisioning, err = factories.BuildCommercialProvisioning(CommercialProvisioningDependencies{CommercialSubscriptionChanges: commercialProvisioningCommercialSubscriptionChangesCapability})
+	if err != nil {
+		return Applications{}, fmt.Errorf("yunka assembly: build application commercial/provisioning: %w", err)
+	}
+	if applications.CommercialProvisioning == nil {
+		return Applications{}, errors.New("yunka assembly: application factory returned nil for commercial/provisioning")
 	}
 	deviceopsDeviceManagementDeviceopsSiteManagementCapability, err := deviceopsapplication.NewDeviceManagementToDeviceopsSiteManagementChildCapability(applications.DeviceopsSiteManagement, executor)
 	if err != nil {

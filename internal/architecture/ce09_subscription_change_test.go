@@ -139,7 +139,8 @@ func assertCE09PlatformOperation(t *testing.T, op ce09Operation) {
 			permission = "platform.subscription.confirm"
 		}
 		want := []string{"commercial.catalog.read", "platform.plan.read", permission, "platform.tenant.read"}
-		if !reflect.DeepEqual(op.Security.Permissions, want) || op.Execution.Transaction != "local" || op.Execution.Idempotency != "required" || op.Composition.Boundary != "local" || len(op.Composition.Requires) != 3 {
+		wantRequires := []string{"commercial.module.plan_catalog", "commercial.plan.eligibility", "commercial.plan.get", "tenant.get"}
+		if !reflect.DeepEqual(op.Security.Permissions, want) || op.Execution.Transaction != "local" || op.Execution.Idempotency != "required" || op.Composition.Boundary != "local" || !reflect.DeepEqual(op.Composition.Requires, wantRequires) {
 			t.Fatalf("wrong platform mutation boundary %+v", op)
 		}
 		return

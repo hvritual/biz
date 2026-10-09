@@ -155,6 +155,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          go -C biz test -count=1 -tags=integration ./integration -run '^TestCE340MySQL'
           go -C biz test -count=1 -tags=integration ./integration -run '^TestCE13PlatformWebSessionSeed$'
           test -s "$CE13_PLATFORM_E2E_ENV_FILE"
           chmod 600 "$CE13_PLATFORM_E2E_ENV_FILE"
@@ -271,9 +272,11 @@ jobs:
           assert stats.get('unexpected', 0) == 0, stats
           assert stats.get('skipped', 0) == 0, stats
           assert stats.get('flaky', 0) == 0, stats
-          assert stats.get('expected', 0) >= 3, stats
-          assert 'TestCE13PlatformCommercialTrustedWebSession' in json.dumps(result), 'CE-13 platform browser acceptance identity missing'
-          print('CE13_PLATFORM_WEB_SESSION=PASS')
+          assert stats.get('expected', 0) >= 4, stats
+          payload = json.dumps(result)
+          assert 'TestCE13PlatformCommercialTrustedWebSession' in payload, 'CE-13 platform browser acceptance identity missing'
+          assert 'TestCE340PlatformFirstSubscriptionThroughTrustedWebSession' in payload, 'CE-340 first subscription browser acceptance identity missing'
+          print('CE13_PLATFORM_WEB_SESSION=PASS CE340_FIRST_SUBSCRIPTION=PASS')
           PY
 
       - name: Write CE13 performance receipt
