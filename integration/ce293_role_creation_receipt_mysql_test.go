@@ -123,6 +123,49 @@ func TestCE293RoleCreationVersionedMigrationWithoutAutoMigrate(t *testing.T) {
 	if err := db.Table("biz_role_creation_receipts").Select("payload").Where("receipt_key=?", receiptKey).Scan(&stored).Error; err != nil || stored != receipt {
 		t.Fatalf("idempotent migration changed receipt: %s %v", stored, err)
 	}
+
+	// Same-named CHECKs may be disabled or replaced on an existing table.
+	// Production preflight and the explicit --apply upgrade must BOTH refuse
+	// those schemas instead of reporting a false verified state.
+	if err := db.Exec("ALTER TABLE biz_role_creation_receipts ALTER CHECK access_role_receipt_json NOT ENFORCED").Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := persistence.RequireRoleCreationReceiptSchema(context.Background(), db); err == nil {
+		t.Fatal("preflight accepted disabled JSON CHECK")
+	}
+	if err := persistence.ApplyRoleCreationReceiptMigration(context.Background(), db); err == nil {
+		t.Fatal("versioned upgrade accepted disabled JSON CHECK")
+	}
+	if err := db.Exec("ALTER TABLE biz_role_creation_receipts ALTER CHECK access_role_receipt_json ENFORCED").Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := persistence.RequireRoleCreationReceiptSchema(context.Background(), db); err != nil {
+		t.Fatalf("restored enforced CHECK rejected: %v", err)
+	}
+	if err := db.Exec("ALTER TABLE biz_role_creation_receipts DROP CHECK access_role_receipt_json").Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Exec("ALTER TABLE biz_role_creation_receipts ADD CONSTRAINT access_role_receipt_json CHECK (payload IS NULL OR JSON_VALID(payload) OR 1=1)").Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := persistence.RequireRoleCreationReceiptSchema(context.Background(), db); err == nil {
+		t.Fatal("preflight accepted a weakened same-name JSON CHECK")
+	}
+	if err := persistence.ApplyRoleCreationReceiptMigration(context.Background(), db); err == nil {
+		t.Fatal("versioned upgrade accepted a weakened same-name JSON CHECK")
+	}
+	if err := db.Exec("ALTER TABLE biz_role_creation_receipts DROP CHECK access_role_receipt_json").Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Exec("ALTER TABLE biz_role_creation_receipts ADD CONSTRAINT access_role_receipt_json CHECK (payload IS NULL OR JSON_VALID(payload))").Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := persistence.RequireRoleCreationReceiptSchema(context.Background(), db); err != nil {
+		t.Fatalf("restored original CHECK rejected: %v", err)
+	}
+	if err := db.Table("biz_role_creation_receipts").Select("payload").Where("receipt_key=?", receiptKey).Scan(&stored).Error; err != nil || stored != receipt {
+		t.Fatalf("schema validation mutations changed original receipt: %s %v", stored, err)
+	}
 }
 
 // Development AutoMigrate and the versioned production upgrade must have
@@ -146,5 +189,17 @@ func TestCE293RoleCreationAutoMigrateSchemaParity(t *testing.T) {
 	// Applying the pre-binary upgrade over a dev-created table must preserve the invariant.
 	if err := persistence.ApplyRoleCreationReceiptMigration(context.Background(), db); err != nil {
 		t.Fatal(err)
+	}
+	if err := db.Exec("ALTER TABLE biz_role_creation_receipts ALTER CHECK access_role_receipt_json NOT ENFORCED").Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := persistence.RequireRoleCreationReceiptSchema(context.Background(), db); err == nil {
+		t.Fatal("AutoMigrate receipt constraint disabled but production preflight passed")
+	}
+	if err := db.Exec("ALTER TABLE biz_role_creation_receipts ALTER CHECK access_role_receipt_json ENFORCED").Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := persistence.ApplyRoleCreationReceiptMigration(context.Background(), db); err != nil {
+		t.Fatalf("re-enabled AutoMigrate receipt constraint rejected: %v", err)
 	}
 }
