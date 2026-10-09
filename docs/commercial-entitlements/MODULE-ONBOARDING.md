@@ -161,7 +161,7 @@ RuntimeConsole 的设备演示工作区当成已产品化的设备页面。以�
 
 | 现有来源 | 可复用的验证内容 | 证据限制 |
 |---|---|---|
-| `integration/ce05_enforcement_mysql_test.go::TestCE05MySQLNoImplicitAccessManagementOrExpiredGrant` | Access 无隐式权益、有效授权后可读取、过期/未来权益拒绝 | 是 Access 场景，不单独声称完整 2×2 矩阵 |
+| `integration/ce05_enforcement_mysql_test.go::TestCE05MySQLNoImplicitAccessManagementOrExpiredGrant` | Access 无隐式权益；已有 IAM 时补充模块权益后可读取 | 同函数的过期/未来断言针对 `device.lifecycle`，不证明 Access 时效边界或完整 2×2 矩阵 |
 | `integration/b12_role_runtime_mysql_test.go::TestB124TenantRolePermissionsAreTenantScopedAndImmediate` | 角色作用域与立即生效 | 权限测试不替代开通旅程 |
 | `integration/ce05_enforcement_mysql_test.go::TestCE294MySQLDeviceCreateIAMEntitlementMatrix` | IAM × Entitlement 四象限、拒绝后无写入、允许后恰好一条 | 这是设备模块现有参考；不得冒称 Access 已跑同一个矩阵 |
 | `web/e2e/enterprise-members-real.spec.ts`、`web/e2e/enterprise-roles-real.spec.ts` | 成员/角色 UI 消费与恢复 | 本节基线两份文件均使用 `page.route`/`route.fulfill` 请求拦截，属于 Mock UI 证据，不证明真实 API/DB 旅程 |
