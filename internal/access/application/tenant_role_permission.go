@@ -74,8 +74,8 @@ func (service *TenantRolePermissionService) CreateTenantRole(ctx context.Context
 	}
 	role := domain.NewRole(newTenantRoleID(), tenantID, name, time.Now().UTC())
 	role.Description = description
-	err = requestscope.JoinDo(ctx, service.repositories, func(scope *requestscope.View[ports.TenantRoleRepositories]) error {
-		return scope.Repositories().Role.Create(scope.Context(), &role)
+	role, err = requestscope.JoinValue(ctx, service.repositories, func(scope *requestscope.View[ports.TenantRoleRepositories]) (domain.Role, error) {
+		return createTenantRoleOnce(scope.Context(), scope.Repositories().Role, request, role)
 	})
 	if err != nil {
 		return nil, err

@@ -222,6 +222,26 @@ func TestCE293AccessModuleFirstSubscriptionRoleJourney(t *testing.T) {
 	if err != nil || !proto.Equal(created, replayed) || countRole(tenantA, command.Name) != 1 {
 		t.Fatalf("role replay duplicated or changed result: %v", err)
 	}
+	// Same key with a changed command is not recovery and must not write.
+	beforeConflict := ce293IAMState(t, e.db, tenantA)
+	_, err = roles.CreateTenantRole(ce04Context(memberToken, key), &accessv1.CreateTenantRoleRequest{Name: "different-payload-" + ce04Random(t)})
+	ce09Code(t, err, codes.Aborted)
+	ce09EqualState(t, beforeConflict, ce293IAMState(t, e.db, tenantA))
+	// A replay returns the original receipt, not a rewrite of newer state.
+	updated, err := roles.UpdateTenantRole(ce04Context(adminA, ce04Random(t)), &accessv1.UpdateTenantRoleRequest{RoleId: created.Id, Version: created.Version, Name: "updated-after-create-" + ce04Random(t)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	afterUpdate := ce293IAMState(t, e.db, tenantA)
+	replayed, err = roles.CreateTenantRole(ce04Context(memberToken, key), command)
+	if err != nil || !proto.Equal(created, replayed) {
+		t.Fatalf("immutable creation receipt changed after update: %v", err)
+	}
+	ce09EqualState(t, afterUpdate, ce293IAMState(t, e.db, tenantA))
+	current, err := roles.GetTenantRole(ce04Context(memberToken, ""), &accessv1.GetTenantRoleRequest{RoleId: created.Id})
+	if err != nil || !proto.Equal(current, updated) {
+		t.Fatalf("replay overwrote later role state: %v", err)
+	}
 	// A4: even an entitled, authorized B admin cannot address A's role.
 	_, err = roles.GetTenantRole(ce04Context(adminB, ""), &accessv1.GetTenantRoleRequest{RoleId: created.Id})
 	ce09Code(t, err, codes.NotFound)
@@ -244,9 +264,29 @@ func TestCE293AccessModuleFirstSubscriptionRoleJourney(t *testing.T) {
 		t.Fatalf("old token after revoke status=%d", got)
 	}
 	denyCreate(memberToken, "")
+	_, err = roles.CreateTenantRole(ce04Context(memberToken, key), command)
+	ce05RPCDenied(t, err, codes.PermissionDenied, "")
+	// A pre-upgrade completed transport claim without a business receipt must
+	// remain a conflict, never create another role under the old key.
+	legacyKey := "ce293-legacy-" + ce04Random(t)
+	legacyRequest := &accessv1.CreateTenantRoleRequest{Name: "legacy-create-" + ce04Random(t)}
+	legacy, err := roles.CreateTenantRole(ce04Context(adminA, legacyKey), legacyRequest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	removed := e.db.Exec("DELETE FROM biz_role_creation_receipts WHERE tenant_id=? AND JSON_UNQUOTE(JSON_EXTRACT(payload, '$.ID'))=?", tenantA, legacy.Id)
+	if removed.Error != nil || removed.RowsAffected != 1 {
+		t.Fatalf("legacy fixture receipt removal failed: %v rows=%d", removed.Error, removed.RowsAffected)
+	}
+	_, err = roles.CreateTenantRole(ce04Context(adminA, legacyKey), legacyRequest)
+	ce09Code(t, err, codes.Aborted)
+	if countRole(tenantA, legacyRequest.Name) != 1 {
+		t.Fatal("legacy completed key created a duplicate role")
+	}
 	if e.getSubscription(tenantA).SubscriptionId != firstReceipt.After.SubscriptionId {
 		t.Fatal("IAM revocation changed commercial subscription")
 	}
+	ce293VerifyRoleReceiptRollback(t, e.db, tenantA)
 	t.Log("CE293_ACCESS_JOURNEY: exact INITIAL; no implicit IAM; 2x2 write matrix; actual role grant/read/write; idempotent recovery; cross-tenant and object-state rejection; old-token revocation PASS")
 }
 

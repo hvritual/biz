@@ -154,7 +154,7 @@ func NewWithContactProtection(database *gorm.DB, protection *ContactProtection) 
 
 func (store *Store) AutoMigrate(ctx context.Context) error {
 	return store.database.WithContext(ctx).AutoMigrate(
-		&tenantCreationRecord{}, &tenantRecord{}, &userRecord{}, &membershipRecord{}, &roleRecord{},
+		&roleCreationRecord{}, &tenantCreationRecord{}, &tenantRecord{}, &userRecord{}, &membershipRecord{}, &roleRecord{},
 		&memberRoleRecord{}, &permissionGrantRecord{}, &memberSiteRecord{}, &dataPolicyRecord{}, &dataPolicySiteRecord{}, &apiTokenRecord{}, &auditEventRecord{},
 		&memberRemovedRoleSnapshotRecord{}, &memberRemovedSiteSnapshotRecord{}, &memberStatusAppealRecord{},
 		&notificationPreferenceRecord{}, &notificationPreferenceReceiptRecord{},
