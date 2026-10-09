@@ -120,3 +120,62 @@ better-typography、当前 CoffeeLink V1.2 和实际浏览器验收。
 版本绑定的准入证据”。这是 #293 后续与 #290/#295 的交接项，不能用本次新增报告
 宣称已经解决。实际接入时必须保留老租户权益、exact PlanVersion、事务竞争校验和
 必要恢复入口；不能直接把模块状态表当作测试批准表。
+
+
+## 模块与权限 V1：先复用一个真实样板
+
+这是 2026-10-09 获准提速工作的第三项，延续 #293/#294，不另造接入引擎。
+本节是实现位置与复用方法，不是新模块销售许可或测试 PASS 记录。
+
+### 首个样板与范围
+
+首个产品样板选 `access-management`，沿用企业成员/角色真实页面；不得把
+RuntimeConsole 的设备演示工作区当成已产品化的设备页面。以两个隔离租户、
+租户管理员和受限成员验证：真实模块/版本 → 首次订阅 → 成员授权 → 合法读取和
+写入 → 直接 API 拒绝/撤权 → 原操作恢复与权威回读。
+
+基础拒绝原因、IAM、Entitlement、DataScope、对象不变量及适用额度全部保留。
+完整诊断工作台、扩容商品、迁移/退役不是本样板的新增前置；这不关闭或删减
+#338、#341—#346 等原任务，也不取消现有发布/销售准入规则。支付相关开通仍
+要求真实价格/支付 authority，不能把无价格引用当付款证明。
+
+### 复用位置（引用已有事实，不复制配置）
+
+| 需要什么 | 应读取/复用的位置 | 禁止另建什么 |
+|---|---|---|
+| 技术模块与能力 | `internal/commercial/modulecatalog/model.go` 的 `ProductionRegistry()` | 第二份 Module/Capability 目录 |
+| 接口及权限 | `contracts/generated/operation-plans.json`、原 PB 与 Operation Executor | 从菜单名推导安全权限 |
+| 商业映射与测试来源 | `contracts/commercial/onboarding.v1.json`、CE-03 既有 mapping | 新的可编辑权限 JSON 权威 |
+| 当前主体可执行动作 | `web/src/services/runtime/authorization.ts` | 长期保存在 Web Session 的角色/套餐布尔值 |
+| 角色写入和菜单 | `web/src/services/enterprise/roleRuntime.ts`、`web/src/router/navigation.ts` | 第二套角色 API 或页面授权器 |
+| 成员任务和恢复 | `web/src/features/enterprise/pages/MembersView.vue`、既有真实服务/Store | 复制整页、伪造成功回执 |
+| 开通到最终权益 | #340 / PR #354 的真实首次订阅链，先核验已合并版本 | 为样板再写一次 INITIAL 状态机 |
+
+#354 尚未完成时，本样板的“首次订阅与完整业务验收”保持待验收。不能拿引用到
+候选分支的源码当 main 已交付，也不能把写出样板文档当真实用户已跑通。
+
+### 现有可执行反例
+
+| 现有来源 | 可复用的验证内容 | 证据限制 |
+|---|---|---|
+| `integration/ce05_enforcement_mysql_test.go::TestCE05MySQLNoImplicitAccessManagementOrExpiredGrant` | Access 无隐式权益、有效授权后可读取、过期/未来权益拒绝 | 是 Access 场景，不单独声称完整 2×2 矩阵 |
+| `integration/b12_role_runtime_mysql_test.go::TestB124TenantRolePermissionsAreTenantScopedAndImmediate` | 角色作用域与立即生效 | 权限测试不替代开通旅程 |
+| `integration/ce05_enforcement_mysql_test.go::TestCE294MySQLDeviceCreateIAMEntitlementMatrix` | IAM × Entitlement 四象限、拒绝后无写入、允许后恰好一条 | 这是设备模块现有参考；不得冒称 Access 已跑同一个矩阵 |
+| `web/e2e/enterprise-members-real.spec.ts`、`web/e2e/enterprise-roles-real.spec.ts` | 成员/角色 UI 消费与恢复 | 文件名 real 不构成真实 API/DB 证据，先检查是否拦截请求 |
+
+复用矩阵的形式，但按目标模块声明实际动作和独立预期：两项都缺、只有 IAM、
+只有权益必须拒绝；两项都有仍需对象范围/状态/额度合法才允许。每个拒绝断言
+同时证明没有业务写入/外部副作用。另测跨租户、撤权后旧会话、结果未知与恢复。
+
+### 执行入口与下一模块的最小差量
+
+源码/引用校验继续使用 `make commercial-check`、`make check` 和
+`cd web && npm run check`，不添加第二个 Onboarding checker。实际数据库验收
+使用原 CI 所属套件或获授权的 `scripts/qualify-evolution-mysql.py`；不因复制样板
+新建数据库、修改共享数据或脱离原 source-owner 流程直接跑 destructive fixtures。
+
+下一模块只新增必要业务源/PB、已有 Registry 的技术定义、CE-03 映射、当前
+onboarding 索引引用、已有页面模板消费者与适用正反例；不改已有 IAM/权益算法。
+开始前先列真实差量及复用位置，完成后分别记录源码接入、API/DB、浏览器、人工
+体验和 main 验证。第一份样板被完整验收后再据此报告第二次接入的减少工作量，
+不得预先声称效率提高几倍。
