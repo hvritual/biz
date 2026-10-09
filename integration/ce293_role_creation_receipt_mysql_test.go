@@ -202,6 +202,23 @@ func TestCE293RoleCreationAutoMigrateSchemaParity(t *testing.T) {
 	if err := persistence.ApplyRoleCreationReceiptMigration(context.Background(), db); err != nil {
 		t.Fatalf("re-enabled AutoMigrate receipt constraint rejected: %v", err)
 	}
+	// An already-present malformed table must not be admitted by AutoMigrate:
+	// GORM migration is not guaranteed to remove a composite primary key.
+	if err := db.Exec("ALTER TABLE biz_role_creation_receipts DROP PRIMARY KEY, ADD PRIMARY KEY (receipt_key, fingerprint)").Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := persistence.RequireRoleCreationReceiptSchema(context.Background(), db); err == nil {
+		t.Fatal("preflight accepted composite PK on an existing AutoMigrate table")
+	}
+	if err := store.AutoMigrate(context.Background()); err == nil || !strings.Contains(err.Error(), "role creation receipt") {
+		t.Fatalf("AutoMigrate must reject incompatible existing receipt schema: %v", err)
+	}
+	if err := db.Exec("ALTER TABLE biz_role_creation_receipts DROP PRIMARY KEY, ADD PRIMARY KEY (receipt_key)").Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := store.AutoMigrate(context.Background()); err != nil {
+		t.Fatalf("AutoMigrate rejected restored receipt key: %v", err)
+	}
 }
 
 // An existing table that looks similar to 0022 must never silently pass

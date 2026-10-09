@@ -31,7 +31,9 @@ func RequireRoleCreationReceiptSchema(ctx context.Context, db *gorm.DB) error {
 		MaxLength  *int64 `gorm:"column:character_maximum_length"`
 	}
 	var columns []receiptColumn
-	result := db.WithContext(ctx).Raw(`SELECT COLUMN_NAME, DATA_TYPE, IS_NULLABLE, CHARACTER_MAXIMUM_LENGTH
+	result := db.WithContext(ctx).Raw(`SELECT COLUMN_NAME AS column_name, DATA_TYPE AS data_type,
+		       IS_NULLABLE AS is_nullable,
+		       CHARACTER_MAXIMUM_LENGTH AS character_maximum_length
 		FROM information_schema.COLUMNS
 		WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='biz_role_creation_receipts'`).Scan(&columns)
 	if result.Error != nil {

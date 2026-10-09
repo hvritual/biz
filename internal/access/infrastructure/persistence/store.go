@@ -153,13 +153,19 @@ func NewWithContactProtection(database *gorm.DB, protection *ContactProtection) 
 }
 
 func (store *Store) AutoMigrate(ctx context.Context) error {
-	return store.database.WithContext(ctx).AutoMigrate(
+	if err := store.database.WithContext(ctx).AutoMigrate(
 		&roleCreationRecord{}, &tenantCreationRecord{}, &tenantRecord{}, &userRecord{}, &membershipRecord{}, &roleRecord{},
 		&memberRoleRecord{}, &permissionGrantRecord{}, &memberSiteRecord{}, &dataPolicyRecord{}, &dataPolicySiteRecord{}, &apiTokenRecord{}, &auditEventRecord{},
 		&memberRemovedRoleSnapshotRecord{}, &memberRemovedSiteSnapshotRecord{}, &memberStatusAppealRecord{},
 		&notificationPreferenceRecord{}, &notificationPreferenceReceiptRecord{},
 		&serviceAPICredentialRecord{}, &serviceAPIOperationRecord{}, &serviceAPINonceRecord{},
-	)
+	); err != nil {
+		return err
+	}
+	// AutoMigrate creates tables but does not necessarily repair an existing
+	// malformed primary key or weakened check. Enforce the same receipt
+	// authority before every caller can use a migrated Access store.
+	return RequireRoleCreationReceiptSchema(ctx, store.database)
 }
 
 func TokenHash(raw string) string {
