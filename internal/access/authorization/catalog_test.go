@@ -204,6 +204,46 @@ func TestPlatformModuleWebActionsDeriveReadManageAndTechnicalAuthority(t *testin
 	}
 }
 
+func TestCE340ProvisioningWebActionsRequireCompletePlatformGrants(t *testing.T) {
+	const read = "commercial.provisioning.task.get"
+	const retry = "commercial.provisioning.task.retry"
+	for _, action := range RoleAssignableActions(Catalog()) {
+		if action.Code == read || action.Code == retry {
+			t.Fatalf("platform provisioning action became tenant-role-assignable: %+v", action)
+		}
+	}
+	for _, test := range []struct {
+		name        string
+		permissions []authz.PermissionKey
+		want        []string
+	}{
+		{"no grants", nil, nil},
+		{"tenant read only", []authz.PermissionKey{"platform.tenant.read"}, nil},
+		{"provisioning read only", []authz.PermissionKey{"platform.provisioning.read"}, nil},
+		{"provisioning manage only", []authz.PermissionKey{"platform.provisioning.manage"}, nil},
+		{"both without tenant read", []authz.PermissionKey{"platform.provisioning.read", "platform.provisioning.manage"}, nil},
+		{"task reader", []authz.PermissionKey{"platform.provisioning.read", "platform.tenant.read"}, []string{read}},
+		{"task retry operator", []authz.PermissionKey{"platform.provisioning.manage", "platform.tenant.read"}, []string{retry}},
+		{"task reader and retry operator", []authz.PermissionKey{"platform.provisioning.read", "platform.provisioning.manage", "platform.tenant.read"}, []string{read, retry}},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			grants := make([]authz.Grant, 0, len(test.permissions))
+			for _, permission := range test.permissions {
+				grants = append(grants, authz.Grant{Permission: permission})
+			}
+			var got []string
+			for _, action := range AuthorizedPlatformActions(grants) {
+				if action.Code == read || action.Code == retry {
+					got = append(got, action.Code)
+				}
+			}
+			if !reflect.DeepEqual(got, test.want) {
+				t.Fatalf("provisioning browser actions = %v, want %v for current grants %v", got, test.want, test.permissions)
+			}
+		})
+	}
+}
+
 func TestAuthorizedPlatformActionsShrinkWithCurrentGrantSet(t *testing.T) {
 	readOnly := AuthorizedPlatformActions([]authz.Grant{{Permission: "platform.module.read"}})
 	readCodes := map[string]bool{}

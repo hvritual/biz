@@ -236,7 +236,8 @@ jobs:
         uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
         with:
           go-version: ${{ steps.lock.outputs.go_version }}
-          cache: false
+          cache: true
+          cache-dependency-path: biz/go.sum
 
       - name: Verify exact sources
         shell: bash

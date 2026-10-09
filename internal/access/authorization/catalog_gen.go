@@ -317,7 +317,7 @@ var generatedActions = []Action{
 	},
 	{
 		Code: "commercial.provisioning.task.get", Domain: "commercial", Application: "provisioning", UseCase: "get_provisioning_task",
-		TenantRequired: false, Authentication: []string{"api-key"},
+		TenantRequired: false, Authentication: []string{"api-key", "web-session"},
 		Permissions: []authz.PermissionKey{authz.PermissionKey("platform.provisioning.read"), authz.PermissionKey("platform.tenant.read")}, PermissionMode: "all",
 		Classification: "platform_management", ModuleCode: "", CapabilityCodes: []string{},
 		RPC: "/commercial.v1.ProvisioningApplication/GetProvisioningTask", HTTP: []HTTPBinding{{Method: "GET", Path: "/v1/platform/tenants/{tenant_id}/provisioning/tasks/{task_id}"}},
@@ -331,7 +331,7 @@ var generatedActions = []Action{
 	},
 	{
 		Code: "commercial.provisioning.task.retry", Domain: "commercial", Application: "provisioning", UseCase: "retry_provisioning_task",
-		TenantRequired: false, Authentication: []string{"api-key"},
+		TenantRequired: false, Authentication: []string{"api-key", "web-session"},
 		Permissions: []authz.PermissionKey{authz.PermissionKey("platform.provisioning.manage"), authz.PermissionKey("platform.tenant.read")}, PermissionMode: "all",
 		Classification: "platform_management", ModuleCode: "", CapabilityCodes: []string{},
 		RPC: "/commercial.v1.ProvisioningApplication/RetryProvisioningTask", HTTP: []HTTPBinding{{Method: "POST", Path: "/v1/platform/tenants/{tenant_id}/provisioning/tasks/{task_id}/retry"}},

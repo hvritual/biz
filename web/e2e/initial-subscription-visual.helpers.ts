@@ -2,6 +2,25 @@ import { expect, type Locator, type Page, type TestInfo } from '@playwright/test
 
 export type InitialSubscriptionObservation = (stage: string, anchor: Locator) => Promise<void>
 
+/** Wrapped labels must stay within their control in both dimensions. */
+export async function expectInitialSelectContentFits(page: Page, stage: string) {
+  const overflow = await page.locator('.initial-card [data-slot="select-trigger"]').evaluateAll((controls) => controls.flatMap((control) => {
+    const value = control.firstElementChild
+    if (!value?.textContent?.trim()) return []
+    const trigger = control.getBoundingClientRect()
+    const range = document.createRange()
+    range.selectNodeContents(value)
+    const valueBounds = value.getBoundingClientRect()
+    const textBounds = range.getBoundingClientRect()
+    const outside = [valueBounds, textBounds].some((bounds) => bounds.width > 0 && bounds.height > 0 && (
+      bounds.top < trigger.top - 1 || bounds.bottom > trigger.bottom + 1 ||
+      bounds.left < trigger.left - 1 || bounds.right > trigger.right + 1
+    ))
+    return outside ? [{ id: control.id, text: value.textContent, trigger: trigger.toJSON(), value: valueBounds.toJSON(), textBounds: textBounds.toJSON() }] : []
+  }))
+  expect(overflow, `${stage}: selected text must fit inside its control`).toEqual([])
+}
+
 /** Use actual Tab traversal: locator.focus()/click() would hide keyboard traps. */
 export async function tabToInitialControl(page: Page, control: Locator) {
   await expect(control).toBeEnabled()
@@ -28,6 +47,7 @@ export function observeInitialSubscription(page: Page, info: TestInfo, prefix: s
       horizontalOverflow: document.documentElement.scrollWidth > window.innerWidth + 1,
     }))
     expect(rendered.horizontalOverflow, `${stage}: page must not require horizontal scrolling`).toBe(false)
+    await expectInitialSelectContentFits(page, stage)
     const workspace = page.getByTestId('platform-initial-subscription')
     const inspected = page.locator('.initial-card, .subscription-card')
     if (await inspected.count()) {

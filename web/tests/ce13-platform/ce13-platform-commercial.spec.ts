@@ -117,6 +117,20 @@ async function login(
 
 test("TestCE13PlatformCommercialTrustedWebSession", async ({ browser, request }) => {
   const data = fixture();
+  const taskPath = `/v1/platform/tenants/${encodeURIComponent(data.tenant_id)}/provisioning/tasks/ce340-session-boundary-missing-task`;
+  const taskActions = ["commercial.provisioning.task.get", "commercial.provisioning.task.retry"];
+  const retryInput = {
+    requestId: "ce340-session-boundary-retry",
+    expectedRevision: "1",
+    reason: "CE-340 provisioning session boundary acceptance",
+  };
+
+  // These real requests exercise the existing protected routes without
+  // creating a task or claiming preparation has succeeded.
+  const anonymousTask = await request.get(data.base_url + taskPath);
+  expect(anonymousTask.status(), await anonymousTask.text()).toBe(401);
+  const anonymousRetry = await request.post(data.base_url + taskPath + "/retry", { data: retryInput });
+  expect(anonymousRetry.status(), await anonymousRetry.text()).toBe(401);
 
   const discovery = await request.get(data.discovery_url);
   expect(discovery.status()).toBe(200);
@@ -128,6 +142,10 @@ test("TestCE13PlatformCommercialTrustedWebSession", async ({ browser, request })
     headers: { Authorization: `Bearer ${data.allowed_api_key}` },
   });
   expect(apiKeyResponse.status(), await apiKeyResponse.text()).toBe(200);
+  const apiKeyTask = await request.get(data.base_url + taskPath, {
+    headers: { Authorization: `Bearer ${data.allowed_api_key}` },
+  });
+  expect(apiKeyTask.status(), await apiKeyTask.text()).toBe(404);
 
   // A tenant browser identity cannot self-assert platform authority through headers.
   const tenant = await login(browser, data, data.tenant_email, data.tenant_password);
@@ -142,6 +160,17 @@ test("TestCE13PlatformCommercialTrustedWebSession", async ({ browser, request })
     },
   });
   expect(spoofed.status, spoofed.text).toBe(403);
+  const tenantTask = await browserRequest(tenant.page, data.web_base_url, taskPath, {
+    headers: { "X-Tenant-ID": data.tenant_id, "X-Platform": "true", "X-Principal": data.allowed_subject },
+  });
+  expect(tenantTask.status, tenantTask.text).toBe(403);
+  expect(tenant.session.csrf_token).toBeTruthy();
+  const tenantRetry = await browserRequest(tenant.page, data.web_base_url, taskPath + "/retry", {
+    method: "POST",
+    headers: { "X-CSRF-Token": String(tenant.session.csrf_token), "Idempotency-Key": retryInput.requestId },
+    body: retryInput,
+  });
+  expect(tenantRetry.status, tenantRetry.text).toBe(403);
   await tenant.context.close();
 
   // A real platform OIDC session without platform.module.read remains denied.
@@ -154,6 +183,18 @@ test("TestCE13PlatformCommercialTrustedWebSession", async ({ browser, request })
   expect(deniedProjection.status, deniedProjection.text).toBe(200);
   expect((deniedProjection.json as AuthorizationView).platform_subject).toBe(data.denied_subject);
   expect((deniedProjection.json as AuthorizationView).button_codes).not.toContain("commercial.module.list");
+  for (const action of taskActions) {
+    expect((deniedProjection.json as AuthorizationView).button_codes).not.toContain(action);
+  }
+  const deniedTask = await browserRequest(denied.page, data.web_base_url, taskPath);
+  expect(deniedTask.status, deniedTask.text).toBe(403);
+  expect(denied.session.csrf_token).toBeTruthy();
+  const deniedRetry = await browserRequest(denied.page, data.web_base_url, taskPath + "/retry", {
+    method: "POST",
+    headers: { "X-CSRF-Token": String(denied.session.csrf_token), "Idempotency-Key": retryInput.requestId },
+    body: retryInput,
+  });
+  expect(deniedRetry.status, deniedRetry.text).toBe(403);
   const deniedModules = await browserRequest(denied.page, data.web_base_url, "/v1/platform/modules");
   expect(deniedModules.status, deniedModules.text).toBe(403);
   await denied.context.close();
@@ -177,7 +218,31 @@ test("TestCE13PlatformCommercialTrustedWebSession", async ({ browser, request })
     "commercial.module.create",
     "commercial.module.set_sales_status",
     "commercial.module.set_technical_status",
+    ...taskActions,
   ]));
+  const allowedTask = await browserRequest(allowed.page, data.web_base_url, taskPath);
+  expect(allowedTask.status, allowedTask.text).toBe(404);
+  expect(allowedTask.text.trim()).toBe("application not found");
+  const retryWithoutCSRF = await browserRequest(allowed.page, data.web_base_url, taskPath + "/retry", {
+    method: "POST",
+    headers: { "Idempotency-Key": retryInput.requestId },
+    body: retryInput,
+  });
+  expect(retryWithoutCSRF.status, retryWithoutCSRF.text).toBe(401);
+  const retryWithoutKey = await browserRequest(allowed.page, data.web_base_url, taskPath + "/retry", {
+    method: "POST",
+    headers: { "X-CSRF-Token": String(allowed.session.csrf_token) },
+    body: retryInput,
+  });
+  expect(retryWithoutKey.status, retryWithoutKey.text).toBe(400);
+  expect(retryWithoutKey.text.trim()).toBe("idempotency key required");
+  const retryMissingTask = await browserRequest(allowed.page, data.web_base_url, taskPath + "/retry", {
+    method: "POST",
+    headers: { "X-CSRF-Token": String(allowed.session.csrf_token), "Idempotency-Key": retryInput.requestId },
+    body: retryInput,
+  });
+  expect(retryMissingTask.status, retryMissingTask.text).toBe(404);
+  expect(retryMissingTask.text.trim()).toBe("application not found");
 
   const modules = await browserRequest(allowed.page, data.web_base_url, "/v1/platform/modules");
   expect(modules.status, modules.text).toBe(200);
@@ -509,6 +574,27 @@ test("TestCE340PlatformFirstSubscriptionThroughTrustedWebSession", async ({ brow
     planVersion: String(draft.version),
     salesScope: "default",
   });
+  const applied = appliedReceipt.json as {
+    effectiveAt: string;
+    entitlementExpiresAt: string;
+    after: { subscriptionId: string; periodStart: string; periodEnd: string };
+  };
+  expect(applied.after.subscriptionId).toBeTruthy();
+  expect(applied.effectiveAt).toBeTruthy();
+  expect(applied.entitlementExpiresAt).toBeTruthy();
+  expect(applied.after).toMatchObject({
+    kind: "BASE",
+    state: "ACTIVE",
+    periodStart: applied.effectiveAt,
+    periodEnd: applied.entitlementExpiresAt,
+  });
+  expect(finalSubscription.json).toMatchObject({
+    subscriptionId: applied.after.subscriptionId,
+    kind: "BASE",
+    state: "ACTIVE",
+    periodStart: applied.after.periodStart,
+    periodEnd: applied.after.periodEnd,
+  });
 
   const entitlements = await browserRequest(
     allowed.page,
@@ -526,6 +612,21 @@ test("TestCE340PlatformFirstSubscriptionThroughTrustedWebSession", async ({ brow
     expect.objectContaining({ kind: "capability", key: "device.lifecycle", allowed: true }),
     expect.objectContaining({ kind: "quota", key: "tenant.devices" }),
   ]));
+  // Requested capabilities do not filter the persisted module/quota decisions.
+  const targetDecisions = decisions.filter((decision) => (decision as { moduleCode?: string }).moduleCode === "device-operations");
+  for (const expected of [
+    { kind: "module", key: "device-operations" },
+    { kind: "capability", key: "device.lifecycle" },
+    { kind: "quota", key: "tenant.devices" },
+  ]) {
+    const matching = targetDecisions.filter((decision) => decision.kind === expected.kind && decision.key === expected.key);
+    expect(matching).toEqual([expect.objectContaining({ ...expected, moduleCode: "device-operations", allowed: true })]);
+  }
+  const quota = targetDecisions.find((decision) => decision.kind === "quota" && decision.key === "tenant.devices") as
+    { limit?: { value?: string; unlimited?: boolean } } | undefined;
+  expect(quota?.limit?.value).toBe("100");
+  // protojson encodes uint64 as a string and may omit the proto3 false value.
+  expect([undefined, false]).toContain(quota?.limit?.unlimited);
 
   // Once INITIAL has applied, a historical or forged recovery bookmark is
   // not permission to hide the normal subscription-management controls.

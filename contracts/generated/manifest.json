@@ -13523,7 +13523,8 @@
             ],
             "permissionMode": "all",
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "execution": {
               "transaction": "read_only",
@@ -13538,7 +13539,8 @@
             ],
             "permissionMode": "all",
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         },
@@ -13641,7 +13643,8 @@
             ],
             "permissionMode": "all",
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ],
             "execution": {
               "transaction": "local",
@@ -13656,7 +13659,8 @@
             ],
             "permissionMode": "all",
             "authentication": [
-              "api-key"
+              "api-key",
+              "web-session"
             ]
           }
         }

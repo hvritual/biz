@@ -45,7 +45,7 @@ service ProvisioningApplication {
  };
  rpc GetProvisioningTask(ReadProvisioningTaskRequest) returns(ProvisioningTaskDTO){
   option(google.api.http)={get:"/v1/platform/tenants/{tenant_id}/provisioning/tasks/{task_id}"};
-  option(yunka.dsl.v1.operation)={id:"commercial.provisioning.task.get" use_case:"get_provisioning_task" permissions:"platform.provisioning.read" permissions:"platform.tenant.read" permission_mode:PERMISSION_ALL tenant_required:false authentication:AUTHENTICATION_API_KEY execution:{transaction:TRANSACTION_READ_ONLY idempotency:IDEMPOTENCY_NONE}};
+  option(yunka.dsl.v1.operation)={id:"commercial.provisioning.task.get" use_case:"get_provisioning_task" permissions:"platform.provisioning.read" permissions:"platform.tenant.read" permission_mode:PERMISSION_ALL tenant_required:false authentication:AUTHENTICATION_API_KEY authentication:AUTHENTICATION_WEB_SESSION execution:{transaction:TRANSACTION_READ_ONLY idempotency:IDEMPOTENCY_NONE}};
  }
  rpc ListProvisioningTasks(ListProvisioningTasksRequest) returns(ListProvisioningTasksResponse){
   option(google.api.http)={get:"/v1/platform/tenants/{tenant_id}/provisioning/tasks"};
@@ -53,7 +53,7 @@ service ProvisioningApplication {
  }
  rpc RetryProvisioningTask(MutateProvisioningTaskRequest) returns(ProvisioningTaskDTO){
   option(google.api.http)={post:"/v1/platform/tenants/{tenant_id}/provisioning/tasks/{task_id}/retry" body:"*"};
-  option(yunka.dsl.v1.operation)={id:"commercial.provisioning.task.retry" use_case:"retry_provisioning_task" permissions:"platform.provisioning.manage" permissions:"platform.tenant.read" permission_mode:PERMISSION_ALL tenant_required:false authentication:AUTHENTICATION_API_KEY execution:{transaction:TRANSACTION_LOCAL idempotency:IDEMPOTENCY_REQUIRED}};
+  option(yunka.dsl.v1.operation)={id:"commercial.provisioning.task.retry" use_case:"retry_provisioning_task" permissions:"platform.provisioning.manage" permissions:"platform.tenant.read" permission_mode:PERMISSION_ALL tenant_required:false authentication:AUTHENTICATION_API_KEY authentication:AUTHENTICATION_WEB_SESSION execution:{transaction:TRANSACTION_LOCAL idempotency:IDEMPOTENCY_REQUIRED}};
  }
  rpc CancelProvisioningTask(MutateProvisioningTaskRequest) returns(ProvisioningTaskDTO){
   option(google.api.http)={post:"/v1/platform/tenants/{tenant_id}/provisioning/tasks/{task_id}/cancel" body:"*"};

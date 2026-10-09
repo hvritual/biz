@@ -186,9 +186,14 @@ jobs:
           export YUNKA_BIZ_IDP_AUTO_MIGRATE="true"
           nohup "$RUNNER_TEMP/ce13-session-idp" >"$RUNNER_TEMP/ce13-idp.log" 2>&1 &
           echo $! > "$RUNNER_TEMP/ce13-idp.pid"
-          for attempt in $(seq 1 60); do
+          for attempt in $(seq 1 69); do
             if curl -fsS http://127.0.0.1:18081/healthz >/dev/null; then break; fi
-            sleep 1
+            # Preserve 60 seconds of nominal backoff; poll faster during the first second.
+            if (( attempt <= 10 )); then
+              sleep 0.1
+            else
+              sleep 1
+            fi
           done
           curl -fsS http://127.0.0.1:18081/healthz
           curl -fsS http://127.0.0.1:18081/idp/.well-known/openid-configuration > "$RUNNER_TEMP/ce13-discovery.json"
@@ -209,9 +214,14 @@ jobs:
           export YUNKA_BIZ_OIDC_SCOPES="openid profile email"
           nohup "$RUNNER_TEMP/ce13-session-biz" >"$RUNNER_TEMP/ce13-biz.log" 2>&1 &
           echo $! > "$RUNNER_TEMP/ce13-biz.pid"
-          for attempt in $(seq 1 60); do
+          for attempt in $(seq 1 69); do
             if curl -fsS http://127.0.0.1:18080/healthz >/dev/null; then break; fi
-            sleep 1
+            # Preserve 60 seconds of nominal backoff; poll faster during the first second.
+            if (( attempt <= 10 )); then
+              sleep 0.1
+            else
+              sleep 1
+            fi
           done
           curl -fsS http://127.0.0.1:18080/healthz
 
@@ -237,9 +247,14 @@ jobs:
           cd "$RUNNER_TEMP/ce13-session/web"
           VITE_DATA_MODE=api BIZ_DEV_API_TARGET="http://127.0.0.1:18080" nohup node node_modules/vite/bin/vite.js --host 127.0.0.1 --port 14183 >"$RUNNER_TEMP/ce13-vite.log" 2>&1 &
           echo $! > "$RUNNER_TEMP/ce13-vite.pid"
-          for attempt in $(seq 1 60); do
+          for attempt in $(seq 1 69); do
             if curl -fsS http://127.0.0.1:14183/ >/dev/null; then break; fi
-            sleep 1
+            # Preserve 60 seconds of nominal backoff; poll faster during the first second.
+            if (( attempt <= 10 )); then
+              sleep 0.1
+            else
+              sleep 1
+            fi
           done
           curl -fsS http://127.0.0.1:14183/ >/dev/null
 

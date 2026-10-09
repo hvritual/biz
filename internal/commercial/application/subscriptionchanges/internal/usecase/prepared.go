@@ -154,6 +154,12 @@ func (s *service) CompletePreparedSubscriptionChange(ctx context.Context, r *v1.
 		nextReceipt := *receipt
 		nextReceipt.Status = change.Applied
 		nextReceipt.After = after
+		if p.Input.Action == change.Initial {
+			// Preparation can outlive confirmation. Publish the same admitted
+			// period as the activated subscription, retaining ConfirmedAt.
+			nextReceipt.EffectiveAt = at
+			nextReceipt.EntitlementExpiresAt = end
+		}
 		nextReceipt.AfterSourceVersion = source
 		nextReceipt.AfterEntitlementVersion = ent
 		nextReceipt.Quotas = report

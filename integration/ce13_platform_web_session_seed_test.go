@@ -125,6 +125,8 @@ func TestCE13PlatformWebSessionSeed(t *testing.T) {
 			"platform.subscription.manage",
 			"platform.subscription.read",
 			"platform.subscription.confirm",
+			"platform.provisioning.read",
+			"platform.provisioning.manage",
 			"platform.entitlement.manage",
 			"platform.entitlement.read",
 			"commercial.catalog.read",

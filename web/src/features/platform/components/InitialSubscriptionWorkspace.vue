@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { UiButton, UiInput, UiOption, UiSelect, UiTextarea } from '@/ui/base'
 import StatusBadge from '@/ui/common/StatusBadge.vue'
+import { currentUiLocale } from '@/i18n'
 import { backendStateTone, backendTermLabel } from '@/i18n/backend-terms'
 import { useInitialSubscription } from '@/features/platform/composables/useInitialSubscription'
 
@@ -49,6 +50,12 @@ const {
   onSubmitted: (id) => emit('submitted', id),
   onCleared: () => emit('cleared'),
 })
+
+function formatTime(value?: string) {
+  if (!value) return '待确认'
+  const parsed = new Date(value)
+  return Number.isNaN(parsed.valueOf()) ? value : parsed.toLocaleString(currentUiLocale(), { hour12: false })
+}
 </script>
 
 <template>
@@ -96,7 +103,7 @@ const {
 
       <label class="field" for="initial-plan-code">
         <span>套餐</span>
-        <UiSelect id="initial-plan-code" v-model="planCode" class="input" aria-label="套餐" :disabled="pending || confirmationSubmitted || loadingPlans || !plans.length">
+        <UiSelect id="initial-plan-code" v-model="planCode" class="input plan-select" aria-label="套餐" :disabled="pending || confirmationSubmitted || loadingPlans || !plans.length">
           <UiOption value="">请选择套餐</UiOption>
           <UiOption v-for="plan in plans" :key="plan.planCode" :value="plan.planCode">
             {{ plan.name || backendTermLabel('plan', plan.planCode) }} · {{ plan.planCode }}
@@ -186,7 +193,7 @@ const {
     <section v-if="preview" class="preview-panel">
       <div class="section-subhead">
         <div><h3>首次开通方案</h3><p>目标 {{ preview.target?.planCode }} · exact v{{ preview.target?.version }}</p></div>
-        <span>{{ preview.provisioningRequirements?.length ? '需要开通准备' : '可直接生效' }}</span>
+        <span>{{ preview.provisioningRequirements?.length ? '需要开通准备' : '无需开通准备' }}</span>
       </div>
 
       <div class="facts-grid">
@@ -195,6 +202,40 @@ const {
         <div><span>模块依赖</span><strong>{{ preview.dependencies?.length ?? 0 }} 项</strong></div>
         <div><span>准备任务</span><strong>{{ preview.provisioningRequirements?.length ?? 0 }} 项</strong></div>
       </div>
+
+      <div class="facts-grid preview-timing">
+        <div><span>预计生效时间</span><strong>{{ formatTime(preview.effectiveAt) }}</strong></div>
+        <div><span>权益预计到期时间</span><strong>{{ formatTime(preview.entitlementExpiresAt) }}</strong></div>
+        <div><span>方案失效时间</span><strong>{{ formatTime(preview.expiresAt) }}</strong></div>
+      </div>
+      <p v-if="preview.mode === 'IMMEDIATE'" class="preview-note">立即生效的时间为预估；如需开通准备，应在准备完成后核对处理结果。实际生效时间和权益到期时间以最终处理结果为准。</p>
+
+      <section class="preview-detail" aria-label="模块依赖明细">
+        <h4>模块依赖明细</h4>
+        <ul v-if="preview.dependencies?.length" class="requirement-list">
+          <li v-for="dependency in preview.dependencies" :key="dependency.moduleCode">
+            <strong>{{ backendTermLabel('module', dependency.moduleCode) }}</strong>
+            <p v-if="dependency.requiresModules?.length">依赖模块：{{ dependency.requiresModules.map((module) => backendTermLabel('module', module)).join('、') }}</p>
+            <p v-else>无额外模块依赖。</p>
+          </li>
+        </ul>
+        <p v-else>本次方案未列出模块依赖。</p>
+      </section>
+
+      <section class="preview-detail" aria-label="开通准备要求">
+        <h4>开通准备要求</h4>
+        <template v-if="preview.provisioningRequirements?.length">
+          <p>准备完成后才能生效。以下项目暂未提供具体业务说明。</p>
+          <ol class="requirement-list">
+            <li v-for="(requirement, index) in preview.provisioningRequirements" :key="`${requirement.code}:${requirement.adapter}:${requirement.version}`">
+              <strong>准备项目 {{ index + 1 }}</strong>
+              <p v-if="Number.isInteger(requirement.maxAttempts) && requirement.maxAttempts > 0">每轮最多尝试 {{ requirement.maxAttempts }} 次。</p>
+              <p v-else>尝试次数上限待确认。</p>
+            </li>
+          </ol>
+        </template>
+        <p v-else>本次方案无需开通准备。</p>
+      </section>
 
       <div class="confirm-box">
         <label class="check">
@@ -268,6 +309,7 @@ const {
 .field small { color: var(--color-text-muted); line-height: 1.4; }
 .field.wide { width: 100%; }
 .input { width: 100%; min-height: 36px; }
+.target-grid :deep(.plan-select) { height: auto; min-height: var(--control-height); padding-block: var(--space-1); text-align: left; }
 .target-action { padding-bottom: 1px; }
 .btn.primary { background: var(--color-primary); border-color: var(--color-primary); color: var(--color-on-primary); }
 .versions-panel, .target-detail, .preview-panel, .result-panel { border-top: 1px solid var(--color-border); }
@@ -290,6 +332,13 @@ const {
 .term-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 10px; }
 .term-grid small { color: var(--color-text-muted); }
 .term-grid p { margin: 5px 0 0; font-size: 12px; }
+.preview-timing { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.preview-note { margin: 0; padding: 12px 20px; color: var(--color-text-secondary); font-size: 12px; line-height: 1.6; }
+.preview-detail { padding: 14px 20px; border-top: 1px solid var(--color-border); }
+.preview-detail h4 { margin: 0; font-size: 13px; }
+.preview-detail p { margin: 6px 0 0; color: var(--color-text-secondary); font-size: 12px; line-height: 1.6; }
+.requirement-list { display: grid; gap: 12px; margin: 12px 0 0; padding: 0; list-style: none; }
+.requirement-list li { min-width: 0; font-size: 13px; overflow-wrap: anywhere; }
 .preview-form, .confirm-box { display: grid; gap: 12px; padding: 16px 20px 20px; border-top: 1px solid var(--color-border); }
 .check { display: flex; align-items: flex-start; gap: 8px; color: var(--color-text-secondary); font-size: 12px; line-height: 1.5; }
 .processing-state, .verified-state, .verification-state { display: grid; gap: 6px; padding: 18px 20px; font-size: 13px; }

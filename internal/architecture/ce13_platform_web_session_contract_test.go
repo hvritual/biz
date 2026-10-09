@@ -15,8 +15,16 @@ type ce13OperationPlans struct {
 		OperationID string `json:"operationId"`
 		Domain      string `json:"domain"`
 		Security    struct {
+			Public         bool     `json:"public"`
+			TenantRequired bool     `json:"tenantRequired"`
 			Authentication []string `json:"authentication"`
+			Permissions    []string `json:"permissions"`
+			PermissionMode string   `json:"permissionMode"`
 		} `json:"security"`
+		Execution struct {
+			Transaction string `json:"transaction"`
+			Idempotency string `json:"idempotency"`
+		} `json:"execution"`
 	} `json:"operations"`
 }
 
@@ -69,6 +77,8 @@ func TestCE13PlatformCommercialWebSessionContract(t *testing.T) {
 		"commercial.subscription.change.confirm":     {},
 		"commercial.subscription.change.preview.get": {},
 		"commercial.subscription.change.get":         {},
+		"commercial.provisioning.task.get":           {},
+		"commercial.provisioning.task.retry":         {},
 	}
 	allowedCommercialWeb := map[string]struct{}{
 		"commercial.entitlement.get_my":                   {},
@@ -85,6 +95,17 @@ func TestCE13PlatformCommercialWebSessionContract(t *testing.T) {
 	}
 	for id := range expectedPlatformWeb {
 		allowedCommercialWeb[id] = struct{}{}
+	}
+
+	// CE-340 needs only task readback and retry in the existing platform
+	// browser flow. Worker, delivery, list and cancel operations stay API-key-only.
+	expectedProvisioningWeb := map[string]struct {
+		permission  string
+		transaction string
+		idempotency string
+	}{
+		"commercial.provisioning.task.get":   {"platform.provisioning.read", "read_only", "none"},
+		"commercial.provisioning.task.retry": {"platform.provisioning.manage", "local", "required"},
 	}
 
 	seen := map[string]bool{}
@@ -112,7 +133,17 @@ func TestCE13PlatformCommercialWebSessionContract(t *testing.T) {
 				t.Fatalf("commercial operation %s unexpectedly admits web-session", operation.OperationID)
 			}
 		}
-		if strings.HasPrefix(operation.OperationID, "commercial.provisioning.") && hasWeb {
+		if expected, ok := expectedProvisioningWeb[operation.OperationID]; ok {
+			permissions := append([]string(nil), operation.Security.Permissions...)
+			sort.Strings(permissions)
+			wantPermissions := []string{expected.permission, "platform.tenant.read"}
+			if operation.Security.Public || operation.Security.TenantRequired || operation.Security.PermissionMode != "all" || strings.Join(permissions, ",") != strings.Join(wantPermissions, ",") {
+				t.Fatalf("%s must retain its protected platform ALL permission boundary: %+v", operation.OperationID, operation.Security)
+			}
+			if operation.Execution.Transaction != expected.transaction || operation.Execution.Idempotency != expected.idempotency {
+				t.Fatalf("%s execution = %+v, want transaction %s and idempotency %s", operation.OperationID, operation.Execution, expected.transaction, expected.idempotency)
+			}
+		} else if strings.HasPrefix(operation.OperationID, "commercial.provisioning.") && strings.Join(authentication, ",") != "api-key" {
 			t.Fatalf("worker/operations provisioning operation %s must remain API-key-only", operation.OperationID)
 		}
 	}

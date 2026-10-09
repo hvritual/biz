@@ -1573,7 +1573,8 @@
       "responseType": "commercial.v1.ProvisioningTaskDTO",
       "security": {
         "authentication": [
-          "api-key"
+          "api-key",
+          "web-session"
         ],
         "permissions": [
           "platform.provisioning.read",
@@ -1643,7 +1644,8 @@
       "responseType": "commercial.v1.ProvisioningTaskDTO",
       "security": {
         "authentication": [
-          "api-key"
+          "api-key",
+          "web-session"
         ],
         "permissions": [
           "platform.provisioning.manage",

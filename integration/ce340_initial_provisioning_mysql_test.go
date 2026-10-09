@@ -185,6 +185,26 @@ func TestCE340MySQLInitialProvisioningFailureRetriesOriginalTaskAndActivatesOnce
 	if done.Completion == nil || done.Completion.ChangeId != receipt.ChangeId || done.Completion.SubscriptionRevision != current.Revision || done.Completion.SourceVersion != current.EntitlementSourceVersion || done.Completion.SourceVersion != view.SourceVersion || done.Completion.EntitlementVersion != view.EntitlementVersion || applied.AfterSourceVersion != view.SourceVersion || applied.AfterEntitlementVersion != view.EntitlementVersion || view.SourceVersion <= receipt.AfterSourceVersion || view.EntitlementVersion <= receipt.AfterEntitlementVersion {
 		t.Fatalf("completion/receipt does not match real activated authority: task=%+v subscription=%+v view=%+v", done, current, view)
 	}
+	if applied.EffectiveAt != current.PeriodStart || done.Completion.AppliedAt != current.PeriodStart {
+		t.Fatalf("final INITIAL effective time differs from actual activation: receipt=%s subscription=%s completion=%s", applied.EffectiveAt, current.PeriodStart, done.Completion.AppliedAt)
+	}
+	if applied.EntitlementExpiresAt != current.PeriodEnd {
+		t.Fatalf("final INITIAL expiry differs from actual subscription period: receipt=%s subscription=%s", applied.EntitlementExpiresAt, current.PeriodEnd)
+	}
+	if applied.ConfirmedAt != receipt.ConfirmedAt {
+		t.Fatalf("INITIAL activation changed the original approval time: before=%s after=%s", receipt.ConfirmedAt, applied.ConfirmedAt)
+	}
+	confirmedAt, err := time.Parse(time.RFC3339Nano, receipt.ConfirmedAt)
+	if err != nil {
+		t.Fatal(err)
+	}
+	activatedAt, err := time.Parse(time.RFC3339Nano, current.PeriodStart)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !activatedAt.After(confirmedAt) {
+		t.Fatalf("fixture must prove activation after the real preparation retry: confirmed=%s activated=%s", confirmedAt, activatedAt)
+	}
 	for _, expected := range []struct{ kind, key, action string }{
 		{"module", "device-operations", ""},
 		{"capability", "device.lifecycle", ""},
@@ -212,6 +232,14 @@ func TestCE340MySQLInitialProvisioningFailureRetriesOriginalTaskAndActivatesOnce
 		if source.SourceKind != entitlement.PlanSource || source.TenantID != tenantID || source.RevokedAt != nil {
 			t.Fatalf("first activation created unexpected authority: %+v", source)
 		}
+	}
+	beforeReplay := ce09State(t, e.ce09Environment)
+	if replay, replayErr := e.confirm(request); replayErr != nil || !proto.Equal(replay, applied) {
+		t.Fatalf("replayed INITIAL confirmation lost the final receipt or activation times: %+v err=%v", replay, replayErr)
+	}
+	ce09EqualState(t, beforeReplay, ce09State(t, e.ce09Environment))
+	if replayedTask := e.task(id); !proto.Equal(replayedTask, done) {
+		t.Fatalf("replayed INITIAL confirmation changed the completed task: before=%+v after=%+v", done, replayedTask)
 	}
 	for _, count := range []struct {
 		table string
