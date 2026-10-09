@@ -68,13 +68,16 @@ describe('primary navigation information architecture', () => {
     const byPath = new Map(quickActions.map((item) => [item.path, item]))
     expect(byPath.get('/enterprise/members?action=create')).toMatchObject({
       authorizationMode: 'all',
-      authorizationActions: [
-        'tenant.member.invite',
-        'tenant.member.profile.update',
-        'tenant.role.assign_member',
-        'tenant.member.activate',
-      ],
+      authorizationActions: ['tenant.member.list', 'tenant.role.list', 'tenant.member.create'],
     })
+    expect(byPath.get('/enterprise/members?action=invite')).toMatchObject({
+      authorizationMode: 'all',
+      authorizationActions: ['tenant.member.list', 'tenant.role.list', 'tenant.member.create'],
+    })
+    // Creating a pending member is not administrator activation. The
+    // backend atomic Operation still owns all permission prerequisites.
+    expect(byPath.get('/enterprise/members?action=create')?.authorizationActions)
+      .not.toContain('tenant.member.activate')
     expect(byPath.get('/enterprise/roles?action=create')).toMatchObject({
       authorizationMode: 'all',
       authorizationActions: [
@@ -85,6 +88,17 @@ describe('primary navigation information architecture', () => {
       ],
     })
     expect(JSON.stringify(quickActions)).not.toContain('tenant.role.update_permissions')
+  })
+
+  it('requires the target member list and role directory as well as the atomic write', () => {
+    const actions = quickActions.filter((item) => item.path.startsWith('/enterprise/members?action='))
+    const grants = ['tenant.member.list', 'tenant.role.list', 'tenant.member.create']
+    for (const action of actions) {
+      expect(action.authorizationMode).toBe('all')
+      const visible = (allowed: string[]) => action.authorizationActions.every((code) => allowed.includes(code))
+      expect(visible(grants)).toBe(true)
+      for (const missing of grants) expect(visible(grants.filter((code) => code !== missing))).toBe(false)
+    }
   })
 
   it('groups customer operations by management, collaboration and success instead of flattening pages', () => {
