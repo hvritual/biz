@@ -43,9 +43,39 @@ python3 -B scripts/check_b2b_ux_skill.py \
 
 以独立的当前分析路径和 `--expected-candidate` 对照任务目标；不能从文件内把 candidate 读出来再当外部校验。证据 scope 是文字，结构层要求它明确包含对应九维稳定键；这仍不证明实际记录覆盖该义务。metric.evidence_ref 对应本分析 evidence.reference，需 user_test、当前候选、通过结果及包含 metric ID 的 scope；样本和 conditions 的真实性仍单独待审。
 
-真实业务写操作必须引用结果与恢复契约，不能只引用 `web/` 或 `docs/design/` 声明。确实缺后端能力时，在 blocking 问题中记录，继续保持待审；不能制造接口或把恢复/操作影响标成不适用来绕过。
+`business_state_mutation: true` 或 `asynchronous_effect: true` 任一成立时，都必须分别引用业务结果与恢复契约，且恢复/操作影响两维不能标为不适用。明确存在外部异步副作用时，不能用 mutation 为 false/unknown 绕过。async 指外部异步业务副作用，普通 API 读取、加载动画或打开详情不自动承担业务命令义务。
+
+已知页面、设计规范和 Skill 路径不能充当业务结果来源；本地引用先按安全路径规范化，`./`、百分号编码及可识别的 GitHub blob/raw URL 不能改变来源性质。来源 kind 自报为 implementation 也不能使页面成为业务权威。缺真实来源时必须记录 blocking 问题，保持 `WRITE_AUTHORITY_MISSING` 待审；没有阻塞记录则拒绝该分析。该历史诊断名称也覆盖外部异步副作用；`WRITE_OBLIGATION_WAIVED` 同样覆盖这两类任务。符合结构筛选的来源仍输出 `BUSINESS_AUTHORITY_REQUIRES_REVIEW`，不能由路径推定内容正确。
+
+GitHub blob/raw 引用使用完整 40 位 SHA，或使用路径与 ref 查询参数分开的 Contents API URL。分支名可以包含斜杠，离线检查不能普遍确定分支名与文件路径的边界；因此包括 main 在内的分支型 blob/raw URL 不能单独补足业务权威来源，需改为明确路径的引用或保留阻塞。这个限制针对路径边界，不表示 Contents API、固定 SHA 或其他外部来源已经过内容核验。
 
 自由文本中的高风险承诺、超时恢复、页面声明与 API 真相之混淆只能提示待审，**不宣称用关键词解决语义判断**。禁止措辞也可能命中提示，Reviewer 必须结合上下文判断；不通过白名单词语把危险承诺自动批准。所有正式 analysis 都保留语义复核，未知项和 N/A 合理性不自动豁免。
+
+## 交互规则的检查强度
+
+本轮沿用 v1 的全部字段。硬约束、条件启发和真实体验判断分别处理，不新增一个能自行批准 UX 的评分器。
+
+| 检查范围 | 本门禁能做什么 | 仍需什么 |
+|---|---|---|
+| 确定的结构矛盾 | 拒绝异步副作用绕过结果/恢复义务、来源分类绕过及已有字段/引用/证据矛盾 | 核验引用内容和实际副作用，不把结构合法当运行通过 |
+| 自由文本中的交互风险 | 按下表给出带位置的 `NEEDS_REVIEW` 提示，帮助定位待判断内容 | Reviewer 判断其是否为禁止例、设计假设、实际缺陷或有依据的设计 |
+| 布局适用性、任务理解和效率 | 保留未验证状态及现有证据类型要求 | 真实浏览器、API、真人任务或独立审阅的对应证据 |
+
+| 待审诊断 | 评审要核实的内容 |
+|---|---|
+| `NAVIGATION_HEURISTIC_REQUIRES_REVIEW` | 点击/跳转目标是否按任务定义，是否删掉必要确认；三次点击不是普适阈值 |
+| `TASK_LAYOUT_REQUIRES_REVIEW` | 筛选/列数、卡片/表格及主按钮位置是否适合查找、比较和批量操作，是否遵守当前页面合同 |
+| `COLLECTION_STATE_DISTINCTION_REQUIRES_REVIEW` | 空集合、无结果、无权限和读取失败是否有不同事实及获准出口 |
+| `ENTITY_SEMANTICS_REQUIRES_REVIEW` | 共用搜索是否仍保留经销商、客户、楼宇和点位的对象类型与归属 |
+| `STATUS_DIMENSIONS_REQUIRES_REVIEW` | 连接、使用、告警和制作能力是否独立表达，是否有文字、时间和未知状态 |
+| `PREFERENCE_SCOPE_REQUIRES_REVIEW` | 偏好/草稿是否按用户、租户、页面和配置版本限定，切换后是否清理旧对象上下文 |
+| `AVAILABILITY_AUTHORITY_REQUIRES_REVIEW` | 模块可用性、租户权益、成员权限、对象数据范围及其他前提是否分别依据真实契约 |
+| `ACTION_RESULT_RECOVERY_REQUIRES_REVIEW` | 受理、执行和最终事实是否区分；响应丢失/刷新是否核实原操作，是否发生未经允许的重复确认 |
+| `RISK_DISCLOSURE_REQUIRES_REVIEW` | 关键对象、后果和风险是否可持续访问；颜色、tooltip 或短暂提示是否成了唯一表达 |
+
+新增九类提示同时输出 `analysis_path` 和 `location`，分别标明分析文件与字段/数组索引；一次检查多份 analysis 也能定位归属。扫描范围包括八维 summary、来源 claim、九维 reason/requirements、页面选择与结果说明、验收场景/检查说明、metrics 的 definition/conditions/failure_policy 及未决问题，不把 URL、ID 或数值本身当作语义结论。
+
+这些诊断包含相应词语的否定例也可能命中，命中不等于缺陷；未命中不等于覆盖完整。原有高风险承诺、超时恢复和页面/API 三类提示继续保留。正式分析始终需要语义复核，不能通过改写措辞消除实际义务；提示只能促成审阅，不能替代浏览器/API/真人验证。尚未取得的证据继续记 not_verified，`--require-verified` 保持非零，批准与交付权限仍为 false。
 
 ## 保留失败与复测记录
 

@@ -2,6 +2,38 @@
 
 关联 #311；这是设计选择参考，不是组件清单或运行时状态机。每个条目的状态是待评审的 UX 义务，实际状态枚举以业务契约为准。use_when 不满足时不采用；不存在的消费者记 gap，不创建假按钮。
 
+## 规则强度和使用边界
+
+2026-10-10 的交互规范升级吸收全局交互规范和高频页面改进思路，继续沿用当前 Access 样板、CoffeeLink 和真实业务契约。历史文档的页面数量、问题记录和排期不是当前实测依据；菜单重组和业务实体合并需要各自的任务依据，不能成为已明确业务任务的新前置。
+
+| 类型 | 必须怎样处理 | 检查边界 |
+|---|---|---|
+| 不可绕过的设计义务 | 对象/数据范围清楚，状态真实，权限与权益分清，身份隔离，失败与结果可解释，关键影响可访问 | 明确结构矛盾可拒绝；真实性、适用性和实际交互仍核对对应证据 |
+| 有条件的交互启发 | 点击、筛选、列数、卡片、按钮位置和引导强度按任务选择，记录采用/不采用的理由 | 不能把建议数字升级为全站通用硬门禁，也不能削弱已有批准合同 |
+| 需要真人或独立判断 | 术语是否理解、入口是否容易找到、任务是否顺利完成、布局是否适合比较、原因披露是否恰当 | 浏览器结构存在、关键词命中和脚本速度不能代替用户观察或独立评审 |
+
+规则描述不表示 checker 已完整理解语义。检查能力和待审提示只以 [CHECKING](../CHECKING.md) 为准；任务内容继续写入同一 UX Contract 的 context、humanized_ux 和 acceptance。
+
+## 按任务使用交互启发
+
+| 常见建议 | 使用条件与边界 |
+|---|---|
+| 功能三次点击可达 | 可用于具体入口的设计目标；同时检查标签、查找路径和误操作。完整业务任务仍保留必要的影响核对、授权和确认 |
+| 默认 3—5 个筛选、最多 8 列 | 是任务讨论的起点；根据集合规模、查询协议、比较需要和视口决定，关键字段不能只为达标被隐藏 |
+| 设备以卡片呈现 | 少量巡检、识别可评估卡片；多对象比较、批量选择需评估表格。表格改卡片仍遵守现有前端的产品信息架构变更要求 |
+| 每页一个主按钮并固定右上 | 保持主次清楚；表单提交、对话框确认、批量工具栏的位置和层级依据当前任务与现有组件，不能硬套同一坐标 |
+| 空态给新增或导入 | 先判断真实为空还是筛选、授权、读取问题；新增/导入仅在实际能力和权限允许时出现，其他情形提供相应出口 |
+| 首访固定三步引导、所有成功都 toast | 根据陌生程度按需说明；普通已确认操作可轻量反馈，关键影响、部分结果和未知状态需要持续可访问的结果说明 |
+| 白话文案、不留英文 | 面向当前语言和业务对象保持术语一致；必要型号、标识符、缩写可以保留并解释，不能改名时丢失对象含义 |
+
+## 对象状态、偏好和恢复的共同义务
+
+- 状态依据真实来源分别展示。在线且存在告警可以同时成立，连接在线不证明制作正常；未知和过期数据保留其含义，文字与颜色配合。
+- 搜索可以共用入口，但不同实体的结果保持类型、标识和归属。经销商、客户、楼宇和点位不能仅为减少筛选器合并为一个实体。
+- 偏好作用域至少考虑用户、租户、页面和配置版本。仅存储当前任务需要且允许保存的内容；切身份/租户后清理旧对象条件、选中集合、详情、草稿和待处理操作上下文，再核实新范围。localStorage 只是存储方式，不提供租户隔离保证。
+- 真实空集合、筛选无结果、无权限、读取失败与加载中分别表达。清筛选、重读、联系获准人员或新增入口按真实原因及能力选择，不能统一引导新增。
+- 写操作和外部异步副作用需要按原操作及权威事实恢复。回复丢失、刷新和重新进入不能触发未经契约允许的重复确认；部分结果保留逐项状态，无恢复能力就保留未知和接管路径。
+
 ## 公共检索入口
 
 先按 [页面选择](page-pattern-selection.md) 和 [源码索引](../../../../docs/design/DESIGN-INDEX.md) 检索，再读真实消费者。可直接定位：[MembersView](../../../../web/src/features/enterprise/pages/MembersView.vue)、[RolesView](../../../../web/src/features/enterprise/pages/RolesView.vue)、[CompanyView](../../../../web/src/features/enterprise/pages/CompanyView.vue)、[AuditLogsView](../../../../web/src/features/enterprise/pages/AuditLogsView.vue)、[PlanChangeLifecycle](../../../../web/src/features/enterprise/components/PlanChangeLifecycle.vue)、[CustomerAreaView](../../../../web/src/features/customer/pages/CustomerAreaView.vue)、[SiteDetailView](../../../../web/src/features/site-rental/pages/SiteDetailView.vue)。
@@ -13,7 +45,7 @@
 - **use_when**：需要先认清对象、当前事实和首要事项。
 - **avoid_when**：仅修改单一字段，或没有可信汇总数据。
 - **business_prerequisites**：确认租户、对象归属和读取权限。
-- **minimum_information**：对象名称/标识、数据范围与新鲜度、待处理事项。
+- **minimum_information**：对象名称/标识、数据范围与新鲜度、待处理事项；设备连接、使用、告警和制作能力按真实来源区分。
 - **key_states**：loading / missing / restricted / stale。
 - **accessibility**：标题层级清晰；状态不只用颜色。
 - **component_lookup**：CustomerIdentity；见 customer-workspace 示例。
@@ -36,12 +68,12 @@
 
 - **use_when**：反复检索同类对象且条件明确。
 - **avoid_when**：小集合强加多级筛选；无保存能力却显示已保存。
-- **business_prerequisites**：说明即时/应用式筛选；保存视图需真实存储与授权。
-- **minimum_information**：已应用条件、结果范围、重置含义。
-- **key_states**：draft / applied / no-results / invalid / unavailable。
+- **business_prerequisites**：说明即时/应用式筛选；保存视图需真实存储与授权，并限定用户、租户、页面和配置版本。
+- **minimum_information**：已应用条件、对象类型、结果范围、重置及偏好失效含义。
+- **key_states**：draft / applied / loading / empty / no-results / denied / read-error / invalid / unavailable。
 - **accessibility**：输入有标签；条件可键盘清除；变化可读。
 - **component_lookup**：SearchField / MemberFilters；MembersView、RolesView。
-- **positive_example**：取消草稿不发查询；无结果允许清筛选。
+- **positive_example**：取消草稿不发查询；无结果允许清筛选；切租户清理旧对象条件，真实空集合仅提供获准的新增入口。
 - **negative_example**：把无权限或接口错误显示为空集合。
 
 ## task-inbox — 任务收件箱
@@ -145,12 +177,12 @@
 - **use_when**：写操作、异步任务或部分执行需要确认结果。
 - **avoid_when**：只读筛选也强加结果弹窗。
 - **business_prerequisites**：实际状态查询/回执接口与操作标识存在。
-- **minimum_information**：受理/执行状态、已变化/未完成项、下一出口。
+- **minimum_information**：原操作与对象范围、受理/执行状态、已变化/未完成项、权威事实及下一出口。
 - **key_states**：accepted / processing / partial / confirmed / unknown。
 - **accessibility**：状态变化可播报；结果可重新进入查看。
 - **component_lookup**：PlanChangeReceipt；PlanChangeLifecycle。
-- **positive_example**：确认响应后读取实际权益状态。
-- **negative_example**：HTTP成功直接显示已生效。
+- **positive_example**：确认后读取实际权益状态；响应丢失或刷新时按真实契约查询原操作和实际结果。
+- **negative_example**：HTTP成功直接显示已生效，或刷新后重新提交确认冒充恢复。
 
 ## error-recovery — 系统错误安全恢复
 
@@ -161,7 +193,7 @@
 - **key_states**：validation / denied / conflict / uncertain / recovered。
 - **accessibility**：保留字段和焦点；错误不只瞬时toast。
 - **component_lookup**：PlanChangeLifecycle / UiDialog；见 guidance-and-recovery。
-- **positive_example**：写超时先查原操作状态。
+- **positive_example**：写超时或响应丢失先查原操作状态；刷新保留获准的追溯信息，按真实规则恢复或接管。
 - **negative_example**：重建操作ID并自动再次扣费。
 
 ## problem-diagnosis — 业务问题核实
