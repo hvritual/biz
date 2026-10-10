@@ -11,6 +11,7 @@ import subprocess
 import tempfile
 import unittest
 from unittest.mock import patch
+from urllib.parse import unquote, urlsplit
 
 import yaml
 
@@ -595,6 +596,455 @@ class AnalysisTests(unittest.TestCase):
             return original(*args, **kwargs)
         with patch.object(ux.subprocess, 'run', side_effect=bounded):
             self.check()
+
+
+class InteractionUpgradeTests(unittest.TestCase):
+    """Behavioral counterexamples for interaction guidance; no external truth is certified."""
+
+    # Reuse fixture construction, not the historical tests themselves.
+    setUp = AnalysisTests.setUp
+    write = AnalysisTests.write
+    active = AnalysisTests.active
+    check = AnalysisTests.check
+    rejected = AnalysisTests.rejected
+
+    def effect(self, mutation=True, asynchronous=False):
+        self.doc['classification'].update(type='business_task', business_state_mutation=mutation,
+                                           asynchronous_effect=asynchronous)
+        self.active('error_recoverability')
+        self.active('operation_effect_transparency')
+        if mutation == 'unknown':
+            self.doc['open_questions'] = [{'question': 'Does the asynchronous operation mutate business state?',
+                                           'blocking': False, 'owner_role': 'Backend'}]
+
+    def source(self, path, kind='implementation'):
+        if not urlsplit(path).scheme:
+            local = self.root / unquote(path.split('#', 1)[0])
+            local.parent.mkdir(parents=True, exist_ok=True)
+            if not local.exists():
+                local.write_text('Synthetic source fixture only; not verified production capability.\n')
+        self.doc['sources'][0].update(path=path, kind=kind)
+
+    def assert_review_examples(self, code, keys, values):
+        baseline = copy.deepcopy(self.doc)
+        location = ''.join(('[' + str(key) + ']') if isinstance(key, int)
+                           else ('.' if index else '') + key for index, key in enumerate(keys))
+        for value in values:
+            with self.subTest(text=value):
+                self.doc = copy.deepcopy(baseline)
+                owner = self.doc
+                for key in keys[:-1]:
+                    owner = owner[key]
+                owner[keys[-1]] = value
+                before = copy.deepcopy(self.doc)
+                pending = self.check()
+                self.assertIn({'code': code, 'location': location, 'analysis_path': self.path}, pending)
+                self.assertIn('SEMANTIC_REVIEW_REQUIRED', {item['code'] for item in pending})
+                self.assertEqual(self.doc, before)
+
+    def test_async_effect_requires_each_authority_with_false_or_unknown_mutation(self):
+        for mutation in (False, 'unknown'):
+            for key in ('result_contract_refs', 'recovery_contract_refs'):
+                with self.subTest(mutation=mutation, missing=key):
+                    self.effect(mutation=mutation, asynchronous=True)
+                    self.doc['outcome'].update(result_contract_refs=['policy'], recovery_contract_refs=['policy'])
+                    self.doc['outcome'][key] = []
+                    self.rejected('WRITE_AUTHORITY_MISSING:' + key)
+
+    def test_async_effect_cannot_waive_recovery_or_effect_transparency(self):
+        for mutation in (False, 'unknown'):
+            for dimension in ('error_recoverability', 'operation_effect_transparency'):
+                with self.subTest(mutation=mutation, dimension=dimension):
+                    self.effect(mutation=mutation, asynchronous=True)
+                    self.doc['humanized_ux'][dimension].update(applicability='not_applicable',
+                        verification='not_applicable', evidence=[])
+                    self.rejected('WRITE_OBLIGATION_WAIVED:' + dimension)
+
+    def test_async_unknown_obligations_remain_explicitly_pending(self):
+        self.effect(mutation='unknown', asynchronous=True)
+        for dimension in ('error_recoverability', 'operation_effect_transparency'):
+            self.doc['humanized_ux'][dimension].update(applicability='unknown', verification='not_verified')
+        before = copy.deepcopy(self.doc)
+        pending = self.check()
+        for dimension in ('error_recoverability', 'operation_effect_transparency'):
+            self.assertIn({'code': 'APPLICABILITY_UNKNOWN', 'location': dimension}, pending)
+        self.assertIn('BUSINESS_AUTHORITY_REQUIRES_REVIEW', {item['code'] for item in pending})
+        self.assertEqual(self.doc, before)
+
+    def test_async_missing_capability_is_blocked_without_fabricating_a_contract(self):
+        self.effect(mutation=False, asynchronous=True)
+        self.doc['outcome'].update(result_contract_refs=[], recovery_contract_refs=[])
+        self.doc['open_questions'] = [{'question': 'No confirmed status or recovery capability exists yet.',
+                                      'blocking': True, 'owner_role': 'Backend'}]
+        before = copy.deepcopy(self.doc)
+        pending = self.check()
+        for key in ('result_contract_refs', 'recovery_contract_refs'):
+            self.assertIn({'code': 'WRITE_AUTHORITY_MISSING', 'location': key}, pending)
+        self.assertIn('OPEN_BLOCKER', {item['code'] for item in pending})
+        self.assertEqual(self.doc, before)
+
+    def test_unknown_async_flag_needs_question_and_is_not_silently_false(self):
+        self.doc['classification']['asynchronous_effect'] = 'unknown'
+        self.doc['outcome'].update(result_contract_refs=[], recovery_contract_refs=[])
+        self.rejected('UNKNOWN_WITHOUT_QUESTION')
+        self.doc['open_questions'] = [{'question': 'Confirm whether this operation has an asynchronous effect.',
+                                      'blocking': True, 'owner_role': 'Product'}]
+        before = copy.deepcopy(self.doc)
+        pending = self.check()
+        self.assertIn('CLASSIFICATION_UNKNOWN', {item['code'] for item in pending})
+        self.assertIn('OPEN_BLOCKER', {item['code'] for item in pending})
+        self.assertEqual(self.doc, before)
+
+    def test_ordinary_read_only_task_does_not_require_business_commands(self):
+        self.doc['outcome'].update(result_contract_refs=[], recovery_contract_refs=[])
+        before = copy.deepcopy(self.doc)
+        codes = {item['code'] for item in self.check()}
+        self.assertTrue({'WRITE_AUTHORITY_MISSING', 'WRITE_OBLIGATION_WAIVED',
+                         'BUSINESS_AUTHORITY_REQUIRES_REVIEW'}.isdisjoint(codes))
+        self.assertIn('SEMANTIC_REVIEW_REQUIRED', codes)
+        self.assertEqual(self.doc, before)
+
+    def test_local_design_authority_aliases_cannot_bypass_the_boundary(self):
+        self.effect()
+        for path in ('./web/ui-contracts.json', 'web%2Fui-contracts.json',
+                     './docs/design/policy.md', 'docs%2Fdesign%2Fpolicy.md', 'docs/./design/policy.md',
+                     '.agents/skills/b2b-product-ux/SKILL.md', './.agents/skills/fixture/SKILL.md',
+                     '.agents%2Fskills%2Ffixture%2FSKILL.md'):
+            with self.subTest(path=path):
+                self.source(path)
+                self.rejected('WRITE_AUTHORITY_MISSING')
+
+    def test_recognizable_github_design_urls_cannot_be_execution_authority(self):
+        self.effect()
+        for path in (
+            f'https://github.com/hvritual/biz/blob/{PRODUCT}/web/ui-contracts.json',
+            f'https://github.com/hvritual/biz/raw/{PRODUCT}/docs/design/policy.md',
+            f'https://raw.githubusercontent.com/hvritual/biz/{PRODUCT}/.agents/skills/fixture/SKILL.md',
+            f'https://api.github.com/repos/hvritual/biz/contents/web/ui-contracts.json?ref={PRODUCT}',
+            f'https://github.com/hvritual/biz/blob/{PRODUCT}/web%2Fui-contracts.json',
+            f'https://api.github.com/repos/hvritual/biz/contents/docs%2Fdesign%2Fpolicy.md?ref={PRODUCT}',
+            f'https://raw.githubusercontent.com/hvritual/biz/{PRODUCT}/.agents%2Fskills%2Ffixture%2FSKILL.md',
+            'https://github.com/hvritual/biz/raw/refs/heads/main/web/ui-contracts.json',
+            'https://raw.githubusercontent.com/hvritual/biz/refs/heads/main/docs/design/policy.md',
+            f'https://github.com/hvritual/biz/blob/{PRODUCT}/./web/ui-contracts.json',
+            f'https://github.com/hvritual/biz/raw/{PRODUCT}/internal/../docs/design/policy.md',
+            f'https://raw.githubusercontent.com/hvritual/biz/{PRODUCT}/contracts/%2E%2E/.agents/skills/fixture/SKILL.md',
+            f'https://api.github.com/repos/hvritual/biz/contents/internal/%2e%2e/web/ui-contracts.json?ref={PRODUCT}',
+        ):
+            with self.subTest(path=path):
+                self.source(path)
+                self.rejected('WRITE_AUTHORITY_MISSING')
+
+    def test_design_source_kind_cannot_override_source_location(self):
+        self.effect()
+        for kind in ('implementation', 'repository_contract', 'validated_runbook'):
+            with self.subTest(kind=kind):
+                self.source('./.agents/skills/fixture/runbook.md', kind)
+                self.rejected('WRITE_AUTHORITY_MISSING')
+
+    def test_result_and_recovery_each_need_their_own_authority(self):
+        self.effect()
+        self.doc['sources'].append(dict(self.doc['sources'][0], id='design', path='./web/ui-contracts.json'))
+        for key in ('result_contract_refs', 'recovery_contract_refs'):
+            with self.subTest(unsupported=key):
+                self.doc['outcome'].update(result_contract_refs=['policy'], recovery_contract_refs=['policy'])
+                self.doc['outcome'][key] = ['design']
+                self.rejected('WRITE_AUTHORITY_MISSING:' + key)
+
+    def test_legitimate_local_contracts_and_runbooks_remain_reviewable(self):
+        self.effect()
+        for path, kind in (
+            ('internal/contracts/result.go', 'implementation'),
+            ('./internal/contracts/recovery.go', 'implementation'),
+            ('internal%2Fcontracts%2Fresult.go', 'implementation'),
+            ('contracts/tenant/module.yaml', 'repository_contract'),
+            ('source/commands/device.go', 'implementation'),
+            ('docs/runbooks/device-recovery.md', 'validated_runbook'),
+            ('internal/contracts/web/result.go', 'implementation'),
+            ('docs/design-history/server-contract.md', 'repository_contract'),
+        ):
+            with self.subTest(path=path, kind=kind):
+                self.source(path, kind)
+                codes = {item['code'] for item in self.check()}
+                self.assertNotIn('WRITE_AUTHORITY_MISSING', codes)
+                self.assertIn('SOURCE_CLAIM_REQUIRES_REVIEW', codes)
+                self.assertIn('BUSINESS_AUTHORITY_REQUIRES_REVIEW', codes)
+
+    def test_legitimate_github_contract_urls_are_not_automatically_verified(self):
+        self.effect()
+        for path in (
+            f'https://github.com/hvritual/biz/blob/{PRODUCT}/internal/contracts/result.go',
+            f'https://github.com/hvritual/biz/raw/{PRODUCT}/contracts/device.proto',
+            f'https://raw.githubusercontent.com/hvritual/biz/{PRODUCT}/internal/contracts/recovery.go',
+            f'https://api.github.com/repos/hvritual/biz/contents/contracts/device.proto?ref={PRODUCT}',
+            f'https://github.com/hvritual/biz/blob/{PRODUCT}/./internal/contracts/result.go',
+            f'https://github.com/hvritual/biz/raw/{PRODUCT}/web/../contracts/device.proto',
+            'https://api.github.com/repos/hvritual/biz/contents/./contracts/device.proto?ref=refs/heads/main',
+            'https://api.github.com/repos/hvritual/biz/contents/contracts/device.proto?ref=main',
+            'https://api.github.com/repos/hvritual/biz/contents/contracts/device.proto?ref=feature/tenant-recovery',
+            'https://api.github.com/repos/hvritual/biz/contents/contracts/device.proto?ref=feature%2Ftenant-recovery',
+        ):
+            with self.subTest(path=path):
+                self.source(path)
+                codes = {item['code'] for item in self.check()}
+                self.assertNotIn('WRITE_AUTHORITY_MISSING', codes)
+                self.assertIn('BUSINESS_AUTHORITY_REQUIRES_REVIEW', codes)
+                self.assertIn('SOURCE_CLAIM_REQUIRES_REVIEW', codes)
+
+    def test_branch_github_refs_need_blocking_authority_resolution(self):
+        self.effect()
+        for path in (
+            # These two formerly positive branch fixtures are retained: independent
+            # review found that a ref/file boundary cannot be resolved offline.
+            'https://github.com/hvritual/biz/raw/refs/heads/main/internal/contracts/result.go',
+            'https://raw.githubusercontent.com/hvritual/biz/refs/heads/main/contracts/device.proto',
+            'https://github.com/hvritual/biz/blob/feature/tenant-recovery/web/ui-contracts.json',
+            'https://github.com/hvritual/biz/raw/feature%2Ftenant-recovery/.agents/skills/fixture/SKILL.md',
+            'https://raw.githubusercontent.com/hvritual/biz/feature/tenant-recovery/web/ui-contracts.json',
+            'https://raw.githubusercontent.com/hvritual/biz/feature%2Ftenant-recovery/.agents/skills/fixture/SKILL.md',
+            'https://github.com/hvritual/biz/blob/main/internal/contracts/result.go',
+            f'https://github.com/hvritual/biz/blob/{PRODUCT[:7]}/internal/contracts/result.go',
+        ):
+            with self.subTest(path=path):
+                self.source(path)
+                self.doc['open_questions'] = []
+                self.rejected('WRITE_AUTHORITY_MISSING')
+                self.doc['open_questions'] = [{
+                    'question': 'Resolve the exact source commit and file path before claiming business authority.',
+                    'blocking': True, 'owner_role': 'Backend'}]
+                before = copy.deepcopy(self.doc)
+                pending = self.check()
+                for key in ('result_contract_refs', 'recovery_contract_refs'):
+                    self.assertIn({'code': 'WRITE_AUTHORITY_MISSING', 'location': key}, pending)
+                self.assertIn('OPEN_BLOCKER', {item['code'] for item in pending})
+                self.assertEqual(self.doc, before)
+
+    def test_design_sources_remain_usable_for_read_only_design_context(self):
+        self.source('./.agents/skills/fixture/SKILL.md', 'repository_contract')
+        codes = {item['code'] for item in self.check()}
+        self.assertNotIn('WRITE_AUTHORITY_MISSING', codes)
+        self.assertNotIn('BUSINESS_AUTHORITY_REQUIRES_REVIEW', codes)
+        self.assertIn('SOURCE_CLAIM_REQUIRES_REVIEW', codes)
+
+    def test_design_reference_can_coexist_with_real_result_and_recovery_contracts(self):
+        self.effect()
+        self.doc['sources'].append(dict(self.doc['sources'][0], id='design', path='./web/ui-contracts.json'))
+        self.doc['outcome'].update(result_contract_refs=['design', 'policy'],
+                                   recovery_contract_refs=['policy', 'design'])
+        codes = {item['code'] for item in self.check()}
+        self.assertNotIn('WRITE_AUTHORITY_MISSING', codes)
+        self.assertIn('BUSINESS_AUTHORITY_REQUIRES_REVIEW', codes)
+
+    def test_navigation_heuristics_in_both_languages_and_negations_need_review(self):
+        self.active('time_to_action')
+        self.assert_review_examples('NAVIGATION_HEURISTIC_REQUIRES_REVIEW',
+            ('humanized_ux', 'time_to_action', 'requirements', 0), (
+                '所有功能必须三次点击可达，否则任务验收失败。',
+                'Every task must satisfy the three-click rule.',
+                '三次点击仅作入口优化线索，不作为所有任务的硬性门禁。',
+                'Do not use the three-click rule as a universal acceptance gate.',
+            ))
+
+    def test_layout_claims_in_both_languages_and_negations_need_review(self):
+        self.assert_review_examples('TASK_LAYOUT_REQUIRES_REVIEW', ('page_pattern', 'reason'), (
+            '把数据表格统一改成卡片网格，每页只能有一个主按钮并放在右上角。',
+            'Always replace data tables with card grids and place the only primary action in the top right.',
+            '不要为了简洁就把表格改成卡片网格，先验证比较与批量操作任务。',
+            'Do not mandate card grids; compare scanning and bulk tasks before choosing a layout.',
+            '每页最多5个筛选项，每张表格不超过8列，一旦超过就验收失败。',
+            'A page must have no more than five filters and eight table columns; exceeding either must fail acceptance.',
+            '筛选数量3至5个、表格不超过8列只是设计起点，不作为任务验收硬阈值。',
+            'Do not enforce a maximum of five filters or eight table columns as a universal acceptance gate.',
+        ))
+
+    def test_collection_states_in_both_languages_and_negations_need_review(self):
+        self.doc['acceptance']['scenarios'] = ['Fixture scenario']
+        self.assert_review_examples('COLLECTION_STATE_DISTINCTION_REQUIRES_REVIEW',
+            ('acceptance', 'scenarios', 0), (
+                '空态统一代表无数据、筛选无结果、无权限和加载失败，并显示去新增。',
+                'Use the same empty state for no records, no filter matches, permission denied and load failure.',
+                '禁止把无权限或读取失败当成空态，先区分真实空数据与筛选无结果。',
+                'Do not treat permission denied or a failed query as an empty state.',
+            ))
+
+    def test_entity_semantics_in_both_languages_and_negations_need_review(self):
+        self.assert_review_examples('ENTITY_SEMANTICS_REQUIRES_REVIEW', ('context', 'entity', 'summary'), (
+            '将经销商和楼宇合并为所属点位，客户直接等于点位。',
+            'Merge distributor and building filters into site; treat customer and site as the same entity.',
+            '经销商、客户和点位不是同一个对象，不因合并搜索入口改变数据归属。',
+            'Do not collapse distributor, customer and site identities when combining search controls.',
+        ))
+
+    def test_status_dimensions_in_both_languages_and_negations_need_review(self):
+        self.assert_review_examples('STATUS_DIMENSIONS_REQUIRES_REVIEW', ('context', 'state', 'summary'), (
+            '设备在线即正常，在线、告警、离线三选一，用颜色即可识别。',
+            'Online means operational; online, alarm and offline are mutually exclusive device statuses.',
+            '在线不等于正常制作，连接状态、使用状态和告警分别呈现，不只靠颜色。',
+            'Online does not imply operational; show connectivity and alarm status separately with text.',
+        ))
+
+    def test_preference_scope_in_both_languages_and_negations_needs_review(self):
+        self.assert_review_examples('PREFERENCE_SCOPE_REQUIRES_REVIEW', ('context', 'workflow', 'summary'), (
+            '筛选偏好统一写入localStorage，切换用户或租户继续使用原值。',
+            'Persist all filters in localStorage and restore the same values for every tenant and user.',
+            'localStorage偏好必须按用户、租户、页面及版本隔离，切换身份清除失效对象。',
+            'Do not reuse localStorage filter preferences across users, tenants or schema versions.',
+        ))
+
+    def test_availability_authority_in_both_languages_and_negations_needs_review(self):
+        self.assert_review_examples('AVAILABILITY_AUTHORITY_REQUIRES_REVIEW', ('context', 'decision', 'summary'), (
+            '模块已开通代表租户有权益且所有成员有权限，直接按角色名称显示按钮。',
+            'An enabled module grants tenant entitlement and member permission; decide access from role names.',
+            '模块已开通不代表成员有权限，分别核实模块状态、租户权益、成员权限和数据范围。',
+            'Do not derive module entitlement or member permission from a role name or visible button.',
+        ))
+
+    def test_action_result_recovery_in_both_languages_and_negations_needs_review(self):
+        self.assert_review_examples('ACTION_RESULT_RECOVERY_REQUIRES_REVIEW', ('outcome', 'definition'), (
+            '请求受理后显示成功toast即完成，超时统一重试。',
+            'A successful toast confirms completion; retry any timeout.',
+            '请求受理不代表实际生效，成功toast不能确认设备结果，超时先核对原操作。',
+            'Do not infer completion from a toast; a timeout requires checking the original operation status.',
+        ))
+
+    def test_risk_disclosure_in_both_languages_and_negations_needs_review(self):
+        self.assert_review_examples('RISK_DISCLOSURE_REQUIRES_REVIEW', ('context', 'risk', 'summary'), (
+            '一键重启设备无需确认后果，危险操作统一弹是否确定即可。',
+            'One-click restart needs no consequence disclosure; a generic confirmation is enough for dangerous actions.',
+            '设备重启前明确对象、范围和后果，不以一键完成省略风险说明。',
+            'Do not skip risk disclosure for a device restart; explain the affected object and consequence.',
+            '费用与操作后果只在tooltip中显示，鼠标悬浮后才可查看。',
+            'Show charges and consequences only in a tooltip on hover.',
+            '关键费用与后果不得只放在tooltip或hover中，确认前必须在正文可见。',
+            'Do not hide charges or consequences in hover-only tooltips; show them before confirmation.',
+        ))
+
+    def test_review_hints_locate_source_claims_and_open_questions(self):
+        self.assert_review_examples('PREFERENCE_SCOPE_REQUIRES_REVIEW', ('sources', 0, 'claim'), (
+            'localStorage保存筛选偏好，必须复核用户及租户隔离。',))
+        self.doc['open_questions'] = [{'question': 'Fixture question', 'blocking': True, 'owner_role': 'Product'}]
+        self.assert_review_examples('COLLECTION_STATE_DISTINCTION_REQUIRES_REVIEW',
+            ('open_questions', 0, 'question'), ('空态是否错误地合并了无权限和读取失败？',))
+
+    def test_each_narrative_occurrence_has_its_own_precise_location(self):
+        item = self.active('time_to_action')
+        item['requirements'] = ['所有入口三次点击可达。', '每个完整任务都应满足三次点击限制。']
+        pending = self.check()
+        locations = {entry['location'] for entry in pending
+                     if entry['code'] == 'NAVIGATION_HEURISTIC_REQUIRES_REVIEW'}
+        self.assertTrue({'humanized_ux.time_to_action.requirements[0]',
+                         'humanized_ux.time_to_action.requirements[1]'} <= locations)
+        for index in (0, 1):
+            self.assertIn({'code': 'NAVIGATION_HEURISTIC_REQUIRES_REVIEW',
+                           'location': f'humanized_ux.time_to_action.requirements[{index}]',
+                           'analysis_path': self.path}, pending)
+
+    def test_metric_prose_has_precise_field_and_analysis_attribution(self):
+        for field, code, value in (
+            ('definition', 'NAVIGATION_HEURISTIC_REQUIRES_REVIEW',
+             'Every successful task must satisfy the three-click rule.'),
+            ('conditions', 'PREFERENCE_SCOPE_REQUIRES_REVIEW',
+             'Measure after restoring localStorage filters across tenants.'),
+            ('failure_policy', 'TASK_LAYOUT_REQUIRES_REVIEW',
+             'Discard attempts that require more than five filters or eight table columns.'),
+        ):
+            with self.subTest(field=field):
+                AnalysisTests.metric(self)
+                self.assert_review_examples(code, ('acceptance', 'metrics', 0, field), (value,))
+                self.assertIsNone(self.doc['acceptance']['metrics'][0]['observed'])
+                self.assertEqual(self.doc['acceptance']['metrics'][0]['sample_size'], 0)
+
+    def test_legacy_hints_keep_their_original_document_location(self):
+        self.doc['outcome']['definition'] = '超时即失败，重新提交；不会重复扣款；页面声明就是API真相。'
+        pending = self.check()
+        for code in ('HIGH_RISK_PROMISE_REQUIRES_REVIEW', 'TIMEOUT_RECOVERY_REQUIRES_REVIEW',
+                     'PAGE_IS_NOT_API_EVIDENCE'):
+            self.assertIn({'code': code, 'location': self.path}, pending)
+
+    def test_neutral_read_only_copy_does_not_require_all_nine_semantic_warnings(self):
+        codes = {item['code'] for item in self.check()}
+        new_codes = {'NAVIGATION_HEURISTIC_REQUIRES_REVIEW', 'TASK_LAYOUT_REQUIRES_REVIEW',
+                     'COLLECTION_STATE_DISTINCTION_REQUIRES_REVIEW', 'ENTITY_SEMANTICS_REQUIRES_REVIEW',
+                     'STATUS_DIMENSIONS_REQUIRES_REVIEW', 'PREFERENCE_SCOPE_REQUIRES_REVIEW',
+                     'AVAILABILITY_AUTHORITY_REQUIRES_REVIEW', 'ACTION_RESULT_RECOVERY_REQUIRES_REVIEW',
+                     'RISK_DISCLOSURE_REQUIRES_REVIEW'}
+        self.assertTrue(new_codes.isdisjoint(codes))
+        self.assertIn('SEMANTIC_REVIEW_REQUIRED', codes)
+
+    def test_existing_v1_template_example_and_analysis_are_not_migrated_or_promoted(self):
+        for relative in (ux.SKILL + '/templates/ux-contract.template.yaml',
+                         ux.SKILL + '/examples/member-context-review.yaml',
+                         'docs/design/ux-pilots/member-management.yaml'):
+            with self.subTest(path=relative):
+                raw = (ROOT / relative).read_bytes()
+                doc = ux.parse(raw)
+                before = copy.deepcopy(doc)
+                pending = ux.analyze(ROOT, relative, doc)
+                self.assertEqual(doc['schema_version'], 1)
+                self.assertEqual(doc, before)
+                self.assertEqual((ROOT / relative).read_bytes(), raw)
+                self.assertTrue(pending)
+                if doc['artifact_kind'] == 'analysis':
+                    self.assertIn('EXTERNAL_CANDIDATE_NOT_VERIFIED', {entry['code'] for entry in pending})
+
+    def test_semantic_warning_cli_preserves_pending_and_cannot_grant_approval(self):
+        # Only substitute the synthetic analysis read; the complete real gate still runs.
+        self.doc['sources'][0]['path'] = ux.SKILL + '/UX-CONTRACT.md'
+        self.doc['context']['workflow']['summary'] = 'Do not share localStorage filters across tenants.'
+        raw = yaml.safe_dump(self.doc, allow_unicode=True).encode()
+        original_read = ux.read
+        def fixture_read(root, path):
+            return raw if path == self.path else original_read(root, path)
+        with patch.object(ux, 'read', side_effect=fixture_read):
+            for strict, expected_exit in ((False, 0), (True, 2)):
+                with self.subTest(strict=strict):
+                    output = io.StringIO()
+                    args = ['--root', str(ROOT), '--analysis', self.path, '--expected-candidate', PRODUCT]
+                    if strict:
+                        args.append('--require-verified')
+                    with redirect_stdout(output):
+                        code = ux.main(args)
+                    result = json.loads(output.getvalue())
+                    self.assertEqual(code, expected_exit, result['errors'])
+                    self.assertEqual(result['structure_result'], 'PASS')
+                    self.assertEqual(result['result'], 'NEEDS_REVIEW')
+                    self.assertIn({'code': 'PREFERENCE_SCOPE_REQUIRES_REVIEW',
+                                   'location': 'context.workflow.summary',
+                                   'analysis_path': self.path}, result['pending_review'])
+                    self.assertFalse(result['approval_granted'])
+                    self.assertFalse(result['delivery_granted'])
+
+    def test_cli_multiple_analyses_keep_identical_hints_attributed_to_each_file(self):
+        self.doc['sources'][0]['path'] = ux.SKILL + '/UX-CONTRACT.md'
+        self.doc['context']['workflow']['summary'] = 'Do not share localStorage filters across tenants.'
+        paths = ('docs/first-analysis.yaml', 'docs/second-analysis.yaml')
+        fixtures = {path: yaml.safe_dump(self.doc, allow_unicode=True).encode() for path in paths}
+        original_read = ux.read
+        def fixture_read(root, path):
+            return fixtures[path] if path in fixtures else original_read(root, path)
+        args = ['--root', str(ROOT), '--expected-candidate', PRODUCT,
+                '--analysis', paths[0], '--analysis', paths[1]]
+        with patch.object(ux, 'read', side_effect=fixture_read):
+            for strict, expected_exit in ((False, 0), (True, 2)):
+                with self.subTest(strict=strict):
+                    output = io.StringIO()
+                    with redirect_stdout(output):
+                        code = ux.main(args + (['--require-verified'] if strict else []))
+                    result = json.loads(output.getvalue())
+                    self.assertEqual(code, expected_exit, result['errors'])
+                    self.assertEqual(result['structure_result'], 'PASS')
+                    self.assertEqual(result['result'], 'NEEDS_REVIEW')
+                    for path in paths:
+                        self.assertEqual(result['checked_files'].count(path), 1)
+                        self.assertIn({'code': 'PREFERENCE_SCOPE_REQUIRES_REVIEW',
+                                       'location': 'context.workflow.summary', 'analysis_path': path},
+                                      result['pending_review'])
+                    hints = [item for item in result['pending_review']
+                             if item['code'] == 'PREFERENCE_SCOPE_REQUIRES_REVIEW'
+                             and item.get('analysis_path') in paths]
+                    self.assertEqual(len(hints), 2)
+                    self.assertFalse(result['approval_granted'])
+                    self.assertFalse(result['delivery_granted'])
 
 
 class RepositoryTests(unittest.TestCase):

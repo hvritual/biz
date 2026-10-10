@@ -27,6 +27,24 @@
 
 `source_refs` 必须引用 `sources.id`。sources.kind 区分 `repository_contract`、`implementation`、`user_requirement`、`validated_runbook`、`hypothesis`；假设可以支持设计建议，不能证明生产能力。历史文档来源写明日期/commit，若描述与当前源码不同需标冲突。`outcome.result_contract_refs` 与 `outcome.recovery_contract_refs` 也必须解析为 `sources.id`，不能只检查 context 中的引用。
 
+`classification.asynchronous_effect` 指任务产生或需要确认的外部异步业务副作用，例如指令执行或延后生效；普通读取 API、加载动画和代码使用 async 不因此构成外部副作用。按真实行为填写，不因本地没有数据库写入就把外部任务降为只读。未知继续填写 unknown 并记录问题。
+
+## 交互义务沿用现有字段
+
+本轮交互规范升级继续使用 schema v1、八维上下文和九维 UX，不添加字段或第二份分析。下表是填写和评审落点，不是新业务状态或权限目录；具体义务先按任务判定，不能机械要求所有页面加入相同控件。
+
+| 需分析的交互问题 | 写入现有字段 | 应覆盖的验收场景 |
+|---|---|---|
+| 对象身份与搜索语义 | `context.entity/decision`、对应 `sources`、`humanized_ux.decision_load` | 同名对象可区分；共用搜索入口仍区分经销商、客户、楼宇和点位，不改变归属 |
+| 设备多维状态与数据时效 | `context.state`、`time_to_information`、`decision_load` | 连接与告警可同时存在；制作能力未知保留未知；状态文字不依赖颜色理解 |
+| 模块、权益、权限及数据范围 | `context.role/action/risk`、`operation_effect_transparency` | 租户有权益但成员无权限、成员有权限但对象超范围等适用负例；原因不泄露未获准信息 |
+| 读取状态与行动出口 | `context.state`、`error_recoverability`、`how_to_guidance` | 真实空集合、筛选无结果、无权限和读取失败分别反馈；动作依据现有能力和权限 |
+| 筛选、视图和草稿恢复 | `context.workflow/risk`、`context_switching`、`error_recoverability` | 同一范围内返回/刷新保留适用上下文；用户或租户切换清理旧对象条件；配置过期按真实规则失效 |
+| 写操作或外部异步副作用 | `classification`、`context.action/risk`、`outcome`、结果及恢复两维 | 响应丢失、刷新、部分结果和最终事实回读；按原操作恢复，不未经契约允许重新确认 |
+| 入口、筛选、列数、视图和按钮布局 | `page_pattern.reason`、适用 UX 维度、`acceptance.human_checks/metrics` | 用户能找到入口、完成比较或批量任务、理解影响；有测量才声明效率变化 |
+
+场景细节写入既有 `acceptance.scenarios`，将可自动验证的行为放入 `automated_checks`，需真人判断的部分放入 `human_checks`。引用真实源码、契约和对应候选证据；不要用填入表中词语或覆盖标签代替执行。规则强度及启发的适用边界见 [交互模式库](references/b2b-interaction-patterns.md)。
+
 ## 九维的稳定键
 
 `time_to_information`、`time_to_action`、`context_switching`、`decision_load`、`interaction_cost`、`error_recoverability`、`how_to_guidance`、`operation_effect_transparency`、`problem_resolution_guidance`。
@@ -76,19 +94,25 @@ status: reviewed 只表示所声明范围的审阅已完成，decision 必须是
 
 本次是在首版合并前补齐 v1 草案字段；旧草案补入 candidate_commit 和 review 的 actor_kind/scope/reference/analysis_ref 为 null，再按真实记录填写，不自动迁移成已验收。后续已发布格式的变化仍须按版本迁移审查。
 
-## 写操作的条件义务
+## 写操作与外部异步副作用的条件义务
 
-存在业务写操作时，context.action/risk 与 outcome 至少引用：允许执行的前提和作用域、操作前影响、真实受理/进度/结果、适用幂等/并发规则、失败/结果未知的处理路径及权威回读。引用缺失则记录阻塞，不允许在模板中写虚构实现。
+`classification.business_state_mutation` 或 `classification.asynchronous_effect` 任一为 true 时，context.action/risk 与 outcome 至少引用：允许执行的前提和作用域、操作前影响、真实受理/进度/结果、适用幂等/并发规则、失败/结果未知的处理路径及权威回读。不能以 business_state_mutation 为 false/unknown 豁免已明确的外部异步副作用。`error_recoverability` 和 `operation_effect_transparency` 不得标为 not_applicable；仍未知则保留 unknown/not_verified 和相应问题。
+
+`outcome.result_contract_refs` 和 `outcome.recovery_contract_refs` 分别需要真实业务来源；页面、设计规范和 Skill 只说明设计义务，不能充当业务执行结果或恢复能力的权威。把来源 kind 改成 implementation 不改变内容的性质；`./`、百分号编码或 GitHub blob/raw URL 也不能把同一页面/设计/Skill 路径变成业务来源。缺少有效来源时必须明确记录 blocking 问题并保持待审，不能伪造接口。可引用的来源仍须独立核对内容、版本与所支持 claim；路径和 kind 满足结构要求不等于业务能力已被证实。
+
+GitHub blob/raw 来源使用完整 SHA 固定文件边界，或改用路径与 ref 分离的 Contents API URL；分支型链接可能因斜杠产生边界歧义，离线检查保留缺少权威来源的阻塞。具体识别与提示范围见 [检查边界](CHECKING.md)，不增加 v1 字段。
 
 金钱、额度、权限、设备等事实由后端决定。操作影响必须对应已知契约；“不会重复扣款”“额度已释放”“已恢复制作”均不能由提示文案自行宣布。结果 unknown 要保留，先查原操作状态；没有查询能力则说明限制并交接。
 
-只读/本地交互仍需说明真实 UI 结果及失败反馈，但不应为普通打开详情建立业务命令、计费确认或新的后端任务。
+响应丢失、页面刷新或重新登录后的恢复须区分原操作与当前事实；不能把再次发起确认当作读取恢复。保存可追溯信息也必须符合身份和租户范围，不能向切换后的用户暴露旧操作结果。只有真实契约允许时才重试；没有恢复能力则保持未解决的事实和接管出口。
+
+只读/本地交互仍需说明真实 UI 结果及失败反馈，但不应为普通打开详情建立业务命令、计费确认或新的后端任务。授权敏感的只读查询依真实授权来源及隔离负例核验，不自动增加写操作回执义务。
 
 ## 测量
 
 每个 metric 记录 ID、定义/起止点、角色/任务/设备条件、baseline、target、observed、unit、sample_size、失败/放弃口径及 evidence_ref。未测量数值使用 null，不用 0；sample_size 的 0 只表示确实尚无样本。observed 非 null 时必须有正整数 sample_size 和可核验 evidence_ref，且证据对应当前候选、metric 和 conditions；不能只把 sample_size 改成 1 就声称测过。失败/放弃、基线和当前样本分别说明，证据不能指向空记录。
 
-历史例子中的 3 秒、5 秒、两次跳转不预填为目标。先确认能测什么；Playwright 速度不等于真人 TTI/TTA。没有基线不写效率改善百分比。
+历史例子中的 3 秒、5 秒、两次跳转以及三次点击不预填为目标；筛选数和列数也不自动成为所有页面的硬门禁。先确认任务条件、能测什么和批准目标；Playwright 速度不等于真人 TTI/TTA。没有基线不写效率改善百分比。
 
 ## 验收分层与负例
 

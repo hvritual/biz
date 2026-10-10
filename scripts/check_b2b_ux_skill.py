@@ -9,6 +9,7 @@ import json
 import math
 import os
 from pathlib import Path, PurePosixPath
+import posixpath
 import re
 import subprocess
 from urllib.parse import unquote, urlsplit
@@ -39,6 +40,48 @@ REQUIRED_FILES = ('SKILL.md', 'PROJECT-INTEGRATION.md', 'UX-CONTRACT.md',
                   'examples/tenant-plan-upgrade.md')
 MAX_BYTES = 1024 * 1024
 SHA = re.compile(r'[0-9a-f]{40}\Z')
+
+# These are review prompts, never a natural-language verdict or a UX score.
+# Negations and justified task-specific choices deliberately remain reviewable.
+INTERACTION_REVIEW_PATTERNS = {
+    'NAVIGATION_HEURISTIC_REQUIRES_REVIEW':
+        r'(?:3|三)\s*(?:次(?:点击|点按)?|步)|\b(?:3|three)[ -]*(?:clicks?|steps?)\b',
+    'TASK_LAYOUT_REQUIRES_REVIEW':
+        r'(?:筛选|filters?|列|columns?).{0,24}\d|\d.{0,16}(?:个筛选|列|filters?|columns?)|'
+        r'\b(?:one|two|three|four|five|six|seven|eight|nine|ten)\b.{0,16}(?:filters?|columns?)|'
+        r'(?:卡片|表格|cards?|tables?).{0,40}(?:默认|优先|替换|改成|网格|default|replace|grid)|'
+        r'(?:默认|优先|替换|改成|default|replace).{0,40}(?:卡片|表格|cards?|tables?)|'
+        r'每页.{0,20}主按钮|主按钮.{0,20}(?:右上|唯一|一个)|'
+        r'(?:one|only|single).{0,20}primary (?:button|action)|primary (?:button|action).{0,24}top.right',
+    'COLLECTION_STATE_DISTINCTION_REQUIRES_REVIEW':
+        r'空态|空状态|无结果|无匹配|empty[ _-]?state|no[ _-]?(?:results?|matches)|'
+        r'(?:401|403|5\d\d|加载失败|读取失败|loading error).{0,40}(?:空|empty)',
+    'ENTITY_SEMANTICS_REQUIRES_REVIEW':
+        r'(?:经销商|楼宇|distributor|building).{0,80}(?:点位|\bsite\b|location)|'
+        r'(?:点位|\bsite\b|location).{0,80}(?:经销商|楼宇|distributor|building)',
+    'STATUS_DIMENSIONS_REQUIRES_REVIEW':
+        r'(?:在线|离线).{0,80}(?:告警|制作|运行)|'
+        r'\b(?:online|offline)\b.{0,80}\b(?:alarm|alert|operational|brewing|working)\b|'
+        r'(?:状态|status).{0,40}(?:颜色|color|colour)|color[ -]only|colour[ -]only|不需读文字',
+    'PREFERENCE_SCOPE_REQUIRES_REVIEW':
+        r'localStorage|sessionStorage|(?:记忆|记住|保存|持久化).{0,40}(?:筛选|列配置|视图|偏好)|'
+        r'(?:筛选|列配置|视图|偏好).{0,24}(?:记忆|持久化)|'
+        r'(?:persist|remember|save).{0,40}(?:filters?|columns?|views?|preferences?)',
+    'AVAILABILITY_AUTHORITY_REQUIRES_REVIEW':
+        r'(?:模块|module).{0,60}(?:开通|启用|权益|权限|enable|entitl|permission)|'
+        r'(?:菜单|menu).{0,40}(?:权限|permission|authoriz)|'
+        r'(?:权益|entitlement).{0,60}(?:权限|范围|permission|scope)',
+    'ACTION_RESULT_RECOVERY_REQUIRES_REVIEW':
+        r'\btoast\b|(?:一键|一步|one[ -]click).{0,32}(?:重启|restart|reboot)|'
+        r'(?:请求|request|提交|submit|response).{0,40}(?:成功|受理|完成|success|accept|complete)|'
+        r'(?:回复|响应).{0,16}丢失|response.{0,16}lost|(?:结果|result).{0,16}(?:未知|unknown)',
+    'RISK_DISCLOSURE_REQUIRES_REVIEW':
+        r'tooltip|悬浮提示|鼠标悬停|hover.{0,40}(?:price|permission|quota|risk|cost)|'
+        r'(?:费用|权限|额度|后果).{0,40}(?:悬浮|颜色|图标)|'
+        r'(?:风险|后果|risk|consequence).{0,40}(?:说明|披露|告知|确认|提示|disclos|confirm|explain)|'
+        r'(?:说明|披露|告知|确认|disclos|confirm|explain).{0,40}(?:风险|后果|risk|consequence)|'
+        r'危险操作|dangerous (?:action|operation)',
+}
 
 
 class Invalid(ValueError):
@@ -147,6 +190,67 @@ def reference(root, value, location):
                 'UNSAFE_REFERENCE', location)
     else:
         safe_path(root, unquote(value.split('#', 1)[0]))
+
+
+def business_source(source):
+    """Exclude presentation provenance, not certify an implementation's semantics.
+
+    Decode paths just as reference() does. GitHub blob/raw URLs need a full SHA:
+    arbitrary branch names can contain slashes, hiding where the file path starts.
+    Contents API URLs have a separate ref query and an unambiguous path boundary.
+    Other external sources still need the existing independent authority review.
+    """
+    if source['kind'] not in {'implementation', 'validated_runbook', 'repository_contract'} or source['path'] is None:
+        return False
+    uri = urlsplit(source['path'])
+    path = posixpath.normpath(unquote(uri.path))
+    if uri.scheme or uri.netloc:
+        parts = path.strip('/').split('/')
+        host = (uri.hostname or '').lower()
+        if host == 'api.github.com' and len(parts) > 4 and parts[0] == 'repos' and parts[3] == 'contents':
+            path = '/'.join(parts[4:])
+        else:
+            if host in {'github.com', 'www.github.com'} and len(parts) > 2 and parts[2] in {'blob', 'raw', 'tree'}:
+                ref_and_path = parts[3:]
+            elif host == 'raw.githubusercontent.com':
+                ref_and_path = parts[2:]
+            else:
+                return True
+            if len(ref_and_path) < 2 or SHA.fullmatch(ref_and_path[0]) is None:
+                return False
+            path = '/'.join(ref_and_path[1:])
+    path = posixpath.normpath(path).lstrip('/')
+    return not (path == 'AGENTS.md' or path.endswith('/AGENTS.md') or
+                path.startswith(('web/', 'docs/design/', '.agents/')))
+
+
+def interaction_text(doc):
+    """Yield existing v1 prose fields, excluding URLs, IDs and gate metadata."""
+    def walk(value, location):
+        if isinstance(value, str):
+            yield location, value
+        elif isinstance(value, list):
+            for index, item in enumerate(value):
+                yield from walk(item, f'{location}[{index}]')
+
+    yield from walk(doc['classification']['reason'], 'classification.reason')
+    for key, item in doc['context'].items():
+        yield from walk(item['summary'], f'context.{key}.summary')
+    for index, item in enumerate(doc['sources']):
+        yield from walk(item['claim'], f'sources[{index}].claim')
+    for key in ('reason', 'gaps'):
+        yield from walk(doc['page_pattern'][key], f'page_pattern.{key}')
+    yield from walk(doc['outcome']['definition'], 'outcome.definition')
+    for dimension, item in doc['humanized_ux'].items():
+        for key in ('reason', 'requirements'):
+            yield from walk(item[key], f'humanized_ux.{dimension}.{key}')
+    for key in ('scenarios', 'automated_checks', 'human_checks'):
+        yield from walk(doc['acceptance'][key], f'acceptance.{key}')
+    for index, item in enumerate(doc['acceptance']['metrics']):
+        for key in ('definition', 'conditions', 'failure_policy'):
+            yield from walk(item[key], f'acceptance.metrics[{index}].{key}')
+    for index, item in enumerate(doc['open_questions']):
+        yield from walk(item['question'], f'open_questions[{index}].question')
 
 
 def git_blob(root, commit, path):
@@ -377,12 +481,9 @@ def analyze(root, path, doc, expected_candidate=None):
             needs('OPEN_BLOCKER', question['question'])
     if not illustrative and any(p['code'] in {'CONTEXT_INCOMPLETE', 'CLASSIFICATION_UNKNOWN', 'APPLICABILITY_UNKNOWN'} for p in pending):
         require(bool(questions), 'UNKNOWN_WITHOUT_QUESTION', path)
-    if classification['business_state_mutation'] is True:
+    if classification['business_state_mutation'] is True or classification['asynchronous_effect'] is True:
         for key in ('result_contract_refs', 'recovery_contract_refs'):
-            authoritative = [sources[s] for s in outcome[key]
-                             if sources[s]['kind'] in {'implementation', 'validated_runbook', 'repository_contract'}
-                             and sources[s]['path'] is not None
-                             and not sources[s]['path'].startswith(('web/', 'docs/design/'))]
+            authoritative = [sources[s] for s in outcome[key] if business_source(sources[s])]
             if not authoritative:
                 require(any(q['blocking'] for q in questions), 'WRITE_AUTHORITY_MISSING', key)
                 needs('WRITE_AUTHORITY_MISSING', key)
@@ -463,6 +564,10 @@ def analyze(root, path, doc, expected_candidate=None):
         if re.search(pattern, serialized, re.I):
             # Includes negations intentionally: human review resolves context; a keyword is not a verdict.
             needs(code, path)
+    for location, value in interaction_text(doc):
+        for code, pattern in INTERACTION_REVIEW_PATTERNS.items():
+            if re.search(pattern, value, re.I | re.S):
+                pending.append({'code': code, 'analysis_path': path, 'location': location})
     if not illustrative:
         needs('SEMANTIC_REVIEW_REQUIRED', path)
     return pending
